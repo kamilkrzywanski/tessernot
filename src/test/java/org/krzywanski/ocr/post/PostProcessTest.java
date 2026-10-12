@@ -219,6 +219,75 @@ class PostProcessTest {
     }
 
     @Test
+    void readingOrderKeepsAPriceOnItsRow() {
+        TextLine bread = line("Chleb", 0, 0, 40, 10);
+        TextLine breadPrice = line("1.99", 90, 0, 20, 10);
+        TextLine cheese = line("Ser", 0, 12, 30, 10);
+        TextLine cheesePrice = line("3.29", 100, 12, 10, 10);
+        TextLine meat = line("Mieso", 0, 24, 36, 10);
+        TextLine meatPrice = line("4.99", 95, 24, 15, 10);
+        String text = ReadingOrder.join(ReadingOrder.group(
+                List.of(meatPrice, bread, cheesePrice, meat, breadPrice, cheese)));
+        assertEquals("Chleb 1.99\nSer 3.29\nMieso 4.99", text);
+    }
+
+    @Test
+    void readingOrderReadsTwoTextColumns() {
+        TextLine left1 = line("L1", 0, 0, 40, 10);
+        TextLine right1 = line("R1", 70, 0, 25, 10);
+        TextLine left2 = line("L2", 0, 12, 20, 10);
+        TextLine right2 = line("R2", 70, 12, 40, 10);
+        TextLine left3 = line("L3", 0, 24, 30, 10);
+        TextLine right3 = line("R3", 70, 24, 15, 10);
+        String text = ReadingOrder.join(ReadingOrder.group(
+                List.of(right2, left1, right3, left3, right1, left2)));
+        assertEquals("L1\nL2\nL3\nR1\nR2\nR3", text);
+    }
+
+    @Test
+    void verticalWordDoesNotGlueColumns() {
+        TextLine tall = line("ORYGINAL", 0, 0, 8, 50);
+        TextLine left1 = line("L1", 20, 0, 30, 10);
+        TextLine right1 = line("R1", 70, 0, 25, 10);
+        TextLine left2 = line("L2", 20, 12, 20, 10);
+        TextLine right2 = line("R2", 70, 12, 40, 10);
+        TextLine left3 = line("L3", 20, 24, 30, 10);
+        TextLine right3 = line("R3", 70, 24, 15, 10);
+        String text = ReadingOrder.join(ReadingOrder.group(
+                List.of(right1, tall, left2, right3, left1, right2, left3)));
+        assertEquals("ORYGINAL\nL1\nL2\nL3\nR1\nR2\nR3", text);
+    }
+
+    @Test
+    void fullWidthLineSeparatesColumnBlocks() {
+        List<TextLine> lines = List.of(
+                line("L1", 0, 0, 40, 10),
+                line("R1", 70, 0, 25, 10),
+                line("L2", 0, 12, 20, 10),
+                line("R2", 70, 12, 40, 10),
+                line("TITLE", 0, 40, 110, 10),
+                line("L3", 0, 60, 40, 10),
+                line("R3", 70, 60, 25, 10),
+                line("L4", 0, 72, 20, 10),
+                line("R4", 70, 72, 40, 10));
+        assertEquals("L1\nL2\nR1\nR2\nTITLE\nL3\nL4\nR3\nR4", ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void readingOrderKeepsAGridInRows() {
+        List<TextLine> lines = List.of(
+                line("a", 0, 0, 20, 10),
+                line("b", 30, 0, 20, 10),
+                line("c", 60, 0, 20, 10),
+                line("d", 90, 0, 20, 10),
+                line("e", 0, 12, 20, 10),
+                line("f", 30, 12, 20, 10),
+                line("g", 60, 12, 20, 10),
+                line("h", 90, 12, 20, 10));
+        assertEquals("a b c d\ne f g h", ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
     void rot90MatchesNumpy() {
         byte[] pixels = new byte[3 * 2 * 3];
         int[] values = {1, 2, 3, 4, 5, 6};

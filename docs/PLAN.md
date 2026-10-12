@@ -13,7 +13,7 @@ Po Fazach 1–2 silnik działa, ale jest wolniejszy i na trudnych dokumentach s�
 Zakres v1:
 
 - Tylko druk. Pismo ręczne nie ma osobnej ścieżki.
-- Detekcja, opcjonalny klasyfikator obrotu o 180° i rozpoznawanie. Brak struktury tabel. Kolejność czytania grupuje linie, gdy pionowe zachodzenie podzielone przez mniejszą wysokość jest co najmniej 0.5 wobec dowolnego pudełka już będącego w wierszu. Potem sortowanie wiersza po x. Dobre dla faktur. Gazeta wielokolumnowa może przepleść kolumny.
+- Detekcja, opcjonalny klasyfikator obrotu o 180° i rozpoznawanie. Brak struktury tabel. Kolejność czytania składa wiersz, gdy pionowe zachodzenie z pierwszym pudełkiem tego wiersza, podzielone przez mniejszą wysokość, wynosi co najmniej 0.5. Pionowy napis dostaje własny wiersz. Dwie kolumny tekstu oddzielone rynną czyta się od góry do dołu, najpierw lewą, potem prawą. Cena wyrównana do prawej zostaje w wierszu towaru. Siatka o trzech i więcej kolumnach zostaje wierszami. Gazeta o trzech kolumnach jest poza zakresem.
 - Język startowy: detekcja i klasyfikator kąta z PP-OCRv5 mobile, rozpoznawanie PP-OCRv6 small (wielojęzyczny CTC, polski jest w słowniku). Inny REC to podmiana ONNX i słownika. PP-OCRv6 small zastąpił latin PP-OCRv5, bo na tym samym druku DejaVu czyta polskie znaki, które tamten model gubił. Wariant medium ma tyle samo całych linii bez błędu i znacznie większy plik, więc nie jest domyślny. Tiny i latin v3 zostały zmierzone i są słabsze.
 - Java 21. Ścieżka skalarna działa zawsze. Vector API (`jdk.incubator.vector`) włącza się tylko, gdy JVM dostanie `--add-modules jdk.incubator.vector`. Brak `module-info`, które twardo wymagałoby inkubatora. Jedyny import inkubatora to `VectorKernels`. Reszta ładuje tę klasę przez refleksję i przy braku modułu zostaje przy skalarze.
 - Model: parser podzbioru protobuf czyta oficjalny ONNX do grafu wewnętrznego, potem optymalizacja, opcjonalnie binarny JIR v1 (magia `JIR1`) do szybszego startu. Wczytanie JIR nie optymalizuje drugi raz. Kształty są dynamiczne. To nie jest ogólny ONNX Runtime.
@@ -90,5 +90,5 @@ Nieobiecane: dogonienie ONNX Runtime na konwolucji. Zmierzony czas strony, z pro
 
 - testy operatorów: błąd bezwzględny około 1e-4 wobec wartości ręcznych
 - czysty druk łaciński i polski: CER poniżej około 0.25
-- trzy skany druku: list Nixona, paragon i pola faktury poza tabelą. Liczba błędów znaków nie rośnie ponad próg zmierzony na PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do wzorca
+- trzy skany druku: list Nixona, paragon i pola faktury poza tabelą. Liczba błędów znaków nie rośnie ponad próg zmierzony na PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do wzorca. Złączony tekst faktury ma kolumnę sprzedawcy przed kolumną nabywcy, a cena na paragonie zostaje w wierszu towaru
 - harness czasu drukuje milisekundy i nie deklaruje progu, dopóki pomiar nie jest w README

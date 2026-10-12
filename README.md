@@ -99,6 +99,8 @@ BufferedImage
   → kolejność czytania
 ```
 
+Kolejność czytania składa wiersz, gdy pionowe zachodzenie z pierwszym pudełkiem wiersza sięga co najmniej połowy krótszego pudełka. Pionowy napis dostaje własny wiersz. Dwie kolumny tekstu oddzielone rynną czyta się od góry do dołu, najpierw lewą, potem prawą. Cena wyrównana do prawego marginesu zostaje przy towarze. Siatka o trzech i więcej kolumnach jest czytana wierszami.
+
 Format wewnętrzny to graf plus wagi. ONNX czyta mały parser protobuf (bez biblioteki protobuf i bez Pythona). Po optymalizacji można zapisać `JIR1` i ładować go szybciej. JIR nie optymalizuje drugi raz. Ucięty albo niespójny plik JIR kończy się wyjątkiem `OcrException`.
 
 Optymalizacje grafu: wycięcie Identity, złożenie Conv+BatchNorm, złożenie biasu z Add, epilog ReLU / Sigmoid / HardSwish. Skalarne mnożenie i dodawanie tuż po konwolucji wchodzi w jej wagi. Drugi taki affine, już po aktywacji, zostaje w tym samym epilogu (`skala * aktywacja + przesunięcie`). Konwolucja 1×1 idzie jako GEMM: cztery wiersze naraz, a panel dwóch wektorów wyjścia zostaje w rejestrach przez całą redukcję K. Przy jednym wątku ten panel kolumn aktywacji jest najpierw zbierany do zwartego bufora, bo te same kolumny wracają raz na każde cztery wiersze wag, a kolejne wiersze aktywacji dzieli długi skok. Rozpoznawanie liczy każdą linię jednym wątkiem, więc z tego korzysta. Detekcja dzielona na wątki czyta aktywację bezpośrednio. 3×3 o skoku 1 składa całe okno w jednym przejściu po wierszu wyjścia. 3×3 o skoku 2 pakuje wiersz na piksele parzyste i nieparzyste, po czym też składa całe okno w jednym przejściu. 5×5 i pozostałe jądra liczone są wprost, bez im2col. Najbliższy resize o całkowitej skali (2, 4, 8) powiela bloki. ConvTranspose 2×2 ze skokiem 2 zapisuje sąsiednią parę wyjść w jednym przejściu po wejściu. Mapy elementarne od miliona elementów są dzielone na wątki. Int8 jest zaimplementowane i wyłączone: w czystej Javie zwykle nie przyspiesza i psuje dokładność.
@@ -143,8 +145,8 @@ Krótka faktura DejaVu (pięć linii) ma CER 0, łącznie z pangramem `Zażół�
 - strona PDF (Helvetica, sam ASCII) renderowana przez PDFBox
 - kilka stron PDF w kolejności oraz pusty PDF
 - JPEG: EXIF Orientation 1–8; brak znacznika zostawia piksele
-- trzy skany druku (list Nixona, paragon Biedronki, pola faktury Rewasza poza tabelą): liczba błędów znaków nie rośnie ponad próg zapisany przy PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do liczenia. Bez katalogu `models/` ten test jest pomijany
+- trzy skany druku (list Nixona, paragon Biedronki, pola faktury Rewasza poza tabelą): liczba błędów znaków nie rośnie ponad próg zapisany przy PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do liczenia. Złączony tekst faktury ma kolumnę sprzedawcy przed kolumną nabywcy, a cena na paragonie zostaje w wierszu towaru. Bez katalogu `models/` ten test jest pomijany
 
 ## Zakres, którego v1 nie obiecuje
 
-Pismo ręczne, struktura tabel, układ wielokolumnowy gazety (wiersze o wspólnym y mogą się przepleść) i jakość na poziomie Aspose.OCR na trudnych skanach. Pionowy tekst jest obracany. Osobny model REC można podłączyć przez `OcrConfig`, razem ze słownikiem o tylu klasach, ile ma głowa.
+Pismo ręczne, struktura tabel, gazeta o trzech kolumnach i jakość na poziomie Aspose.OCR na trudnych skanach. Pionowy tekst jest obracany. Osobny model REC można podłączyć przez `OcrConfig`, razem ze słownikiem o tylu klasach, ile ma głowa.

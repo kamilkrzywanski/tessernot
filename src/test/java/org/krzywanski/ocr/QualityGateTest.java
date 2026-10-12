@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -144,13 +145,86 @@ class QualityGateTest {
     void realPrintDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         try (OcrEngine engine = OcrEngine.create(OcrConfig.latin(Path.of("models")))) {
-            check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
-            check(engine, "receipt-biedronka.jpg", RECEIPT, RECEIPT_MAX_EDITS);
-            check(engine, "faktura-klodzka.jpg", INVOICE, INVOICE_MAX_EDITS);
+            String nixon = check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
+            String receipt = check(engine, "receipt-biedronka.jpg", RECEIPT, RECEIPT_MAX_EDITS);
+            String invoice = check(engine, "faktura-klodzka.jpg", INVOICE, INVOICE_MAX_EDITS);
+            assertJoinedReadingOrder(nixon, receipt, invoice);
         }
     }
 
-    private static void check(OcrEngine engine, String file, List<String> reference, int maxEdits) throws IOException {
+    /**
+     * The joined page, not the individual boxes. Seller and the letterhead come before the
+     * facing column. A receipt price stays on the item's line. Nixon's typed lines stay in order.
+     */
+    private static void assertJoinedReadingOrder(String nixon, String receipt, String invoice) {
+        assertInOrder(nixon, NIXON);
+        int stamp = nixon.indexOf("11.35 AM");
+        if (stamp >= 0) {
+            assertTrue(nixon.indexOf("Sincerely,") < stamp, nixon);
+        }
+        assertSameLine(receipt, "Chleb", "1,99");
+        assertSameLine(receipt, "Ser", "3,29");
+        assertSameLine(receipt, "100g", "4,99");
+        assertDifferentLines(receipt, "Ser", "4,99");
+        assertDifferentLines(receipt, "100g", "3,29");
+        assertSameLine(receipt, "2020-01-09", "422351");
+        assertSameLine(receipt, "Rabat", "-2,00");
+        assertSameLine(receipt, "SUMA PLN", "8,27");
+        assertInOrder(invoice, List.of(
+                "Oficyna",
+                "Biuro",
+                "Konto:",
+                "www.rewasz.com.pl",
+                "rewasz@rewasz.com.pl",
+                "wystawienia:",
+                "Pruszków",
+                "Data dostawy",
+                "2014-06-25",
+                "Data wystawienia:",
+                "25 czerwiec 2014",
+                "Sprzedawca:",
+                "Dobra",
+                "534-000-67-48",
+                "Nabywca:",
+                "Tuwima",
+                "728-25-97-388",
+                "Symbol:"));
+        assertSameLine(invoice, "www.rewasz.com.pl", "rewasz@rewasz.com.pl");
+        assertDifferentLines(invoice, "rewasz@rewasz.com.pl", "2014-06-25");
+        assertDifferentLines(invoice, "Sprzedawca:", "Nabywca:");
+        assertSameLine(invoice, "Ziemia", "80.00");
+        assertSameLine(invoice, "Razem do zap", "90,00");
+        assertSameLine(invoice, "przelewem:", "90.00");
+    }
+
+    private static void assertInOrder(String text, List<String> parts) {
+        int at = -1;
+        for (String part : parts) {
+            int found = text.indexOf(part, at + 1);
+            assertTrue(found >= 0, "out of order \"" + part + "\"\n" + text);
+            at = found + part.length() - 1;
+        }
+    }
+
+    private static void assertSameLine(String text, String anchor, String other) {
+        String line = lineWith(text, anchor);
+        assertTrue(line.contains(other), anchor + " / " + other + "\n" + text);
+    }
+
+    private static void assertDifferentLines(String text, String anchor, String other) {
+        assertFalse(lineWith(text, anchor).contains(other), anchor + " glued " + other + "\n" + text);
+    }
+
+    private static String lineWith(String text, String anchor) {
+        for (String line : text.split("\n", -1)) {
+            if (line.contains(anchor)) {
+                return line;
+            }
+        }
+        throw new AssertionError("missing \"" + anchor + "\"\n" + text);
+    }
+
+    private static String check(OcrEngine engine, String file, List<String> reference, int maxEdits) throws IOException {
         OcrResult result = engine.recognize(page(file));
         List<String> lines = new ArrayList<>();
         for (TextLine line : result.lines()) {
@@ -159,6 +233,7 @@ class QualityGateTest {
         PrintedCer.Result score = PrintedCer.score(lines, reference);
         System.out.print(score.detail(file));
         assertTrue(score.edits() <= maxEdits, score.detail(file));
+        return result.text();
     }
 
     private static BufferedImage page(String name) throws IOException {
