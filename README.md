@@ -67,7 +67,13 @@ try (OcrEngine engine = OcrEngine.load(Path.of("models"))) {
 }
 ```
 
-`quad` to osiem liczb: lewy górny, prawy górny, prawy dolny, lewy dolny, w pikselach obrazu. Jeden silnik nie jest współbieżny — `recognize` jest synchronizowane. Po `close` kolejne wywołanie kończy się wyjątkiem, a sesje modelu są puszczane. PDF z wieloma stronami zrównolegla strony, ale wtedy detekcja na stronie nie dokłada już pracy do tej samej puli wątków (inaczej pula zakleszczyłaby się sama ze sobą). Render idzie oknem o szerokości puli, więc w pamięci jest co najwyżej tyle bitmap, ile wątków. Jedna strona nadal liczy detekcję na pełnej puli.
+`quad` to osiem liczb: lewy górny, prawy górny, prawy dolny, lewy dolny, w pikselach obrazu. Jeden silnik nie jest współbieżny — `recognize` jest synchronizowane. Równoległe wywołania biorą silnik z `OcrPool`: każde miejsce to pełny silnik o tej samej konfiguracji, więc tekst jest ten sam co przy jednym silniku na tej konfiguracji. Zajęte miejsca każą czekać. `close` puszcza trwające wywołania i dopiero potem zamyka silniki. Silnika oddanego do `call` nie wolno zamykać, bo to miejsce wypada z puli. Jeden PDF zostaje na jednym silniku, razem ze swoim oknem stron. Po `close` kolejne wywołanie kończy się wyjątkiem, a sesje modelu są puszczane. PDF z wieloma stronami zrównolegla strony wewnątrz tego silnika, ale wtedy detekcja na stronie nie dokłada już pracy do tej samej puli wątków (inaczej pula zakleszczyłaby się sama ze sobą). Render idzie oknem o szerokości puli, więc w pamięci jest co najwyżej tyle bitmap, ile wątków. Jedna strona nadal liczy detekcję na pełnej puli.
+
+```java
+try (OcrPool pool = OcrPool.open(Path.of("models"), 2)) {
+    OcrResult result = pool.recognize(image);
+}
+```
 
 Jedna linia, bez detekcji:
 

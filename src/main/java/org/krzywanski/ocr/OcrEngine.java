@@ -31,6 +31,7 @@ import java.util.function.IntFunction;
 
 /**
  * One engine is not safe for concurrent {@link #recognize} calls; the methods are synchronized.
+ * Concurrent callers use {@link OcrPool}, which lends each of them a separate engine.
  * <p>
  * Detection may split GEMM across {@code pool} on the calling thread. Page workers therefore use
  * {@link Session#fork()} with no pool and run lines inline, so they never submit back to {@code pool}.
@@ -251,6 +252,11 @@ public final class OcrEngine implements AutoCloseable {
         if (closed) {
             throw new OcrException("engine is closed");
         }
+    }
+
+    /** True after {@link #close()}. The pool uses this to drop a slot the caller shut down. */
+    synchronized boolean isClosed() {
+        return closed;
     }
 
     private OcrResult run(BufferedImage image, boolean lineParallel) {
