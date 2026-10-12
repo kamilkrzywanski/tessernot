@@ -8,6 +8,7 @@ import org.krzywanski.ocr.post.Charset;
 import org.krzywanski.ocr.post.Ctc;
 import org.krzywanski.ocr.post.DbPost;
 import org.krzywanski.ocr.post.ReadingOrder;
+import org.krzywanski.ocr.post.Tables;
 import org.krzywanski.ocr.runtime.Session;
 import org.krzywanski.ocr.runtime.Sig;
 import org.krzywanski.ocr.runtime.Tensor;
@@ -275,12 +276,48 @@ public final class OcrEngine implements AutoCloseable {
         List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized);
+        List<TextLine> flat = ReadingOrder.flatten(rows);
         return new OcrResult(
                 ReadingOrder.join(rows),
-                ReadingOrder.flatten(rows),
+                flat,
+                readTables(bgr, flat),
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart);
+    }
+
+    /**
+     * Borrows one recognizer after line recognition has already returned its session.
+     * A ruled box is sliced and read again; the joined page text keeps the original line.
+     */
+    private List<TextTable> readTables(Bgr page, List<TextLine> lines) {
+        if (!cfg.useRec || rec == null || charset == null) {
+            return Tables.find(page, lines, null);
+        }
+        boolean borrowed = recPool != null;
+        Session session = borrowed ? borrow(recPool) : rec;
+        try {
+            return Tables.find(page, lines, crop -> readSlice(session, crop));
+        } finally {
+            if (borrowed) {
+                recPool.offer(session);
+            }
+        }
+    }
+
+    private String readSlice(Session session, Bgr crop) {
+        if (crop.width() < 2 || crop.height() < 2) {
+            return "";
+        }
+        float[] data = Images.recTensor(crop, cfg.recHeight, cfg.recMinWidth, cfg.recMaxWidth, cfg.mean, cfg.std);
+        int width = data.length / (3 * cfg.recHeight);
+        Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight, width}, data);
+        Tensor output = only(session.run(Map.of(recInput, input)));
+        Ctc.Result result = Ctc.greedy(output, charset);
+        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+            return "";
+        }
+        return result.text();
     }
 
     private List<DbPost.Box> detect(Bgr bgr, boolean lineParallel) {

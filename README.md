@@ -58,6 +58,11 @@ try (OcrEngine engine = OcrEngine.load(Path.of("models"))) {
     for (TextLine line : result.lines()) {
         // line.text(), line.score(), line.detScore(), line.quad(), line.bounds()
     }
+    for (TextTable table : result.tables()) {
+        for (List<String> row : table.cells()) {
+            // komórki od lewej; pusta komórka to ""
+        }
+    }
     List<OcrResult> pages = engine.recognizePdf(Path.of("scan.pdf"), 150f);
 }
 ```
@@ -82,7 +87,7 @@ CLI:
 ./ocr.sh eval
 ```
 
-`ocr.sh` zostawia katalog, z którego zostało wywołane, więc względna ścieżka obrazu albo PDF jest liczona od tego miejsca. Gdy nie podano `--model`, skrypt sam podaje katalog `models` leżący obok niego. Tekst idzie na stdout, czasy na stderr. Czasy, CER i wynik `selfcheck` są zapisywane z kropką dziesiętną. Przy wielu stronach stdout dostaje nagłówek `--- page N ---` przed tekstem strony, gdy ta strona jest gotowa, a nie po całym pliku. `eval` kończy się kodem 1, gdy CER syntetycznej faktury przekroczy 0.35. Zły `--dpi`, `--limit` albo `--threads`, także zero i liczba ujemna, kończy się kodem 1 i nazwą flagi, zanim silnik otworzy model albo plik. Ten sam zapis działa ze znakiem równości, na przykład `--dpi=150`. Przełączniki `--no-cls`, `--no-det` i `--raw` nie pochłaniają następnej ścieżki, więc mogą stać przed nazwą pliku. `--no-cls=false` zostawia klasyfikator włączony. Nieznana flaga, na przykład `--thread`, oraz flaga bez wartości, na przykład samo `--model`, kończą się kodem 1, zanim otwarty zostanie plik. Ścieżka `--model`, która jest plikiem, kończy się komunikatem, że to nie jest katalog, zanim komenda otworzy obraz, PDF albo pobieranie. Puste `--model=` jest tym samym błędem co samo `--model`. Dodatkowy argument, na przykład drugi plik przy `ocr ocr` albo plik przy `eval`, kończy się komunikatem `unexpected argument`, zanim komenda cokolwiek otworzy. Powtórzona flaga, na przykład dwa razy `--limit`, też kończy się błędem, zanim plik zostanie otwarty. Flaga, której komenda nie używa, na przykład `--dpi` przy `ocr`, też kończy się błędem, zanim plik zostanie otwarty. Brak plików modelu kończy się komunikatem z `ocr download`. Przy `ocr` i `bench` ten komunikat pojawia się, zanim obraz zostanie odczytany. Pusty plik wagi jest zgłaszany tak samo, z nazwą etapu, zanim obraz zostanie odczytany.
+`ocr.sh` zostawia katalog, z którego zostało wywołane, więc względna ścieżka obrazu albo PDF jest liczona od tego miejsca. Gdy nie podano `--model`, skrypt sam podaje katalog `models` leżący obok niego. Tekst idzie na stdout, czasy na stderr. Czasy, CER i wynik `selfcheck` są zapisywane z kropką dziesiętną. Przy wielu stronach stdout dostaje nagłówek `--- page N ---` przed tekstem strony, gdy ta strona jest gotowa, a nie po całym pliku. Gdy strona ma siatkę z kresek, po tekście jest nagłówek `--- table N ---`, a komórki w wierszu rozdziela tabulator. Strona bez kresek nie dostaje tego nagłówka. `eval` kończy się kodem 1, gdy CER syntetycznej faktury przekroczy 0.35. Zły `--dpi`, `--limit` albo `--threads`, także zero i liczba ujemna, kończy się kodem 1 i nazwą flagi, zanim silnik otworzy model albo plik. Ten sam zapis działa ze znakiem równości, na przykład `--dpi=150`. Przełączniki `--no-cls`, `--no-det` i `--raw` nie pochłaniają następnej ścieżki, więc mogą stać przed nazwą pliku. `--no-cls=false` zostawia klasyfikator włączony. Nieznana flaga, na przykład `--thread`, oraz flaga bez wartości, na przykład samo `--model`, kończą się kodem 1, zanim otwarty zostanie plik. Ścieżka `--model`, która jest plikiem, kończy się komunikatem, że to nie jest katalog, zanim komenda otworzy obraz, PDF albo pobieranie. Puste `--model=` jest tym samym błędem co samo `--model`. Dodatkowy argument, na przykład drugi plik przy `ocr ocr` albo plik przy `eval`, kończy się komunikatem `unexpected argument`, zanim komenda cokolwiek otworzy. Powtórzona flaga, na przykład dwa razy `--limit`, też kończy się błędem, zanim plik zostanie otwarty. Flaga, której komenda nie używa, na przykład `--dpi` przy `ocr`, też kończy się błędem, zanim plik zostanie otwarty. Brak plików modelu kończy się komunikatem z `ocr download`. Przy `ocr` i `bench` ten komunikat pojawia się, zanim obraz zostanie odczytany. Pusty plik wagi jest zgłaszany tak samo, z nazwą etapu, zanim obraz zostanie odczytany.
 
 `Images.read` i CLI obracają JPEG według znacznika EXIF Orientation (wartości 1–8). Brak znacznika zostawia piksele bez zmian. PNG oraz `BufferedImage` podany wprost do `recognize` nie dostają tej korekty. TIFF albo GIF z więcej niż jednym obrazem kończy się komunikatem z tą liczbą. Komenda `ocr` czyta jeden obraz. Plik z nagłówkiem `%PDF-` w pierwszym kilobajcie, podany do `ocr ocr`, kończy się wskazaniem komendy `ocr pdf`, chyba że sam zaczyna się jako PNG, JPEG, GIF, BMP albo TIFF. Taki obraz jest czytany normalnie, nawet gdy napis `%PDF-` stoi w komentarzu. PNG, JPEG, GIF, BMP albo TIFF podany do `ocr pdf`, a także brak pliku, kończy się przed wczytaniem modelu. Brak pliku albo katalog podany do `ocr ocr` kończy się komunikatem, że to nie jest plik, zanim model zostanie wczytany. PDF z hasłem użytkownika kończy się komunikatem, że plik jest zaszyfrowany, zanim model zostanie wczytany. Gdy znacznik `/Encrypt` leży dalej niż 64 KiB od końca, preflight czyta obiekt wskazany przez `startxref`, więc długi strumień xref też zatrzymuje się przed modelem. PDF z pustym hasłem użytkownika otwiera się także wtedy, gdy hasło właściciela jest ustawione. Obraz, którego spakowany BGR nie mieści się w jednej tablicy Javy, kończy się komunikatem `image is too large`, także gdy iloczyn wymiarów przepełnia 64-bitowy licznik.
 
@@ -97,9 +102,12 @@ BufferedImage
   → CLS 80×160, ewentualnie obrót o 180°
   → REC wysokość 48, CTC greedy
   → kolejność czytania
+  → siatka z kresek, osobno od tekstu
 ```
 
 Kolejność czytania składa wiersz, gdy pionowe zachodzenie z pierwszym pudełkiem wiersza sięga co najmniej połowy krótszego pudełka. Pionowy napis dostaje własny wiersz. Dwie kolumny tekstu oddzielone rynną czyta się od góry do dołu, najpierw lewą, potem prawą. Cena wyrównana do prawego marginesu zostaje przy towarze. Siatka o trzech i więcej kolumnach jest czytana wierszami.
+
+Siatka z kresek, od dwóch kolumn i dwóch wierszy, jest osobnym wynikiem `tables()`. Pusta komórka to pusty napis. Pudełko przecięte kreską w środku jest czytane jeszcze raz, kawałek po kawałku, bez ponownego obrotu, więc napis w komórce może różnić się od linii. Cena wyrównana do marginesu nie tworzy tabeli. Tabela bez kreski zostaje zwykłym tekstem.
 
 Format wewnętrzny to graf plus wagi. ONNX czyta mały parser protobuf (bez biblioteki protobuf i bez Pythona). Po optymalizacji można zapisać `JIR1` i ładować go szybciej. JIR nie optymalizuje drugi raz. Ucięty albo niespójny plik JIR kończy się wyjątkiem `OcrException`.
 
@@ -139,14 +147,14 @@ Krótka faktura DejaVu (pięć linii) ma CER 0, łącznie z pangramem `Zażół�
 - operatory względem wartości liczonych ręcznie (błąd około 1e-4)
 - parser oficjalnych ONNX: liczby operatorów, wejście CLS 80×160, wejście REC o wysokości 48, wyjście REC 18710
 - detekcja 64×64: graf surowy i po fuzji, różnica poniżej 1e-3, wartości skończone
-- faktura narysowana DejaVu (albo SansSerif): CER poniżej 0.25, w tekście są `FAKTURA`, `NIP` i `Zażółć gęślą jaźń`
+- faktura narysowana DejaVu (albo SansSerif): CER poniżej 0.25, w tekście są `FAKTURA`, `NIP` i `Zażółć gęślą jaźń`, a lista tabel jest pusta
 - pusta kartka 64×64, obraz 1×1 i `null` (wyjątek)
 - pionowa linia `FAKTURA`
 - strona PDF (Helvetica, sam ASCII) renderowana przez PDFBox
 - kilka stron PDF w kolejności oraz pusty PDF
 - JPEG: EXIF Orientation 1–8; brak znacznika zostawia piksele
-- trzy skany druku (list Nixona, paragon Biedronki, pola faktury Rewasza poza tabelą): liczba błędów znaków nie rośnie ponad próg zapisany przy PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do liczenia. Złączony tekst faktury ma kolumnę sprzedawcy przed kolumną nabywcy, a cena na paragonie zostaje w wierszu towaru. Bez katalogu `models/` ten test jest pomijany
+- trzy skany druku (list Nixona, paragon Biedronki, pola faktury Rewasza poza tabelą): liczba błędów znaków nie rośnie ponad próg zapisany przy PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do liczenia. Złączony tekst faktury ma kolumnę sprzedawcy przed kolumną nabywcy, a cena na paragonie zostaje w wierszu towaru. Na fakturze Rewasza nazwa towaru i kwota brutto są w różnych komórkach jednego wiersza, a stawki 23% i 5% są w jednej siatce. Paragon i list mają pustą listę tabel. Bez katalogu `models/` ten test jest pomijany
 
 ## Zakres, którego v1 nie obiecuje
 
-Pismo ręczne, struktura tabel, gazeta o trzech kolumnach i jakość na poziomie Aspose.OCR na trudnych skanach. Pionowy tekst jest obracany. Osobny model REC można podłączyć przez `OcrConfig`, razem ze słownikiem o tylu klasach, ile ma głowa.
+Pismo ręczne, tabela bez kreski, gazeta o trzech kolumnach i jakość na poziomie Aspose.OCR na trudnych skanach. Pionowy tekst jest obracany. Osobny model REC można podłączyć przez `OcrConfig`, razem ze słownikiem o tylu klasach, ile ma głowa.

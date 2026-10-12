@@ -63,6 +63,7 @@ class OcrEndToEndTest {
         assertTrue(result.text().contains("FAKTURA"), result.text());
         assertTrue(result.text().contains("NIP"), result.text());
         assertTrue(result.text().contains("Zażółć gęślą jaźń"), result.text());
+        assertTrue(result.tables().isEmpty(), result.tables().toString());
     }
 
     @Test

@@ -13,7 +13,7 @@ Po Fazach 1–2 silnik działa, ale jest wolniejszy i na trudnych dokumentach s�
 Zakres v1:
 
 - Tylko druk. Pismo ręczne nie ma osobnej ścieżki.
-- Detekcja, opcjonalny klasyfikator obrotu o 180° i rozpoznawanie. Brak struktury tabel. Kolejność czytania składa wiersz, gdy pionowe zachodzenie z pierwszym pudełkiem tego wiersza, podzielone przez mniejszą wysokość, wynosi co najmniej 0.5. Pionowy napis dostaje własny wiersz. Dwie kolumny tekstu oddzielone rynną czyta się od góry do dołu, najpierw lewą, potem prawą. Cena wyrównana do prawej zostaje w wierszu towaru. Siatka o trzech i więcej kolumnach zostaje wierszami. Gazeta o trzech kolumnach jest poza zakresem.
+- Detekcja, opcjonalny klasyfikator obrotu o 180° i rozpoznawanie. Siatka z kresek, co najmniej dwie kolumny i dwa wiersze, trafia do `OcrResult.tables()` jako komórki. Tekst strony zostaje w dotychczasowej kolejności. Pudełko przecięte kreską w środku jest czytane ponownie, osobno dla każdego kawałka, więc tekst komórki może się różnić od linii. Cena przy marginesie, tabela bez kreski i gazeta o trzech kolumnach nie są tabelą. Kolejność czytania składa wiersz, gdy pionowe zachodzenie z pierwszym pudełkiem tego wiersza, podzielone przez mniejszą wysokość, wynosi co najmniej 0.5. Pionowy napis dostaje własny wiersz. Dwie kolumny tekstu oddzielone rynną czyta się od góry do dołu, najpierw lewą, potem prawą. Cena wyrównana do prawej zostaje w wierszu towaru. Siatka o trzech i więcej kolumnach zostaje wierszami. Gazeta o trzech kolumnach jest poza zakresem.
 - Język startowy: detekcja i klasyfikator kąta z PP-OCRv5 mobile, rozpoznawanie PP-OCRv6 small (wielojęzyczny CTC, polski jest w słowniku). Inny REC to podmiana ONNX i słownika. PP-OCRv6 small zastąpił latin PP-OCRv5, bo na tym samym druku DejaVu czyta polskie znaki, które tamten model gubił. Wariant medium ma tyle samo całych linii bez błędu i znacznie większy plik, więc nie jest domyślny. Tiny i latin v3 zostały zmierzone i są słabsze.
 - Java 21. Ścieżka skalarna działa zawsze. Vector API (`jdk.incubator.vector`) włącza się tylko, gdy JVM dostanie `--add-modules jdk.incubator.vector`. Brak `module-info`, które twardo wymagałoby inkubatora. Jedyny import inkubatora to `VectorKernels`. Reszta ładuje tę klasę przez refleksję i przy braku modułu zostaje przy skalarze.
 - Model: parser podzbioru protobuf czyta oficjalny ONNX do grafu wewnętrznego, potem optymalizacja, opcjonalnie binarny JIR v1 (magia `JIR1`) do szybszego startu. Wczytanie JIR nie optymalizuje drugi raz. Kształty są dynamiczne. To nie jest ogólny ONNX Runtime.
@@ -30,7 +30,7 @@ Zakres v1:
 - Wyjście REC tego modelu to `[N, T, 18710]`. Wejście ma stałą wysokość 48, więc inna `recHeight` jest odrzucana przy starcie. Oś klas jest tą, której rozmiar równa się słownikowi. Mapa detekcji dostaje sigmoid, gdy wartości wychodzą poza około `[0, 1.2]`.
 - Słownik: 18708 tokenów, każdy w osobnej linii, bez linii ze spacją. Puste linie są pomijane, treści znaku się nie przycina, zdejmowany jest jeden końcowy CR i BOM. `useSpaceChar` dokleja spację. Klasy: blank + 18708 + spacja = 18710. Spacja ma indeks 18709. Polskie znaki `ĄąĘęŁłŃńÓóŚśŹźŻż` są w pliku.
 - Jeden `OcrEngine` nie jest używany równolegle z zewnątrz. Wewnętrzna pula zrównolegla linie REC. GEMM detekcji może dzielić wiersze na puli wołającego wątku. Detekcji nie wolno wołać z wątku puli. REC w workerze ma `pool = null` i jeden wątek. Strony PDF przy wielu wątkach idą osobno, każda ze swoim `fork()` bez puli, żeby worker nie oddawał pracy do tej samej puli.
-- API: `OcrEngine.load` / `create`, `recognize(BufferedImage)` → tekst i lista linii (score, score detekcji, quad, bounds), `recognizePdf`, `recognizeLine`. CLI: `download`, `ocr`, `bench`, `pdf`, `convert`, `ops`, `synth`, `eval`, `selfcheck`.
+- API: `OcrEngine.load` / `create`, `recognize(BufferedImage)` → tekst, lista linii (score, score detekcji, quad, bounds) i tabele z kresek, `recognizePdf`, `recognizeLine`. CLI: `download`, `ocr`, `bench`, `pdf`, `convert`, `ops`, `synth`, `eval`, `selfcheck`. Przy niepustej siatce CLI dopisuje `--- table N ---` i rozdziela komórki tabulatorem.
 
 Modele bazowe (nie są w gicie, skróty SHA-256 są w `ModelFiles`):
 
@@ -61,6 +61,7 @@ Zrobione:
 - `Geometry`: kadłub wypukły, prostokąt o minimalnym polu, score wielokąta, homografia
 - `DbPost`, `Ctc`, `Charset`, `ReadingOrder`. Mapa detekcji, której iloczyn boków nie mieści się w buforze, jest odrzucana także wtedy, gdy mnożenie przepełnia `int` i wygląda na pustą mapę.
 - `OcrEngine` spina pipeline
+- `Tables`: siatka z kresek jako komórki. Tekst strony i bramka jakości liczą te same linie co przedtem
 
 ## Faza 3 — użyteczność
 
@@ -84,11 +85,12 @@ Nieobiecane: dogonienie ONNX Runtime na konwolucji. Zmierzony czas strony, z pro
 - GEMM i konwolucja w czystej Javie zostają wolniejsze niż natywny runtime.
 - Pełna lista operatorów ONNX nie jest celem. Nowy eksport modelu może nazwać brakujący operator i wtedy dopiero go dopisujemy.
 - Jakość zależy od modelu i preprocessingu bardziej niż od kolejnych operatorów.
+- Na trzech skanach bramki część znaków zostaje pomyłką modelu: spacje, ogonki, Łódź, znak mnożenia oraz cyfra Lp w jednym pudełku z nazwą. Słownik i dekoder CTC te znaki mają. Klasyfikator kąta tych linii nie obraca. Poszerzenie kadru o kilka pikseli poprawia część faktury i psuje przecinki na paragonie, więc kadr zostaje bez marginesu.
 - Czarny tekst na białym tle nie wykryje zamiany BGR/RGB. Kanały i tak trzymamy w BGR, tak jak wagi.
 
 ## Kryterium „działa”
 
 - testy operatorów: błąd bezwzględny około 1e-4 wobec wartości ręcznych
 - czysty druk łaciński i polski: CER poniżej około 0.25
-- trzy skany druku: list Nixona, paragon i pola faktury poza tabelą. Liczba błędów znaków nie rośnie ponad próg zmierzony na PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do wzorca. Złączony tekst faktury ma kolumnę sprzedawcy przed kolumną nabywcy, a cena na paragonie zostaje w wierszu towaru
+- trzy skany druku: list Nixona, paragon i pola faktury poza tabelą. Liczba błędów znaków nie rośnie ponad próg zmierzony na PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do wzorca. Złączony tekst faktury ma kolumnę sprzedawcy przed kolumną nabywcy, a cena na paragonie zostaje w wierszu towaru. Faktura z kreskami ma wiersz towaru, w którym nazwa i kwota brutto są w różnych komórkach, oraz stawki 23% i 5% w jednej siatce. Paragon, list i faktura narysowana bez kresek mają pustą listę tabel
 - harness czasu drukuje milisekundy i nie deklaruje progu, dopóki pomiar nie jest w README

@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Printed text on three public scans. The ceiling is the edit count of the current
  * PP-OCRv6 small reader. A larger count fails. Handwriting, stamps, and the invoice
  * table grid are not part of the reference, and extra detections do not add edits.
+ * Ruled cells are checked on the same result and do not change that count.
  */
 class QualityGateTest {
     /** Typed letter, read exactly. The signature and the blue time stamp are not scored. */
@@ -145,11 +146,65 @@ class QualityGateTest {
     void realPrintDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         try (OcrEngine engine = OcrEngine.create(OcrConfig.latin(Path.of("models")))) {
-            String nixon = check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
-            String receipt = check(engine, "receipt-biedronka.jpg", RECEIPT, RECEIPT_MAX_EDITS);
-            String invoice = check(engine, "faktura-klodzka.jpg", INVOICE, INVOICE_MAX_EDITS);
-            assertJoinedReadingOrder(nixon, receipt, invoice);
+            OcrResult nixon = check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
+            OcrResult receipt = check(engine, "receipt-biedronka.jpg", RECEIPT, RECEIPT_MAX_EDITS);
+            OcrResult invoice = check(engine, "faktura-klodzka.jpg", INVOICE, INVOICE_MAX_EDITS);
+            assertJoinedReadingOrder(nixon.text(), receipt.text(), invoice.text());
+            assertTrue(nixon.tables().isEmpty(), dump(nixon.tables()));
+            assertTrue(receipt.tables().isEmpty(), dump(receipt.tables()));
+            assertRuledInvoice(invoice);
         }
+    }
+
+    /** The Rewasz item row and the VAT grid. A price rail and the parties block are not cells. */
+    private static void assertRuledInvoice(OcrResult result) {
+        String dump = dump(result.tables());
+        assertTrue(result.tables().size() <= 4, dump);
+        boolean itemRow = false;
+        boolean rates = false;
+        for (TextTable table : result.tables()) {
+            boolean vat23 = false;
+            boolean vat5 = false;
+            for (List<String> row : table.cells()) {
+                int name = -1;
+                int gross = -1;
+                for (int column = 0; column < row.size(); column++) {
+                    String cell = row.get(column);
+                    assertFalse(cell.contains("Sprzedawca") && cell.contains("Nabywca"), cell);
+                    if (name < 0 && cell.contains("Ziemia")) {
+                        name = column;
+                    }
+                    if (gross < 0 && (cell.contains("80.00") || cell.contains("80,00"))) {
+                        gross = column;
+                    }
+                    if (cell.contains("23%") || cell.contains("VAT 23")) {
+                        vat23 = true;
+                    }
+                    if (cell.contains("5%") || cell.contains("VAT 5")) {
+                        vat5 = true;
+                    }
+                }
+                if (name >= 0 && gross >= 0 && name != gross) {
+                    itemRow = true;
+                }
+            }
+            if (vat23 && vat5) {
+                rates = true;
+            }
+        }
+        assertTrue(itemRow, dump);
+        assertTrue(rates, dump);
+    }
+
+    private static String dump(List<TextTable> tables) {
+        StringBuilder out = new StringBuilder();
+        for (TextTable table : tables) {
+            out.append(table.rows()).append('x').append(table.columns()).append('\n');
+            for (List<String> row : table.cells()) {
+                out.append(String.join(" | ", row)).append('\n');
+            }
+        }
+        return out.toString();
     }
 
     /**
@@ -224,7 +279,7 @@ class QualityGateTest {
         throw new AssertionError("missing \"" + anchor + "\"\n" + text);
     }
 
-    private static String check(OcrEngine engine, String file, List<String> reference, int maxEdits) throws IOException {
+    private static OcrResult check(OcrEngine engine, String file, List<String> reference, int maxEdits) throws IOException {
         OcrResult result = engine.recognize(page(file));
         List<String> lines = new ArrayList<>();
         for (TextLine line : result.lines()) {
@@ -233,7 +288,7 @@ class QualityGateTest {
         PrintedCer.Result score = PrintedCer.score(lines, reference);
         System.out.print(score.detail(file));
         assertTrue(score.edits() <= maxEdits, score.detail(file));
-        return result.text();
+        return result;
     }
 
     private static BufferedImage page(String name) throws IOException {

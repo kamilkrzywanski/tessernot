@@ -109,9 +109,7 @@ public final class Cli {
         requireModels(parsed, models);
         BufferedImage image = readImage(Path.of(parsed.positionals.get(1)));
         try (OcrEngine engine = engine(parsed, models)) {
-            OcrResult result = engine.recognize(image);
-            System.out.println(result.text());
-            timing(result);
+            show(engine.recognize(image));
         }
         return 0;
     }
@@ -159,8 +157,7 @@ public final class Cli {
                 if (count > 1) {
                     System.out.println("--- page " + (index + 1) + " ---");
                 }
-                System.out.println(result.text());
-                timing(result);
+                show(result);
             });
         }
         return 0;
@@ -229,8 +226,7 @@ public final class Cli {
             OcrResult result = engine.recognize(Samples.invoice());
             double cer = Metrics.cer(result.text(), Samples.invoiceText());
             System.out.printf(Locale.ROOT, "CER %.4f%n", cer);
-            System.out.println(result.text());
-            timing(result);
+            show(result);
             return cer > 0.35 ? 1 : 0;
         }
     }
@@ -336,6 +332,19 @@ public final class Cli {
         return Images.read(path);
     }
 
+    private static void show(OcrResult result) {
+        System.out.println(result.text());
+        List<TextTable> tables = result.tables();
+        for (int i = 0; i < tables.size(); i++) {
+            System.out.println();
+            System.out.println("--- table " + (i + 1) + " ---");
+            for (List<String> row : tables.get(i).cells()) {
+                System.out.println(String.join("\t", row));
+            }
+        }
+        timing(result);
+    }
+
     private static void timing(OcrResult result) {
         System.err.printf(Locale.ROOT, "det %.1f ms  rec %.1f ms  total %.1f ms  lines %d%n",
                 result.detectionMillis(), result.recognitionMillis(), result.totalMillis(), result.lines().size());
@@ -364,6 +373,7 @@ public final class Cli {
                 Missing model files for ocr and bench, and an empty model file, are reported before the image is read.
                 A flag the command does not use, such as --dpi on ocr, is rejected before a file is opened.
                 A multi-page PDF prints "--- page N ---" before each page. Timings stay on stderr.
+                A ruled grid is printed after the page text as "--- table N ---", with cells separated by tabs. A page with no rules prints no table.
                 """);
     }
 
