@@ -143,6 +143,7 @@ Krótka faktura DejaVu (pięć linii) ma CER 0, łącznie z pangramem `Zażół�
 - strona PDF (Helvetica, sam ASCII) renderowana przez PDFBox
 - kilka stron PDF w kolejności oraz pusty PDF
 - JPEG: EXIF Orientation 1–8; brak znacznika zostawia piksele
+- trzy skany druku (list Nixona, paragon Biedronki, pola faktury Rewasza poza tabelą): liczba błędów znaków nie rośnie ponad próg zapisany przy PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do liczenia. Bez katalogu `models/` ten test jest pomijany
 
 ## Zakres, którego v1 nie obiecuje
 

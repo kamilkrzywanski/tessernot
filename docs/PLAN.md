@@ -90,4 +90,5 @@ Nieobiecane: dogonienie ONNX Runtime na konwolucji. Zmierzony czas strony, z pro
 
 - testy operatorów: błąd bezwzględny około 1e-4 wobec wartości ręcznych
 - czysty druk łaciński i polski: CER poniżej około 0.25
+- trzy skany druku: list Nixona, paragon i pola faktury poza tabelą. Liczba błędów znaków nie rośnie ponad próg zmierzony na PP-OCRv6 small. Podpis, pieczątka i siatka tabeli nie wchodzą do wzorca
 - harness czasu drukuje milisekundy i nie deklaruje progu, dopóki pomiar nie jest w README

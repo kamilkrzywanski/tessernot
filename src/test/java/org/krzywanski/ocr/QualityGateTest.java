@@ -1,0 +1,182 @@
+package org.krzywanski.ocr;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.krzywanski.ocr.image.Images;
+
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+/**
+ * Printed text on three public scans. The ceiling is the edit count of the current
+ * PP-OCRv6 small reader. A larger count fails. Handwriting, stamps, and the invoice
+ * table grid are not part of the reference, and extra detections do not add edits.
+ */
+class QualityGateTest {
+    /** Typed letter, read exactly. The signature and the blue time stamp are not scored. */
+    private static final int NIXON_MAX_EDITS = 0;
+    /**
+     * Thermal receipt. The budget is the letters the model still misses:
+     * Wrocław, Żniwna, Żyt, Świat, Polędw łos, łącznie, and two {@code x} read as {@code ×}.
+     */
+    private static final int RECEIPT_MAX_EDITS = 10;
+    /**
+     * Invoice fields outside the table, plus the product name and the amount due.
+     * The budget is the current misses: spaces, ł and ó, Łódź, and the {@code 1 } glued
+     * to Ziemia Kłodzka. The grid, the stamp, and the signature are not scored.
+     */
+    private static final int INVOICE_MAX_EDITS = 18;
+
+    private static final List<String> NIXON = List.of(
+            "THE WHITE HOUSE",
+            "WASHINGTON",
+            "August 9, 1974",
+            "Dear Mr. Secretary:",
+            "I hereby resign the Office of President of the",
+            "United States.",
+            "Sincerely,",
+            "The Honorable Henry A. Kissinger",
+            "The Secretary of State",
+            "Washington, D.C. 20520"
+    );
+
+    private static final List<String> RECEIPT = List.of(
+            "Biedronka",
+            "Codziennie niskie ceny",
+            "Sklep 5163 ul. Grabarska 2, 50-079 Wrocław",
+            "Jeronimo Martins Polska S.A.",
+            "ul. Żniwna 5, 62-025 Kostrzyn",
+            "NIP 779-10-11-327",
+            "2020-01-09 13:18",
+            "422351",
+            "PARAGON FISKALNY",
+            "ChlebPszen-Żyt550g",
+            "1 x1,99 1,99C",
+            "Ser ż.Świat. 150g",
+            "1 x3.29 3,29C",
+            "Polędw łos 100g",
+            "1 x4,99 4,99C",
+            "Rabat",
+            "-2,00",
+            "2,99C",
+            "SPRZEDAZ OPODATKOWANA C",
+            "8,27",
+            "PTU C 5,00 %",
+            "0,39",
+            "SUMA PTU",
+            "0,39",
+            "SUMA PLN",
+            "8,27",
+            "00098 #Kasa 2 Kasjer nr 5",
+            "2020-01-09 13:18",
+            "7A867BBB57E0D223E2006F5A914C03216172E61C",
+            "CCH 1701363955",
+            "Nr sys. 5667",
+            "Karta Visa Debit 05 1",
+            "8,27 PLN",
+            "Nr transakcji:",
+            "5667",
+            "Numer:",
+            "5163200109566702",
+            "Udzielono łącznie rabatów:",
+            "2,00",
+            "DZIEKUJEMY I ZAPRASZAMY PONOWNIE",
+            "BDO 000004585"
+    );
+
+    private static final List<String> INVOICE = List.of(
+            "ORYGINAŁ",
+            "Oficyna Wydawnicza \"Rewasz\", tel. (22) 798-33-84, fax 435-55-90",
+            "Biuro i magazyn: ul. Warszawska 55, 05-820 Piastów",
+            "Konto: PKO BP XV O/W-wa, 05 1020 1156 0000 7902 0010 4927",
+            "www.rewasz.com.pl",
+            "rewasz@rewasz.com.pl",
+            "Miejsce wystawienia:",
+            "Pruszków",
+            "Data dostawy/wykonania usługi",
+            "2014-06-25",
+            "Data wystawienia:",
+            "25 czerwiec 2014",
+            "Sprzedawca:",
+            "\"Rewasz\" Antoniak i Wspólnicy Spółka Jawna",
+            "Dobra 5/36",
+            "05-800 Pruszków",
+            "NIP: 534-000-67-48",
+            "Nabywca:",
+            "Stowarzyszenie Wikimedia Polska",
+            "Tuwima 95/pok. 15",
+            "90-031 Łódź",
+            "NIP: 728-25-97-388",
+            "Symbol: W HALICKI",
+            "Faktura VAT 268/APV/2014",
+            "Ziemia Kłodzka",
+            "Razem do zapłaty:",
+            "90,00",
+            "Słownie:",
+            "dziewięćdziesiąt PLN 0/100",
+            "Zapłacono przelewem:",
+            "90,00"
+    );
+
+    @Test
+    void extraLinesDoNotRaiseThePrintedCer() {
+        assertEquals(0, PrintedCer.score(List.of("ALA", "kot"), List.of("ALA", "kot")).edits());
+        assertEquals(0, PrintedCer.score(List.of("ALA", "śmieć", "kot"), List.of("ALA", "kot")).edits());
+        assertEquals(1, PrintedCer.score(List.of("ALA", "kOt"), List.of("ALA", "kot")).edits());
+        assertEquals(3, PrintedCer.score(List.of("ALA"), List.of("ALA", "kot")).edits());
+        assertEquals(2, PrintedCer.score(List.of("AA"), List.of("AA", "AA")).edits());
+        assertEquals(0, PrintedCer.score(List.of("a", "ab"), List.of("ab", "a")).edits());
+        assertEquals(0, PrintedCer.score(List.of(), List.of()).edits());
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void realPrintDoesNotRegress() throws Exception {
+        assumeTrue(modelsPresent(), "models/ is missing");
+        try (OcrEngine engine = OcrEngine.create(OcrConfig.latin(Path.of("models")))) {
+            check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
+            check(engine, "receipt-biedronka.jpg", RECEIPT, RECEIPT_MAX_EDITS);
+            check(engine, "faktura-klodzka.jpg", INVOICE, INVOICE_MAX_EDITS);
+        }
+    }
+
+    private static void check(OcrEngine engine, String file, List<String> reference, int maxEdits) throws IOException {
+        OcrResult result = engine.recognize(page(file));
+        List<String> lines = new ArrayList<>();
+        for (TextLine line : result.lines()) {
+            lines.add(line.text());
+        }
+        PrintedCer.Result score = PrintedCer.score(lines, reference);
+        System.out.print(score.detail(file));
+        assertTrue(score.edits() <= maxEdits, score.detail(file));
+    }
+
+    private static BufferedImage page(String name) throws IOException {
+        try (InputStream in = QualityGateTest.class.getResourceAsStream("/quality/" + name)) {
+            if (in == null) {
+                throw new AssertionError("missing test scan " + name);
+            }
+            Path tmp = Files.createTempFile("quality-", "-" + name);
+            tmp.toFile().deleteOnExit();
+            Files.write(tmp, in.readAllBytes());
+            return Images.read(tmp);
+        }
+    }
+
+    private static boolean modelsPresent() {
+        return Files.exists(Path.of("models", ModelFiles.DET))
+                && Files.exists(Path.of("models", ModelFiles.REC))
+                && Files.exists(Path.of("models", ModelFiles.CLS))
+                && Files.exists(Path.of("models", ModelFiles.DICT));
+    }
+}
