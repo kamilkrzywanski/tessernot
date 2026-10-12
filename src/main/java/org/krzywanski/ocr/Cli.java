@@ -17,9 +17,9 @@ import java.util.Set;
 
 /** Command line. OCR text goes to stdout. Timings go to stderr. */
 public final class Cli {
-    private static final Set<String> SWITCHES = Set.of("no-cls", "no-det", "raw");
+    private static final Set<String> SWITCHES = Set.of("no-cls", "no-det", "raw", "json");
     private static final Set<String> FLAGS = Set.of(
-            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw");
+            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json");
 
     private Cli() {
     }
@@ -98,10 +98,10 @@ public final class Cli {
     }
 
     private static int ocr(Parsed parsed) throws Exception {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json");
         if (parsed.positionals.size() < 2) {
             throw new OcrException(
-                    "usage: ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N]");
+                    "usage: ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json]");
         }
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
@@ -109,7 +109,13 @@ public final class Cli {
         requireModels(parsed, models);
         BufferedImage image = readImage(Path.of(parsed.positionals.get(1)));
         try (OcrEngine engine = engine(parsed, models)) {
-            show(engine.recognize(image));
+            OcrResult result = engine.recognize(image);
+            if (parsed.has("json")) {
+                System.out.print(OcrJson.page(result));
+                timing(result);
+            } else {
+                show(result);
+            }
         }
         return 0;
     }
@@ -138,10 +144,10 @@ public final class Cli {
     }
 
     private static int pdf(Parsed parsed) throws Exception {
-        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det");
+        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json");
         if (parsed.positionals.size() < 2) {
             throw new OcrException(
-                    "usage: ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N]");
+                    "usage: ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json]");
         }
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
@@ -153,12 +159,21 @@ public final class Cli {
         Path file = Path.of(parsed.positionals.get(1));
         PdfPages.requireUnlocked(file);
         try (OcrEngine engine = engine(parsed, models)) {
-            engine.recognizePdf(file, dpi, (index, count, result) -> {
-                if (count > 1) {
-                    System.out.println("--- page " + (index + 1) + " ---");
-                }
-                show(result);
-            });
+            if (parsed.has("json")) {
+                List<OcrResult> pages = new ArrayList<>();
+                engine.recognizePdf(file, dpi, (index, count, result) -> {
+                    pages.add(result);
+                    timing(result);
+                });
+                System.out.print(OcrJson.document(pages));
+            } else {
+                engine.recognizePdf(file, dpi, (index, count, result) -> {
+                    if (count > 1) {
+                        System.out.println("--- page " + (index + 1) + " ---");
+                    }
+                    show(result);
+                });
+            }
         }
         return 0;
     }
@@ -355,9 +370,9 @@ public final class Cli {
                 ocr-pro — pure Java PP-OCR
 
                 ocr download [dir]
-                ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N]
+                ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json]
                 ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N]
-                ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N]
+                ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json]
                 ocr convert <in.onnx> <out.jir>
                 ocr ops <model> [--raw]
                 ocr selfcheck
@@ -374,6 +389,7 @@ public final class Cli {
                 A flag the command does not use, such as --dpi on ocr, is rejected before a file is opened.
                 A multi-page PDF prints "--- page N ---" before each page. Timings stay on stderr.
                 A ruled grid is printed after the page text as "--- table N ---", with cells separated by tabs. A page with no rules prints no table.
+                With --json, ocr and pdf print one JSON document instead of the page text: a page object, or {"pages":[...]} for a PDF. Timings stay on stderr.
                 """);
     }
 

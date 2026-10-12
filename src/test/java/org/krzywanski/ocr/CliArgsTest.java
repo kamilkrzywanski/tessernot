@@ -613,6 +613,79 @@ class CliArgsTest {
         }
     }
 
+    @Test
+    void jsonIsOnlyForOcrAndPdf() {
+        assertTrue(Cli.enabled(new String[]{"ocr", "--json"}, "json"));
+        assertTrue(Cli.enabled(new String[]{"ocr", "--json=TRUE"}, "json"));
+        assertFalse(Cli.enabled(new String[]{"ocr", "--json=false"}, "json"));
+
+        Run download = run(() -> Cli.execute(new String[]{"download", "--json"}));
+        assertEquals(1, download.code);
+        assertTrue(download.err.contains("--json is not used by download"), download.err);
+        assertEquals("", download.out);
+
+        Run bench = run(() -> Cli.execute(new String[]{"bench", "missing.png", "--json"}));
+        assertEquals(1, bench.code);
+        assertTrue(bench.err.contains("--json is not used by bench"), bench.err);
+        assertFalse(bench.err.contains("cannot read"), bench.err);
+
+        Run benchOff = run(() -> Cli.execute(new String[]{"bench", "--json=false", "missing.png"}));
+        assertEquals(1, benchOff.code);
+        assertTrue(benchOff.err.contains("--json is not used by bench"), benchOff.err);
+        assertFalse(benchOff.err.contains("cannot read"), benchOff.err);
+
+        Run eval = run(() -> Cli.execute(new String[]{"eval", "--json"}));
+        assertEquals(1, eval.code);
+        assertTrue(eval.err.contains("--json is not used by eval"), eval.err);
+        assertFalse(eval.out.contains("CER"), eval.out);
+
+        Run selfcheck = run(() -> Cli.execute(new String[]{"selfcheck", "--json"}));
+        assertEquals(1, selfcheck.code);
+        assertTrue(selfcheck.err.contains("--json is not used by selfcheck"), selfcheck.err);
+        assertFalse(selfcheck.out.contains("vector="), selfcheck.out);
+
+        Run convert = run(() -> Cli.execute(new String[]{"convert", "--json"}));
+        assertEquals(1, convert.code);
+        assertTrue(convert.err.contains("--json is not used by convert"), convert.err);
+
+        Run ops = run(() -> Cli.execute(new String[]{"ops", "--json"}));
+        assertEquals(1, ops.code);
+        assertTrue(ops.err.contains("--json is not used by ops"), ops.err);
+        assertFalse(ops.err.contains("cannot load"), ops.err);
+
+        Run synth = run(() -> Cli.execute(new String[]{"synth", "--json"}));
+        assertEquals(1, synth.code);
+        assertTrue(synth.err.contains("--json is not used by synth"), synth.err);
+
+        Run usage = run(() -> Cli.execute(new String[]{"ocr", "--json"}));
+        assertEquals(1, usage.code);
+        assertTrue(usage.err.contains("usage: ocr ocr"), usage.err);
+        assertTrue(usage.err.contains("--json"), usage.err);
+        assertFalse(usage.err.contains("unknown flag"), usage.err);
+        assertFalse(usage.err.contains("cannot read"), usage.err);
+
+        Run pdfUsage = run(() -> Cli.execute(new String[]{"pdf", "--json"}));
+        assertEquals(1, pdfUsage.code);
+        assertTrue(pdfUsage.err.contains("usage: ocr pdf"), pdfUsage.err);
+        assertTrue(pdfUsage.err.contains("--json"), pdfUsage.err);
+        assertFalse(pdfUsage.err.contains("cannot render"), pdfUsage.err);
+
+        Run typo = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--jsonn"}));
+        assertEquals(1, typo.code);
+        assertTrue(typo.err.contains("unknown flag --jsonn"), typo.err);
+        assertFalse(typo.err.contains("cannot read"), typo.err);
+
+        Run maybe = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--json=maybe"}));
+        assertEquals(1, maybe.code);
+        assertTrue(maybe.err.contains("true or false"), maybe.err);
+        assertFalse(maybe.err.contains("cannot read"), maybe.err);
+
+        Run help = run(() -> Cli.execute(new String[]{"help"}));
+        assertEquals(0, help.code);
+        assertTrue(help.err.contains("{\"pages\":[...]}"), help.err);
+        assertTrue(help.err.contains("Timings stay on stderr."), help.err);
+    }
+
     /** PNG with a {@code tEXt} chunk that contains {@code %PDF-} inside the first kilobyte. */
     private static byte[] pngWithPdfMarker(BufferedImage image) throws IOException {
         ByteArrayOutputStream raw = new ByteArrayOutputStream();
