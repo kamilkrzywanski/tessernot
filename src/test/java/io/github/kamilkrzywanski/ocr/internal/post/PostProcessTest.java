@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -391,6 +392,77 @@ class PostProcessTest {
     }
 
     @Test
+    void headingsAtOneHeightDoNotCutColumns() {
+        // Each column has its own heading, and both sit at the same height with blank rows around them.
+        // A blank across the page is not a section break while the columns go on.
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            lines.add(line("L" + i, 0, i * 12, 100, 10));
+            lines.add(line("R" + i, 130, i * 12, 100, 10));
+        }
+        lines.add(line("H1", 30, 70, 40, 10));
+        lines.add(line("H2", 160, 70, 40, 10));
+        for (int i = 4; i < 8; i++) {
+            lines.add(line("L" + i, 0, 44 + i * 12, 100, 10));
+            lines.add(line("R" + i, 130, 44 + i * 12, 100, 10));
+        }
+        assertEquals("L0\nL1\nL2\nL3\nH1\nL4\nL5\nL6\nL7\nR0\nR1\nR2\nR3\nH2\nR4\nR5\nR6\nR7",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void threeTextColumnsReadOneAfterAnother() {
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            lines.add(line("A" + i, 0, i * 12, 100, 10));
+            lines.add(line("B" + i, 130, i * 12, 100, 10));
+            lines.add(line("C" + i, 260, i * 12, 100, 10));
+        }
+        assertEquals("A0\nA1\nA2\nA3\nA4\nA5\nB0\nB1\nB2\nB3\nB4\nB5\nC0\nC1\nC2\nC3\nC4\nC5",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void skewedColumnsSplitOnceTheyAreLevel() {
+        // A photo turned by 3 degrees: down a column of 24 lines the gutter drifts by more than
+        // its own width, so the right column's first line lands in the left column's first row.
+        List<TextLine> lines = new ArrayList<>();
+        List<String> expected = new ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            lines.add(turned("L" + i, 0, i * 14, 100, 10, 3));
+            lines.add(turned("R" + i, 110, i * 14, 100, 10, 3));
+            expected.add("L" + i);
+        }
+        for (int i = 0; i < 24; i++) {
+            expected.add("R" + i);
+        }
+        assertEquals(String.join("\n", expected), ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void lineMergedAcrossTheGutterIsCutThere() {
+        // Row 5 is one box over both columns. The title above is taller, and the full-width line
+        // below has a blank above it, so neither is two column lines.
+        List<TextLine> lines = new ArrayList<>();
+        lines.add(line("TITLE", 40, 0, 150, 20));
+        for (int i = 0; i < 12; i++) {
+            float y = 30 + i * 12;
+            if (i == 5) {
+                lines.add(line("L5 R5", 0, y, 230, 10));
+            } else {
+                lines.add(line("L" + i, 0, y, 100, 10));
+                lines.add(line("R" + i, 130, y, 100, 10));
+            }
+        }
+        lines.add(line("WIDE", 0, 190, 230, 10));
+        Map<TextLine, Float> cuts = ReadingOrder.cuts(lines);
+        assertEquals(1, cuts.size());
+        TextLine merged = cuts.keySet().iterator().next();
+        assertEquals("L5 R5", merged.text());
+        assertEquals(115f / 230f, cuts.get(merged), 0.03f);
+    }
+
+    @Test
     void readingOrderKeepsAGridInRows() {
         List<TextLine> lines = List.of(
                 line("a", 0, 0, 20, 10),
@@ -467,5 +539,17 @@ class PostProcessTest {
         return new TextLine(text, 1f, 1f,
                 new float[]{x, y, x + w, y, x + w, y + h, x, y + h},
                 new Rectangle((int) x, (int) y, (int) w, (int) h));
+    }
+
+    /** {@link #line} turned by {@code degrees} around the origin, as on a skewed photo. */
+    private static TextLine turned(String text, float x, float y, float w, float h, double degrees) {
+        double a = Math.toRadians(degrees);
+        float[] q = {x, y, x + w, y, x + w, y + h, x, y + h};
+        float[] out = new float[8];
+        for (int i = 0; i < 8; i += 2) {
+            out[i] = (float) (q[i] * Math.cos(a) - q[i + 1] * Math.sin(a));
+            out[i + 1] = (float) (q[i] * Math.sin(a) + q[i + 1] * Math.cos(a));
+        }
+        return new TextLine(text, 1f, 1f, out, null);
     }
 }

@@ -8,18 +8,24 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Reading order for printed lines.
+ * A skewed page is turned level first: every box is rotated by the median angle of the long lines,
+ * so a gutter that runs at a slant on a photo is vertical again.
  * A line joins the first row whose seed overlaps it by at least half the shorter height.
  * A vertical word stays out of that test, so a tall margin mark cannot glue the page into one row.
- * Two text columns separated by a gutter are read left column, then right column. The gutter is
- * the emptiest vertical strip of the block once each box is narrowed by its padding, so columns
- * whose boxes touch on a low-resolution scan still separate, and a title across both columns
- * only ends one column section. A split is kept only when both sides read like columns: lines
- * that share a left edge and stand alone on their rows. A form with scattered fields stays in rows.
- * A right-aligned price stays on the item's row. A grid of three or more columns stays row by row.
+ * Text columns are found before blank rows split the page: a heading that sits at the same height
+ * in both columns leaves a blank across the page, and cutting there would interleave the columns.
+ * The gutter is the emptiest vertical strip of the block once each box is narrowed by its padding,
+ * so columns whose boxes touch on a low-resolution scan still separate, and a title across the
+ * columns only ends one column section. Each side is ordered again, so three or more columns split
+ * one gutter at a time. Without text columns the block splits at blank rows, and each piece may
+ * still split into two sides when both read like columns: lines that share a left edge and stand
+ * alone on their rows. A form with scattered fields stays in rows. A right-aligned price stays on
+ * the item's row. A grid of three or more short cells stays row by row.
  */
 public final class ReadingOrder {
     /** Half the shorter box. */
@@ -57,8 +63,8 @@ public final class ReadingOrder {
     private static final float FORM_ALIGN = 0.6f;
     private static final float FORM_SINGLE = 0.65f;
     /**
-     * A narrower gutter is accepted only between two full text columns: this many lines a side,
-     * nearly all on one margin, alone on their rows, and spanning most of the column width.
+     * A text column: this many lines, nearly all on one margin, alone on their rows, and spanning
+     * most of the column width. A narrower gutter is accepted only between two such columns.
      */
     private static final int NARROW_LINES = 5;
     private static final float NARROW_ALIGN = 0.8f;
@@ -69,8 +75,28 @@ public final class ReadingOrder {
      * numbers or bullets, not a column: "2." to "6." next to the items of the 1921 manual.
      */
     private static final float MARKER_SHARE = 0.25f;
+    /** Text columns of one page are set to similar widths; item names and prices are not. */
+    private static final float WIDTH_SHARE = 0.5f;
     /** Boxes that may still cross the gutter, as a share of the block (a title, two merged lines). */
     private static final float CROSSING = 0.1f;
+    /** A crossing line this many median lines long runs past each edge of the gutter by this share of its width. */
+    private static final float LONG_LINE = 4f;
+    private static final float CROSS_SIDE = 0.1f;
+    /** Nested splits: columns inside a section inside a block. */
+    private static final int MAX_DEPTH = 6;
+    /** A page turned less than this, in radians (about 0.3 degrees), is read as it is. */
+    private static final double MIN_SKEW = 0.005;
+    /** More than this (about 20 degrees) is not skew, and the boxes are read as they are. */
+    private static final double MAX_SKEW = 0.35;
+    /** Only lines at least this many times longer than high give the skew angle. */
+    private static final float SKEW_LINE = 3f;
+    /**
+     * A box across a text-column gutter is two merged lines when it is no taller than this many
+     * median lines, starts on the left column's margin, and holds this many median lines of text
+     * on each side of the gutter.
+     */
+    private static final float MERGED_HEIGHT = 1.5f;
+    private static final float MERGED_SIDE = 2f;
 
     private ReadingOrder() {
     }
@@ -79,10 +105,45 @@ public final class ReadingOrder {
         if (lines.isEmpty()) {
             return new ArrayList<>();
         }
-        float medianH = medianHeight(lines);
+        Map<TextLine, TextLine> original = new IdentityHashMap<>();
+        List<TextLine> level = level(lines, original);
+        return restore(order(level, null), original);
+    }
+
+    /**
+     * Lines the detector merged across the gutter of two text columns, each with the fraction of its
+     * length, from the left edge, where the gutter runs. Read as two lines, they let the columns
+     * be read one after the other. A title across the columns, a line of a full-width paragraph and
+     * a running head stay whole: they are taller, start off the column margin, or no column runs
+     * right above or below them.
+     */
+    public static Map<TextLine, Float> cuts(List<TextLine> lines) {
+        Map<TextLine, Float> out = new IdentityHashMap<>();
+        if (lines.isEmpty()) {
+            return out;
+        }
+        Map<TextLine, TextLine> original = new IdentityHashMap<>();
+        List<TextLine> level = level(lines, original);
+        Map<TextLine, Float> found = new IdentityHashMap<>();
+        order(level, found);
+        for (Map.Entry<TextLine, Float> cut : found.entrySet()) {
+            float[] q = cut.getKey().quad();
+            float from = (q[0] + q[6]) * 0.5f;
+            float to = (q[2] + q[4]) * 0.5f;
+            if (to - from > 1f) {
+                float t = (cut.getValue() - from) / (to - from);
+                out.put(original.getOrDefault(cut.getKey(), cut.getKey()), Math.max(0.05f, Math.min(0.95f, t)));
+            }
+        }
+        return out;
+    }
+
+    /** Rows of level boxes. When {@code found} is not null, merged lines and their cut x are added to it. */
+    private static List<List<TextLine>> order(List<TextLine> level, Map<TextLine, Float> found) {
+        float medianH = medianHeight(level);
         List<TextLine> normal = new ArrayList<>();
         List<TextLine> vertical = new ArrayList<>();
-        for (TextLine line : lines) {
+        for (TextLine line : level) {
             if (verticalWord(line, medianH)) {
                 vertical.add(line);
             } else {
@@ -90,18 +151,9 @@ public final class ReadingOrder {
             }
         }
         vertical.sort(Comparator.comparingDouble(ReadingOrder::top).thenComparingDouble(ReadingOrder::left));
-        if (normal.isEmpty()) {
-            return singletonRows(vertical);
-        }
-        List<List<TextLine>> rows = seedRows(normal);
-        List<List<List<TextLine>>> zones = splitZones(rows, medianH);
-        List<TextLine> loose = new ArrayList<>();
-        List<List<TextLine>> owned = assignVertical(vertical, zones, loose);
-        List<List<List<TextLine>>> pieces = new ArrayList<>();
-        for (int i = 0; i < zones.size(); i++) {
-            pieces.add(orderZone(zones.get(i), owned.get(i), medianH));
-        }
-        return stitch(pieces, loose);
+        return normal.isEmpty()
+                ? singletonRows(vertical)
+                : orderBlock(normal, vertical, medianH, 0, found);
     }
 
     public static List<TextLine> flatten(List<List<TextLine>> rows) {
@@ -152,6 +204,68 @@ public final class ReadingOrder {
         return Math.max(x, line.quad()[6]);
     }
 
+    /**
+     * Boxes rotated by the page's skew, each mapped to its source line in {@code original}.
+     * A level page returns the lines themselves.
+     */
+    private static List<TextLine> level(List<TextLine> lines, Map<TextLine, TextLine> original) {
+        double angle = skew(lines);
+        if (Math.abs(angle) < MIN_SKEW || Math.abs(angle) > MAX_SKEW) {
+            return lines;
+        }
+        double cos = Math.cos(-angle);
+        double sin = Math.sin(-angle);
+        List<TextLine> out = new ArrayList<>(lines.size());
+        for (TextLine line : lines) {
+            float[] q = line.quad();
+            float[] turned = new float[8];
+            for (int i = 0; i < 8; i += 2) {
+                turned[i] = (float) (q[i] * cos - q[i + 1] * sin);
+                turned[i + 1] = (float) (q[i] * sin + q[i + 1] * cos);
+            }
+            TextLine copy = new TextLine(line.text(), line.score(), line.detScore(), turned, line.bounds());
+            original.put(copy, line);
+            out.add(copy);
+        }
+        return out;
+    }
+
+    /** Median angle of the long edges of long lines, in radians; 0 when no line is long enough. */
+    private static double skew(List<TextLine> lines) {
+        double[] angles = new double[lines.size()];
+        int count = 0;
+        for (TextLine line : lines) {
+            float[] q = line.quad();
+            float dx = (q[2] - q[0] + q[4] - q[6]) * 0.5f;
+            float dy = (q[3] - q[1] + q[5] - q[7]) * 0.5f;
+            float h = (float) Math.hypot((q[6] - q[0] + q[4] - q[2]) * 0.5f, (q[7] - q[1] + q[5] - q[3]) * 0.5f);
+            if (dx > 0f && dx >= SKEW_LINE * h) {
+                angles[count++] = Math.atan2(dy, dx);
+            }
+        }
+        if (count == 0) {
+            return 0.0;
+        }
+        Arrays.sort(angles, 0, count);
+        int mid = count / 2;
+        return (count & 1) == 1 ? angles[mid] : (angles[mid - 1] + angles[mid]) * 0.5;
+    }
+
+    private static List<List<TextLine>> restore(List<List<TextLine>> rows, Map<TextLine, TextLine> original) {
+        if (original.isEmpty()) {
+            return rows;
+        }
+        List<List<TextLine>> out = new ArrayList<>(rows.size());
+        for (List<TextLine> row : rows) {
+            List<TextLine> back = new ArrayList<>(row.size());
+            for (TextLine line : row) {
+                back.add(original.getOrDefault(line, line));
+            }
+            out.add(back);
+        }
+        return out;
+    }
+
     private static boolean verticalWord(TextLine line, float medianH) {
         float h = bottom(line) - top(line);
         float w = right(line) - left(line);
@@ -184,6 +298,33 @@ public final class ReadingOrder {
             row.sort(Comparator.comparingDouble(ReadingOrder::left));
         }
         return rows;
+    }
+
+    /**
+     * Text columns of the whole block first. Otherwise the block splits at blank rows, and each
+     * piece is ordered again; a piece that does not split further reads as a zone.
+     */
+    private static List<List<TextLine>> orderBlock(List<TextLine> boxes, List<TextLine> vertical,
+                                                   float medianH, int depth, Map<TextLine, Float> found) {
+        List<List<TextLine>> rows = seedRows(boxes);
+        if (depth < MAX_DEPTH) {
+            List<List<TextLine>> columns = textColumns(rows, vertical, medianH, depth, found);
+            if (columns != null) {
+                return columns;
+            }
+        }
+        List<List<List<TextLine>>> zones = splitZones(rows, medianH);
+        List<TextLine> loose = new ArrayList<>();
+        List<List<TextLine>> owned = assignVertical(vertical, zones, loose);
+        List<List<List<TextLine>>> pieces = new ArrayList<>();
+        for (int i = 0; i < zones.size(); i++) {
+            if (zones.size() == 1 || depth >= MAX_DEPTH) {
+                pieces.add(orderZone(zones.get(i), owned.get(i), medianH));
+            } else {
+                pieces.add(orderBlock(flatten(zones.get(i)), owned.get(i), medianH, depth + 1, found));
+            }
+        }
+        return stitch(pieces, loose);
     }
 
     private static List<List<List<TextLine>>> splitZones(List<List<TextLine>> rows, float medianH) {
@@ -244,19 +385,146 @@ public final class ReadingOrder {
         return owned;
     }
 
+    /**
+     * Sections between rows that cross the gutter, read side by side where both sides are text
+     * columns. Null when no section is. Each side is ordered again, so it may hold more columns.
+     */
+    private static List<List<TextLine>> textColumns(List<List<TextLine>> rows, List<TextLine> vertical,
+                                                    float medianH, int depth, Map<TextLine, Float> found) {
+        float[] gutter = gutter(rows, medianH, true);
+        if (gutter == null) {
+            return null;
+        }
+        float mid = (gutter[0] + gutter[1]) * 0.5f;
+        List<Section> sections = sections(rows, gutter, mid, medianH,
+                (left, right) -> textSplit(left, right, rows, medianH, depth));
+        boolean any = false;
+        for (Section section : sections) {
+            any |= section.split;
+        }
+        if (!any) {
+            return null;
+        }
+        if (found != null) {
+            mergedLines(sections, gutter, medianH, found);
+        }
+        List<TextLine> unplaced = place(vertical, sections, mid);
+        List<List<TextLine>> out = new ArrayList<>();
+        for (Section section : sections) {
+            if (section.split) {
+                out.addAll(orderBlock(flatten(section.left), section.leftExtras, medianH, depth + 1, found));
+                out.addAll(orderBlock(flatten(section.right), section.rightExtras, medianH, depth + 1, found));
+            } else if (section.crossing) {
+                out.addAll(mergeByTop(section.rows, section.extras));
+            } else {
+                out.addAll(orderBlock(flatten(section.rows), section.extras, medianH, depth + 1, found));
+            }
+        }
+        return mergeByTop(out, unplaced);
+    }
+
+    /**
+     * Crossing rows that are two column lines read as one box. A candidate has the height of a text
+     * line, starts on the left column's margin and runs well into both columns. It counts when the
+     * columns go on right above or below it, directly or through another such row.
+     */
+    private static void mergedLines(List<Section> sections, float[] gutter, float medianH, Map<TextLine, Float> found) {
+        float margin = Float.POSITIVE_INFINITY;
+        for (Section section : sections) {
+            if (section.split) {
+                margin = Math.min(margin, minLeft(flatten(section.left)));
+            }
+        }
+        int n = sections.size();
+        TextLine[] merged = new TextLine[n];
+        for (int i = 0; i < n; i++) {
+            if (sections.get(i).crossing) {
+                merged[i] = mergedBox(sections.get(i).rows.get(0), gutter, margin, medianH);
+            }
+        }
+        boolean[] accepted = new boolean[n];
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (int i = 0; i < n; i++) {
+                if (merged[i] != null && !accepted[i]
+                        && (continues(sections, accepted, i, i - 1, medianH)
+                        || continues(sections, accepted, i, i + 1, medianH))) {
+                    accepted[i] = true;
+                    changed = true;
+                }
+            }
+        }
+        float cut = (gutter[0] + gutter[1]) * 0.5f;
+        for (int i = 0; i < n; i++) {
+            if (accepted[i]) {
+                found.put(merged[i], cut);
+            }
+        }
+    }
+
+    /** The only box of the row over the gutter, when it looks like two column lines in one. */
+    private static TextLine mergedBox(List<TextLine> row, float[] gutter, float margin, float medianH) {
+        TextLine merged = null;
+        for (TextLine line : row) {
+            float pad = BOX_PAD * (bottom(line) - top(line));
+            if (left(line) + pad <= gutter[1] && right(line) - pad >= gutter[0]) {
+                if (merged != null) {
+                    return null;
+                }
+                merged = line;
+            }
+        }
+        if (merged == null || bottom(merged) - top(merged) > MERGED_HEIGHT * medianH) {
+            return null;
+        }
+        float pad = BOX_PAD * (bottom(merged) - top(merged));
+        boolean onMargin = left(merged) <= margin + ALIGN * medianH;
+        boolean bothSides = left(merged) + pad < gutter[0] - MERGED_SIDE * medianH
+                && right(merged) - pad > gutter[1] + MERGED_SIDE * medianH;
+        return onMargin && bothSides ? merged : null;
+    }
+
+    /** Section {@code j} is split into columns, or an accepted merged row, with no blank between it and {@code i}. */
+    private static boolean continues(List<Section> sections, boolean[] accepted, int i, int j, float medianH) {
+        if (j < 0 || j >= sections.size() || !sections.get(j).split && !accepted[j]) {
+            return false;
+        }
+        Section a = sections.get(Math.min(i, j));
+        Section b = sections.get(Math.max(i, j));
+        return b.top() - a.bottom() <= ZONE_GAP * medianH;
+    }
+
     private static List<List<TextLine>> orderZone(List<List<TextLine>> zone, List<TextLine> vertical, float medianH) {
-        float[] gutter = gutter(zone, medianH);
+        float[] gutter = gutter(zone, medianH, false);
         if (gutter == null) {
             return mergeByTop(zone, vertical);
         }
         float mid = (gutter[0] + gutter[1]) * 0.5f;
-        // A row with a box over the gutter (a title across both columns) closes a section and stays whole.
+        List<Section> sections = sections(zone, gutter, mid, medianH,
+                (left, right) -> columnsHold(left, right, zone, medianH));
+        List<TextLine> unplaced = place(vertical, sections, mid);
+        List<List<TextLine>> out = new ArrayList<>();
+        for (Section section : sections) {
+            if (section.split) {
+                out.addAll(mergeByTop(section.left, section.leftExtras));
+                out.addAll(mergeByTop(section.right, section.rightExtras));
+            } else {
+                out.addAll(mergeByTop(section.rows, section.extras));
+            }
+        }
+        return mergeByTop(out, unplaced);
+    }
+
+    /** A row with a box over the gutter (a title across both columns) closes a section and stays whole. */
+    private static List<Section> sections(List<List<TextLine>> rows, float[] gutter, float mid, float medianH,
+                                          Splitter splitter) {
         List<Section> sections = new ArrayList<>();
         List<List<TextLine>> open = new ArrayList<>();
-        for (List<TextLine> row : zone) {
-            if (crosses(row, gutter)) {
+        for (List<TextLine> row : rows) {
+            if (crosses(row, gutter, medianH)) {
                 if (!open.isEmpty()) {
-                    sections.add(Section.of(open, mid, medianH));
+                    sections.add(Section.of(open, mid, splitter));
                     open = new ArrayList<>();
                 }
                 sections.add(Section.whole(row));
@@ -265,8 +533,13 @@ public final class ReadingOrder {
             }
         }
         if (!open.isEmpty()) {
-            sections.add(Section.of(open, mid, medianH));
+            sections.add(Section.of(open, mid, splitter));
         }
+        return sections;
+    }
+
+    /** Vertical words go to the section they overlap most, on the side of their centre; the rest are returned. */
+    private static List<TextLine> place(List<TextLine> vertical, List<Section> sections, float mid) {
         List<TextLine> unplaced = new ArrayList<>();
         for (TextLine word : vertical) {
             Section best = null;
@@ -288,28 +561,20 @@ public final class ReadingOrder {
                 best.rightExtras.add(word);
             }
         }
-        List<List<TextLine>> out = new ArrayList<>();
-        for (Section section : sections) {
-            if (section.split) {
-                out.addAll(mergeByTop(section.left, section.leftExtras));
-                out.addAll(mergeByTop(section.right, section.rightExtras));
-            } else {
-                out.addAll(mergeByTop(section.rows, section.extras));
-            }
-        }
-        return mergeByTop(out, unplaced);
+        return unplaced;
     }
 
     /**
      * The x range (inclusive) of the emptiest vertical strip between at least two boxes on each side,
-     * after each box loses its padding. Null for a small block, a grid, or a block that no strip separates.
+     * after each box loses its padding. Null for a small block, a block that no strip separates, or
+     * a grid unless {@code grid} allows one (text columns check their sides instead).
      */
-    private static float[] gutter(List<List<TextLine>> zone, float medianH) {
+    private static float[] gutter(List<List<TextLine>> zone, float medianH, boolean grid) {
         List<TextLine> boxes = new ArrayList<>();
         for (List<TextLine> row : zone) {
             boxes.addAll(row);
         }
-        if (boxes.size() < 4 || medianCount(zone) >= GRID_ROW) {
+        if (boxes.size() < 4 || !grid && medianCount(zone) >= GRID_ROW) {
             return null;
         }
         float zoneLeft = minLeft(boxes);
@@ -387,15 +652,32 @@ public final class ReadingOrder {
         return sorted.length - i - 1;
     }
 
-    /** A box crosses when its narrowed extent reaches into the gutter, as the coverage count saw it. */
-    private static boolean crosses(List<TextLine> row, float[] gutter) {
+    /** A row crosses when one of its boxes does. */
+    private static boolean crosses(List<TextLine> row, float[] gutter, float medianH) {
         for (TextLine line : row) {
-            float pad = BOX_PAD * (bottom(line) - top(line));
-            if (left(line) + pad <= gutter[1] && right(line) - pad >= gutter[0]) {
+            if (crossing(line, gutter, medianH)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * The narrowed box reaches into the gutter, as the coverage count saw it. A long line that
+     * runs past one edge of the gutter by less than {@link #CROSS_SIDE} of its width does not:
+     * it is a line of one column that picked up the last letter of the other, where the gutter
+     * is narrow. A page number between the columns still crosses.
+     */
+    private static boolean crossing(TextLine line, float[] gutter, float medianH) {
+        float pad = BOX_PAD * (bottom(line) - top(line));
+        float from = left(line) + pad;
+        float to = right(line) - pad;
+        if (from > gutter[1] || to < gutter[0]) {
+            return false;
+        }
+        float width = to - from;
+        return width < LONG_LINE * medianH
+                || Math.min(gutter[0] - from, to - gutter[1]) >= CROSS_SIDE * width;
     }
 
     /** Whether the two sides of a section are columns to read one after the other. */
@@ -417,6 +699,52 @@ public final class ReadingOrder {
             return formSide(leftBoxes, rows, medianH) && formSide(rightBoxes, rows, medianH);
         }
         return textSide(leftBoxes, rows, medianH) && textSide(rightBoxes, rows, medianH);
+    }
+
+    /**
+     * Both sides are text columns of similar width, or split into such columns themselves.
+     * Prices beside item names are a rail, not a column.
+     */
+    private static boolean textSplit(List<TextLine> leftBoxes, List<TextLine> rightBoxes,
+                                     List<List<TextLine>> rows, float medianH, int depth) {
+        if (leftBoxes.size() < NARROW_LINES || rightBoxes.size() < NARROW_LINES) {
+            return false;
+        }
+        float leftWidth = medianWidth(leftBoxes);
+        float rightWidth = medianWidth(rightBoxes);
+        if (Math.min(leftWidth, rightWidth) < WIDTH_SHARE * Math.max(leftWidth, rightWidth)) {
+            return false;
+        }
+        float gap = minLeft(rightBoxes) - maxRight(leftBoxes);
+        if (valueRail(rightBoxes, leftBoxes, gap, medianH)) {
+            return false;
+        }
+        return columnLike(leftBoxes, rows, medianH, depth) && columnLike(rightBoxes, rows, medianH, depth);
+    }
+
+    /** One text column, or a side that splits again into text columns. */
+    private static boolean columnLike(List<TextLine> side, List<List<TextLine>> rows, float medianH, int depth) {
+        if (textSide(side, rows, medianH)) {
+            return true;
+        }
+        if (depth + 1 >= MAX_DEPTH || side.size() < 2 * NARROW_LINES) {
+            return false;
+        }
+        float[] gutter = gutter(seedRows(side), medianH, true);
+        if (gutter == null) {
+            return false;
+        }
+        float mid = (gutter[0] + gutter[1]) * 0.5f;
+        List<TextLine> leftBoxes = new ArrayList<>();
+        List<TextLine> rightBoxes = new ArrayList<>();
+        for (TextLine line : side) {
+            if ((left(line) + right(line)) * 0.5f < mid) {
+                leftBoxes.add(line);
+            } else {
+                rightBoxes.add(line);
+            }
+        }
+        return textSplit(leftBoxes, rightBoxes, rows, medianH, depth + 1);
     }
 
     private static boolean formSide(List<TextLine> side, List<List<TextLine>> rows, float medianH) {
@@ -672,19 +1000,27 @@ public final class ReadingOrder {
         return overlap / minHeight;
     }
 
+    /** Decides whether the left and right boxes of a section are columns. */
+    private interface Splitter {
+        boolean split(List<TextLine> leftBoxes, List<TextLine> rightBoxes);
+    }
+
     /** Rows between two crossing rows: either read as they are, or left column then right column. */
     private static final class Section {
         final List<List<TextLine>> rows;
         final boolean split;
+        final boolean crossing;
         final List<List<TextLine>> left;
         final List<List<TextLine>> right;
         final List<TextLine> extras = new ArrayList<>();
         final List<TextLine> leftExtras = new ArrayList<>();
         final List<TextLine> rightExtras = new ArrayList<>();
 
-        private Section(List<List<TextLine>> rows, boolean split, List<List<TextLine>> left, List<List<TextLine>> right) {
+        private Section(List<List<TextLine>> rows, boolean split, boolean crossing,
+                        List<List<TextLine>> left, List<List<TextLine>> right) {
             this.rows = rows;
             this.split = split;
+            this.crossing = crossing;
             this.left = left;
             this.right = right;
         }
@@ -692,10 +1028,10 @@ public final class ReadingOrder {
         static Section whole(List<TextLine> row) {
             List<List<TextLine>> rows = new ArrayList<>();
             rows.add(row);
-            return new Section(rows, false, List.of(), List.of());
+            return new Section(rows, false, true, List.of(), List.of());
         }
 
-        static Section of(List<List<TextLine>> rows, float mid, float medianH) {
+        static Section of(List<List<TextLine>> rows, float mid, Splitter splitter) {
             List<TextLine> leftBoxes = new ArrayList<>();
             List<TextLine> rightBoxes = new ArrayList<>();
             List<List<TextLine>> leftRows = new ArrayList<>();
@@ -719,10 +1055,10 @@ public final class ReadingOrder {
                     rightRows.add(onRight);
                 }
             }
-            if (columnsHold(leftBoxes, rightBoxes, rows, medianH)) {
-                return new Section(rows, true, leftRows, rightRows);
+            if (splitter.split(leftBoxes, rightBoxes)) {
+                return new Section(rows, true, false, leftRows, rightRows);
             }
-            return new Section(rows, false, List.of(), List.of());
+            return new Section(rows, false, false, List.of(), List.of());
         }
 
         float top() {

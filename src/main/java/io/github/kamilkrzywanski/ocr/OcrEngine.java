@@ -306,6 +306,7 @@ public final class OcrEngine implements AutoCloseable {
         if (corrected) {
             recognized = splitAmounts(bgr, recognized);
         }
+        recognized = splitColumns(bgr, recognized, lineParallel);
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized);
         List<TextLine> flat = ReadingOrder.flatten(rows);
@@ -316,6 +317,39 @@ public final class OcrEngine implements AutoCloseable {
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart);
+    }
+
+    /**
+     * A box the detector drew over two text columns, where the gutter is narrow, is cut on the
+     * gutter and each half is read again. Otherwise the two lines would come out as one line in
+     * the middle of the left column.
+     */
+    private List<TextLine> splitColumns(Bgr page, List<TextLine> lines, boolean lineParallel) {
+        if (!cfg.useRec() || rec == null || lines.size() < 2) {
+            return lines;
+        }
+        Map<TextLine, Float> cuts = ReadingOrder.cuts(lines);
+        if (cuts.isEmpty()) {
+            return lines;
+        }
+        List<DbPost.Box> halves = new ArrayList<>(cuts.size() * 2);
+        List<TextLine> out = new ArrayList<>(lines.size() + cuts.size());
+        for (TextLine line : lines) {
+            Float t = cuts.get(line);
+            if (t == null) {
+                out.add(line);
+                continue;
+            }
+            float[] q = line.quad();
+            float topX = q[0] + (q[2] - q[0]) * t;
+            float topY = q[1] + (q[3] - q[1]) * t;
+            float bottomX = q[6] + (q[4] - q[6]) * t;
+            float bottomY = q[7] + (q[5] - q[7]) * t;
+            halves.add(new DbPost.Box(new float[]{q[0], q[1], topX, topY, bottomX, bottomY, q[6], q[7]}, line.detScore()));
+            halves.add(new DbPost.Box(new float[]{topX, topY, q[2], q[3], q[4], q[5], bottomX, bottomY}, line.detScore()));
+        }
+        out.addAll(recognizeBoxes(page, halves, lineParallel));
+        return out;
     }
 
     /**
