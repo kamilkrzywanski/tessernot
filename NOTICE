@@ -14,5 +14,7 @@ Third-party content distributed with this repository:
 - src/test/resources/quality/: three scans from Wikimedia Commons used only as
   test fixtures (public domain and CC BY-SA 4.0). Details are in
   src/test/resources/quality/ATTRIBUTION.md.
-- bench/: the held-out benchmark lists Wikimedia Commons files by URL and
-  license in bench/manifest.tsv. The images are downloaded, not stored here.
+- bench/data/ and bench/ref/: benchmark page images and their reference
+  transcriptions, from Wikimedia Commons, Wikisource and Polish digital
+  libraries (public domain, CC0, CC BY and CC BY-SA). The source URL, license
+  and author of each are in bench/manifest.tsv.

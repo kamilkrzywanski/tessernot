@@ -1,10 +1,12 @@
 #!/bin/sh
-# Downloads the benchmark images listed in bench/manifest.tsv into bench/data and checks SHA-256.
-# Empty fields are written as "-" (read would merge two tabs). A row with a page number is a
-# document: the original is checked, then that page is rendered.
-#   PDF:  pdftoppm (poppler-utils) at 200 dpi, or at the dpi given as "page@dpi", to PNG.
-#   DjVu: ddjvu (DjVuLibre) at full resolution, to TIFF.
-# A file that is already there is not downloaded again.
+# Restores the benchmark images listed in bench/manifest.tsv into bench/data. The images are
+# tracked in git, so this is needed only to check them against the sources or to rebuild one.
+# Empty fields are written as "-" (read would merge two tabs). A row without a page number is an
+# image: it is downloaded and checked against SHA-256. A row with a page number is a document: the
+# original is downloaded and checked, then that page is rendered to PNG.
+#   PDF:  pdftoppm (poppler-utils) at 200 dpi, or at the dpi given as "page@dpi".
+#   DjVu: ddjvu (DjVuLibre) at full resolution, then pnmtopng (netpbm), ImageMagick or Pillow.
+# An image with the right digest, or a rendered page that is already there, is kept.
 set -eu
 BENCH=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 DATA="$BENCH/data"
@@ -28,6 +30,22 @@ download() {
   sleep 1
 }
 
+# PNM to an RGB PNG, with whichever converter is installed.
+topng() {
+  if command -v pnmtopng >/dev/null 2>&1; then
+    pnmtopng "$1" > "$2"
+  elif command -v magick >/dev/null 2>&1; then
+    magick "$1" "PNG24:$2"
+  elif command -v convert >/dev/null 2>&1; then
+    convert "$1" "PNG24:$2"
+  elif python3 -I -c 'import PIL' 2>/dev/null; then
+    python3 -I -c 'import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2])' "$1" "$2"
+  else
+    echo "pnmtopng (netpbm), ImageMagick or Python Pillow is needed to write $2" >&2
+    exit 1
+  fi
+}
+
 tail -n +2 "$BENCH/manifest.tsv" | while IFS="$(printf '\t')" read -r name set file url sha page rest; do
   [ -n "$name" ] || continue
   dest="$DATA/$file"
@@ -37,6 +55,9 @@ tail -n +2 "$BENCH/manifest.tsv" | while IFS="$(printf '\t')" read -r name set f
     fi
     download "$url" "$dest" "$sha"
   else
+    if [ -f "$dest" ]; then
+      continue
+    fi
     case $url in
       *.djvu|*.DJVU) ext=djvu ;;
       *) ext=pdf ;;
@@ -44,19 +65,19 @@ tail -n +2 "$BENCH/manifest.tsv" | while IFS="$(printf '\t')" read -r name set f
     src="$DATA/$name.$ext"
     if [ ! -f "$src" ] || [ "$(digest "$src")" != "$sha" ]; then
       download "$url" "$src" "$sha"
-      rm -f "$dest"
     fi
-    if [ ! -f "$dest" ]; then
-      number=${page%@*}
-      if [ "$ext" = djvu ]; then
-        command -v ddjvu >/dev/null 2>&1 || { echo "ddjvu (djvulibre) is needed for $name" >&2; exit 1; }
-        ddjvu -format=tiff -page="$number" "$src" "$dest"
-      else
-        command -v pdftoppm >/dev/null 2>&1 || { echo "pdftoppm (poppler-utils) is needed for $name" >&2; exit 1; }
-        dpi=200
-        case $page in *@*) dpi=${page#*@} ;; esac
-        pdftoppm -r "$dpi" -f "$number" -l "$number" -png -singlefile "$src" "${dest%.png}"
-      fi
+    echo "render $file" >&2
+    number=${page%@*}
+    if [ "$ext" = djvu ]; then
+      command -v ddjvu >/dev/null 2>&1 || { echo "ddjvu (djvulibre) is needed for $name" >&2; exit 1; }
+      ddjvu -format=pnm -page="$number" "$src" "$dest.pnm"
+      topng "$dest.pnm" "$dest"
+      rm -f "$dest.pnm"
+    else
+      command -v pdftoppm >/dev/null 2>&1 || { echo "pdftoppm (poppler-utils) is needed for $name" >&2; exit 1; }
+      dpi=200
+      case $page in *@*) dpi=${page#*@} ;; esac
+      pdftoppm -r "$dpi" -f "$number" -l "$number" -png -singlefile "$src" "${dest%.png}"
     fi
   fi
 done

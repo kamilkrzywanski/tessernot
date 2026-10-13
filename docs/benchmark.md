@@ -23,9 +23,10 @@ them. This benchmark uses public documents with references transcribed by hand, 
 ## The documents
 
 `bench/manifest.tsv` lists every document with its source URL, SHA-256, license, author and
-set. The images are not stored in the repository. `bench/fetch.sh` downloads them, about 250 MB
-with the PDF and DjVu originals, checks the digests and renders PDF and DjVu pages. The
-references are in `bench/ref/dev/` and `bench/ref/test/` and carry the same attribution.
+set. The page images are stored in `bench/data/` (about 75 MB). Pages of PDF and DjVu documents
+are stored as lossless PNG renders. The originals are not stored: `bench/fetch.sh` downloads them,
+checks the digests and renders a page again when its image is missing. The references are in
+`bench/ref/dev/` and `bench/ref/test/` and carry the same attribution.
 
 | Kind | dev | test |
 | --- | --- | --- |
@@ -188,7 +189,8 @@ Three problems were found on `dev` and fixed there. `test` was collected afterwa
 
 ```bash
 mvn -DskipTests package
-bench/fetch.sh                      # needs curl; pdftoppm and ddjvu for PDF and DjVu pages
+# The images are in bench/data. bench/fetch.sh rebuilds a missing one from its source
+# (curl; pdftoppm for PDF; ddjvu and pnmtopng, ImageMagick or Pillow for DjVu).
 
 ./ocr.sh score bench/ref/test bench/data --out bench/out/test-plain
 ./ocr.sh score bench/ref/test bench/data --corrections polish --out bench/out/test-polish

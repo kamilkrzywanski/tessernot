@@ -46,6 +46,10 @@ build/
 /.idea/vcs.xml
 /.idea/.gitignore
 
-# Benchmark: images are downloaded by bench/fetch.sh, outputs are local.
-/bench/data/
+# Benchmark: the page images in bench/data are tracked. The PDF and DjVu originals they are
+# rendered from are downloaded by bench/fetch.sh, and outputs are local.
+/bench/data/*.pdf
+/bench/data/*.djvu
+/bench/data/*.part
+/bench/data/*.pnm
 /bench/out/
