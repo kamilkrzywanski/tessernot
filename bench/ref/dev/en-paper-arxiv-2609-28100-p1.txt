@@ -1,0 +1,81 @@
+Network lexical analysis of student integration of music and physics knowledge
+W. Brian Lane1,2* and Emily E. Pipkin3
+1Department of Physics, University of North Florida
+2Northeast Florida Center for STEM Education,
+University of North Florida
+3Department of Biology, University of North Florida
+1 UNF Drive, Jacksonville, FL, 32224
+(Dated: September 24, 2026)
+Introductory physics students benefit from learning to integrate new physics knowledge with prior
+knowledge related to their interests. Writing assignments that offer high epistemic agency can foster
+this integration, and provide rich artifacts for qualitative analysis. Physics education researchers
+are increasingly interested in studying such artifacts using computer-based textual analysis. In this
+paper, we use lexical methods to look for evidence of knowledge integration in written assignments
+from a Physics of Music course. These assignments require students to communicate to an external
+audience a clear and cohesive narrative that synthesizes concepts from music and physics. To apply
+this methodology, we first establish a lexicon of music, physics, and integrated keywords that N = 10
+students used across 6 writing assignments. Then, we visualize this word usage in a series of network
+diagrams based on which keywords were used in proximity to each other in each assignment. We
+find that students most strongly connected ideas from music and physics using keywords related
+to the physical structure of sound (sound, frequency, and wave). Applying these methods to each
+assignment prompt and its resulting student submissions, we find that, in assignments with a lower
+degree of epistemic agency (assessed qualitatively by our experience teaching the course), students
+primarily followed the example of integration modeled by the assignment prompt, but in assignments
+with a higher degree of epistemic agency, they explored music-physics integration to a greater degree.
+We use this analysis to offer a pedagogical contribution to introductory physics courses centered
+around students’ extant interests, a theoretical contribution by illustrating a means of quantifying
+epistemic agency, and a methodological contribution that complements textual analysis and offers
+the scalability sought in such approaches.
+I. INTRODUCTION: DOMAIN KNOWLEDGE
+INTEGRATION AS A SUBJECT OF LEXICAL
+ANALYSIS
+An important challenge that physics educators face is
+supporting students in the process of integrating their
+new physics knowledge with existing knowledge from a
+subject that holds their interest. For many undergrad-
+uate students, these existing interests are embodied in
+their major, but for others they might be related to their
+career plans, hobbies, or communities. Regardless of the
+source, the opportunity for a student to explore the con-
+ceptual connections between physics and a domain of in-
+terest is an important act of epistemic agency.
+Epistemic agency is defined as “the ways in which stu-
+dents, teachers, or social groups take on and distribute
+cognitive authority—that is, the responsibility for cre-
+ating and evaluating new knowledge” [1]. When em-
+powered as epistemic agents, students establish their
+own goals, determine their own methods for reaching
+those goals, and construct new knowledge in pursuit of
+those goals rather than reproducing established knowl-
+edge [2, 3]. Instructors can scaffold epistemic agency
+along different paths, opening up different aspects of the
+knowledge-building process depending on the activity or
+student population [4]. Epistemic agency is socially sit-
+uated [5], such that a student might feel more agency
+within their domain of interest but less agency within a
+new context like physics. Students have been reported
+to prefer higher-agency activities, often attributing this
+preference to the freedom they experience [6].
+Exploration of interdisciplinary concepts between physics
+and a domain of interest is an act of epistemic agency in
+that cognitive authority is invested in the student to im-
+plement their knowledge of the domain of interest while
+developing a new base of physics knowledge. This invest-
+ment empowers the student to choose goals and methods
+based on their existing knowledge base and employ new
+physics concepts within that existing knowledge base.
+The knowledge constructed is new both as a development
+of physics concepts and as an extension of their existing
+interests. There is also the possibility that the student
+employs extant knowledge or develops interdisciplinary
+knowledge that is new to the instructor, heightening the
+authenticity of their work as an epistemic agent at the
+boundary of two domains.
+While this integration is an exciting and personally fulfill-
+ing educational outcome, it can be difficult for instructors
+and researchers to find evidence of how students carry out
+this integration. For example, students might make con-
+ceptual connections that we do not know to ask about,
+and each student’s background knowledge and interests
+are unique. Even if the instructor or researcher has a
+* Brian.Lane@unf.edu

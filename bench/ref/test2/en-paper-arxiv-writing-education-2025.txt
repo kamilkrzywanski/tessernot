@@ -1,0 +1,88 @@
+Surveying the State of Writing Education in Physics and Astronomy
+Briley L. Lewis*
+Department of Physics, University of California, Santa Barbara, Santa Barbara, CA 93108 USA
+(Dated: October 7, 2025)
+Writing is a critical skill for modern science, enabling collaboration, scientific discourse, pub-
+lic outreach, and more. Accordingly, it is important to consider how physicists and astronomers
+are trained to write. This study aims to understand the landscape of science writing education,
+specifically in physics and astronomy, in higher education in the United States. An online survey
+probing various aspects of their writing training in both undergraduate and graduate school was
+administered to 515 participants who have obtained training in physics and/or astronomy, or related
+fields, at the level equal to or beyond upper-division undergraduate study. Humanities and writing
+requirement courses appear to have a key role in general writing education, while laboratory courses
+and feedback from mentors are the dominant modes of science writing education in undergraduate
+and graduate school respectively. There is substantial variation in the quality of writing educa-
+tion in physics and astronomy, often dependent on the student’s institution and/or mentor. Some
+participants also report that their success in disciplinary writing was a result of a solid foundation
+from K-12 education and/or self-direction towards resources; such reliance on past experiences and
+student background may contribute to inequality in the field. Many participants also stated a clear
+desire for more structured writing training to be available in the field. We provide suggestions for
+how to implement such training to meet the needs of the community identified in the survey.
+I. INTRODUCTION
+Many students and instructors in STEM have negative
+attitudes towards writing in science, possibly as a result
+of the deprioritization of writing in science at multiple
+levels of education [1]. However, it is clearly evident that
+writing is necessary in many aspects of science, e.g. re-
+search papers, grant proposals, graduate school and job
+applications, and public outreach. Effective communi-
+cation has the potential to improve not only commu-
+nication between scientists, making scientific discourse
+and collaboration more efficient and effective, but also
+communication with the public, which is necessary for
+improved scientific literacy and public trust in science
+[2, 3]. Additionally, writing plays a role in the teaching
+and learning of physics/astronomy. Instructors must be
+able to write clear, coherent assessments, lecture slides,
+and course notes, while students must be able to coher-
+ently explain their work and answers to show conceptual
+understanding.
+As a result, writing is widely regarded as a highly de-
+sirable skill for careers in STEM, including physics and
+astronomy (P&A). Career guidance from the American
+Astronomical Society (AAS) emphasizes communication
+skills as part of an astronomy career [4], and recommen-
+dations for undergraduate curriculum from the American
+Association of Physics Teachers (AAPT) list communi-
+cating physics as a key learning outcome for physics stu-
+dents in laboratory courses [5]. Many instructors say
+that writing is an important goal of their laboratory
+courses, and place a high value on students’ writing skill
+development [6]. Additionally, the recent Phys21 report
+from the Joint Task Force on Undergraduate Physics Pro-
+grams from the American Physical Society, National Sci-
+ence Foundation, and American Association of Physics
+Teachers highlights the need for instruction focused on
+communication skills to prepare students for modern ca-
+reers [7]. Similarly, guidance from Effective Practices for
+Physics Programs (EP3) emphasizes the need for train-
+ing in communication skills [8]. Writing and communica-
+tion skills are also important for physics and astronomy
+students who choose to pursue non-academic careers, as
+these skills are listed as some of the most highly desirable
+traits in a candidate for employment by the National As-
+sociation of Colleges and Employers’ 2024 Job Outlook
+report [9]. Despite the recent rise in the use of artificial
+intelligence (AI) tools such as ChatGPT, the task of sci-
+entific writing still requires a skilled human author, who
+can be assisted but not replaced by AI tools [10], main-
+taining the need for developing writing skills in STEM
+practitioners.
+Writing and writing instruction are therefore an im-
+portant aspect of students’ professionalization, preparing
+them for careers in science. Writing is essentially a social
+practice, defining and perpetuating the norms and activ-
+ities of a discipline, and helps students build and explore
+their identities as emerging professionals in a field such
+as P&A [11–14]. For example, doctoral thesis writing
+is key to the development of students’ science identities
+as they make the major transition from student to inde-
+pendent researcher [15, 16]. Publication is a major part
+of the social practice of writing in STEM, and students
+view publication as a transformative process that vali-
+dates their role in the scientific community, especially fe-
+male students who are often marginalized in STEM [17].
+Similarly, writing research papers for publication can be
+seen broadly as an enculturation task, establishing early
+career scientists as members of the discipline [18].
+* brileylewis@ucsb.edu

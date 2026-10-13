@@ -4,9 +4,9 @@ OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. You 
 model files. It needs no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
 
 **Status: experimental.** It reads printed pages, invoices, receipts, typed letters and
-two-column pages. Its recognition matches the same models on ONNX Runtime and is ahead of
-Tesseract on photos and receipts. Some multi-column layouts still come out in the wrong order.
-See the [benchmark](#accuracy-and-speed).
+multi-column pages. Its recognition matches the same models on ONNX Runtime and is ahead of
+Tesseract, by a wide margin on invoices, receipts and photos. Tesseract still orders dense
+historical newspapers better. See the [benchmark](#accuracy-and-speed).
 
 ## Why
 
@@ -17,12 +17,13 @@ See the [benchmark](#accuracy-and-speed).
   `jdk.incubator.vector` is available and falls back to scalar code that gives the same results
   when it is not.
 - **It does more than return text.** You get line boxes and scores, reading order for
-  two-column pages, and ruled tables as cells. PDF input goes through Apache PDFBox. Output is
+  multi-column pages, and ruled tables as cells. PDF input goes through Apache PDFBox. Output is
   plain text or JSON.
 
-Expect 1.5–4 s per page on a laptop CPU, depending on how much text the page has. That is the
-same range as RapidOCR on ONNX Runtime and as Tesseract in the benchmark below. It needs Java 21.
-Without the incubator module, the scalar path is slower.
+Expect 2–8 s per page on a laptop CPU, depending on how much text the page has; a dense
+newspaper page with a hundred lines takes longest. Detection at 960 px instead of the default
+2048 px (`--limit 960`) is about a quarter faster. It needs Java 21 and about 1.5 GB of heap at
+the default, under 1 GB at 960 px. Without the incubator module, the scalar path is slower.
 
 ## Quick start
 
@@ -95,27 +96,36 @@ post-processing) is public only for technical reasons. It may change in any rele
 
 ## Accuracy and speed
 
-These numbers come from 27 public documents that were collected after the last fix and never used
-for tuning: invoices, bills, receipts, letters, forms, two-column newspapers, dictionaries and
-official gazettes (18 Polish, 9 English). The references were transcribed by hand. Method, a
-second `dev` set, per-document results and how to reproduce them are in
+Public documents with references transcribed by hand, in Polish and English: invoices,
+receipts, letters, forms, and multi-column books, dictionaries, newspapers and official
+gazettes. `test2` was collected for the latest round and scored once, at the end; nobody tuned
+on it. `test` was scored once in the round before and then pointed at what to fix.
+
+![Character accuracy on test2 by document kind](docs/benchmark-test2.png)
+
+| Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **ocr-pro** | 0.123 / 0.068 | 0.950 | **0.048 / 0.033** | **0.930** | 7.3 s / 3.8 s |
+| ocr-pro, `--limit 960` | 0.216 / 0.048 | 0.935 | 0.070 / 0.038 | 0.915 | 5.8 s / 2.9 s |
+| RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.9 s / 4.1 s |
+| Tesseract 5 (`pol` / `eng`) | **0.070 / 0.033** | 0.934 | 0.210 / 0.149 | 0.854 | 4.6 s / 2.0 s |
+
+CER counts reading order; word F1 does not. The test machine was an Intel i7-1365U laptop with
+12 threads.
+
+- **Invoices, bills and receipts:** 90 % character accuracy against 67 % for Tesseract on
+  `test2`, and 87 % against 67 % on `test`. Tesseract returns nothing for some thermal and
+  dot-matrix receipts.
+- **Recognition:** word F1 is above Tesseract on every set and matches ONNX Runtime running the
+  same models, so the pure-Java runtime gives up nothing.
+- **Layout:** multi-column dictionaries, legal gazettes, the EU Official Journal, journal
+  articles and three-column newspapers are read column by column. RapidOCR reads the same
+  models row by row and loses most of those pages.
+- **Where Tesseract still wins:** dense 19th-century newspapers with four narrow columns, and a
+  few other complex pages, are ordered better by its layout analysis. It is also faster.
+
+Method, the `dev` set, per-document results and how to reproduce them are in
 [docs/benchmark.md](docs/benchmark.md).
-
-| Engine | Word F1 | CER (median per page) | CER (pooled) | Median time per page |
-| --- | ---: | ---: | ---: | ---: |
-| ocr-pro | 0.915 | 0.087 | 0.214 | 3.6 s |
-| ocr-pro + Polish corrections | 0.920 | 0.087 | 0.214 | 3.5 s |
-| RapidOCR, same models on ONNX Runtime | 0.911 | 0.221 | 0.514 | 3.3 s |
-| Tesseract 5 (`pol` / `eng`) | 0.854 | 0.149 | 0.210 | 2.3 s |
-
-The test machine was an Intel i7-1365U laptop with 12 threads. Word F1 ignores reading order;
-CER does not.
-
-- The pure-Java runtime reproduces ONNX Runtime's recognition.
-- It reads photos, receipts and stained paper clearly better than Tesseract.
-- Its reading order handles two-column pages and forms, which RapidOCR reads row by row.
-- A few two-column pages still come out in the wrong order: a dictionary, a poster photo, a
-  noisy 1952 scan, and a page split by a figure. Tesseract's layout analysis wins on two of those.
 
 ## Polish print corrections
 
@@ -126,15 +136,15 @@ adds:
 - Polish and English word lists, and a list of Polish postal codes
 - second reads of a line crop for invoice details
 
-These rules were tuned on three scans and checked on the `dev` set. On the `test` set they add
-0.8 points of word F1 on Polish documents. They are **off by default**. See
+These rules were tuned on three scans and checked on the `dev` set. On Polish documents they add
+0.3 points of word F1 on `test2` and 0.7 on `test`. They are **off by default**. See
 [docs/corrections.md](docs/corrections.md) for the rules and what they get wrong.
 
 ## Not in scope
 
 - handwriting
 - tables without ruled lines
-- newspapers with three or more columns
+- newspaper pages whose articles jump between columns, and ad collages
 - the quality of commercial engines on hard scans
 
 Vertical lines are rotated and read.
