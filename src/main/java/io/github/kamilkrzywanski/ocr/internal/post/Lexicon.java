@@ -17,6 +17,11 @@ import java.util.Locale;
  * applies only when exactly one dictionary word matches. A lowercase one-letter preposition glued
  * to the next word is split.
  * <p>
+ * An all-capitals token that is a word without its marks is not given an extra letter. It gets the
+ * marks back only when the same line already prints a Polish mark: a fiscal printer that drops them
+ * keeps {@code SPRZEDAZ}, while {@code PLATNOŚCI} becomes {@code PŁATNOŚCI}. A token followed by a
+ * period that starts a longer dictionary word is an abbreviation ({@code Przewod.}) and stays.
+ * <p>
  * The Polish list is the sjp.pl alternative dictionary, which its authors offer under Apache-2.0
  * (also GPL-2, LGPL-2.1, MPL-1.1, or CC-BY-4.0). The English list is SCOWL, copyright 2000-2011
  * Kevin Atkinson, usable for any purpose with that notice kept. Both files are optional.
@@ -67,6 +72,7 @@ public final class Lexicon {
         if (line == null || line.isEmpty()) {
             return line;
         }
+        boolean marked = marked(line);
         StringBuilder out = new StringBuilder(line.length() + 8);
         int i = 0;
         while (i < line.length()) {
@@ -82,7 +88,7 @@ public final class Lexicon {
                 while (i < line.length() && Character.isLetter(line.charAt(i))) {
                     i++;
                 }
-                String word = fix(line.substring(wordStart, i));
+                String word = fix(line.substring(wordStart, i), marked, dotted(line, i));
                 if (word.length() >= 4 && dictionaryWord(word)) {
                     out.append(token).append(' ').append(word);
                     continue;
@@ -90,9 +96,23 @@ public final class Lexicon {
                 out.append(token).append(word);
                 continue;
             }
-            out.append(letters ? fix(token) : token);
+            out.append(letters ? fix(token, marked, dotted(line, i)) : token);
         }
         return out.toString();
+    }
+
+    private static boolean dotted(String line, int end) {
+        return end < line.length() && line.charAt(end) == '.';
+    }
+
+    /** Whether the line already prints a Polish letter with a mark. */
+    private static boolean marked(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            if ("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ".indexOf(line.charAt(i)) >= 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean digits(String token) {
@@ -112,7 +132,7 @@ public final class Lexicon {
         return english.contains(lower) || known(lower);
     }
 
-    private String fix(String token) {
+    private String fix(String token, boolean marked, boolean dotted) {
         if (token.length() < 4 || token.length() > 24) {
             return token;
         }
@@ -120,7 +140,14 @@ public final class Lexicon {
         if (english.contains(lower) || known(lower)) {
             return token;
         }
+        if (dotted && polish.extendsPrefix(lower)) {
+            return token;
+        }
         if (capitals(token)) {
+            List<String> forms = markForms(lower);
+            if (!forms.isEmpty()) {
+                return marked && forms.size() == 1 ? forms.get(0).toUpperCase(Locale.ROOT) : token;
+            }
             String gap = uniqueGap(lower);
             return gap == null ? token : gap.toUpperCase(Locale.ROOT);
         }
@@ -177,6 +204,16 @@ public final class Lexicon {
             }
         }
         return letter;
+    }
+
+    /** Dictionary words one diacritic away, else two; at most two are collected. */
+    private List<String> markForms(String lower) {
+        List<String> hits = new ArrayList<>();
+        collect(lower, 1, 0, 0, hits);
+        if (hits.isEmpty()) {
+            collect(lower, 2, 0, 0, hits);
+        }
+        return hits;
     }
 
     private String unique(String lower, int edits) {

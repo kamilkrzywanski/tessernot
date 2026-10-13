@@ -85,6 +85,44 @@ final class WordList {
         return false;
     }
 
+    /** Whether a longer word starts with {@code prefix}. */
+    boolean extendsPrefix(String prefix) {
+        if (prefix == null || prefix.isEmpty() || start.length == 0) {
+            return false;
+        }
+        byte[] key = prefix.getBytes(StandardCharsets.UTF_8);
+        int lo = 0;
+        int hi = start.length;
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            if (compare(mid, key) < 0) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        // The first entry at or after the prefix is the prefix itself or a longer word that starts with it.
+        for (int line = lo; line < start.length && line <= lo + 1; line++) {
+            if (lineEnd(line) - start[line] > key.length && startsWith(line, key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean startsWith(int line, byte[] key) {
+        int i = start[line];
+        if (lineEnd(line) - i < key.length) {
+            return false;
+        }
+        for (int k = 0; k < key.length; k++) {
+            if (data[i + k] != key[k]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private int compare(int line, byte[] key) {
         int i = start[line];
         int end = lineEnd(line);

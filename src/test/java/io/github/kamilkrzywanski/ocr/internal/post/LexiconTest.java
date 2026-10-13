@@ -73,6 +73,39 @@ class LexiconTest {
     }
 
     @Test
+    void capitalsGetMarksOnlyWhereTheLinePrintsThem() {
+        Lexicon list = Lexicon.of(
+                new String[] {"związek", "zawiązek", "płatności", "płatnością", "sprzedaż", "rozliczenie", "łącznie"},
+                new String[] {"hello"});
+        // A word without its marks never gets an inserted letter instead.
+        assertEquals("ZWIAZEK", list.apply("ZWIAZEK"));
+        assertEquals("ROZLICZENIE PŁATNOŚCI", list.apply("ROZLICZENIE PLATNOŚCI"));
+        assertEquals("SPRZEDAZ OPODATKOWANA", list.apply("SPRZEDAZ OPODATKOWANA"));
+        assertEquals("SPRZEDAŻ ŁĄCZNIE", list.apply("SPRZEDAZ ŁĄCZNIE"));
+    }
+
+    @Test
+    void abbreviationBeforeAPeriodStays() {
+        Lexicon list = Lexicon.of(
+                new String[] {"przewód", "przewodniczącego", "połączenia"},
+                new String[] {"hello"});
+        assertEquals("Wybór Przewod. Walnego", list.apply("Wybór Przewod. Walnego"));
+        assertEquals("Złe połączenia.", list.apply("Złe połaczenia."));
+        assertEquals("przewód", list.apply("przewod"));
+    }
+
+    @Test
+    void wordListFindsLongerWordsForAPrefix() {
+        WordList list = WordList.of("przewód", "przewodniczący", "ser", "serce");
+        assertTrue(list.extendsPrefix("przewod"));
+        assertTrue(list.extendsPrefix("ser"));
+        assertFalse(list.extendsPrefix("serce"));
+        assertFalse(list.extendsPrefix("sera"));
+        assertFalse(list.extendsPrefix("zzz"));
+        assertFalse(list.extendsPrefix(""));
+    }
+
+    @Test
     void wordListDoesNotMatchAPrefix() {
         WordList list = WordList.of("ser", "serce", "ą");
         assertTrue(list.contains("ser"));

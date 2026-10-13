@@ -121,6 +121,7 @@ public final class Ctc {
             // × on the 4,99 row is 0.36 for x. l in zapłaty is 0.35 for ł.
             // t in Wrocław, łącznie and Zapłacono is at least 0.16 for ł. The period in 90.00 is 0.35 for a comma.
             // ó in dziewięćdziesiąt is 0.17 for ć. A bar of 0.10 for t adds nothing on these scans.
+            // The comma swap needs a digit before it: on the dev set it turned an English sentence end into a comma.
             // Capital S in Świat is 0.023 for Ś. The next capital S on these scans is 0.0023.
             // o in Spółka is 0.061 for ó. No other o on these scans reaches 0.04.
             if (corrected && (runnerUp(arg, second, secondBest, times, ex, 0.35f)
@@ -128,7 +129,7 @@ public final class Ctc {
                     || runnerUp(arg, second, secondBest, capitalEl, capitalEll, 0.34f)
                     || runnerUp(arg, second, secondBest, tee, ell, 0.15f)
                     || runnerUp(arg, second, secondBest, capitalTee, capitalEll, 0.15f)
-                    || runnerUp(arg, second, secondBest, dot, comma, 0.34f)
+                    || runnerUp(arg, second, secondBest, dot, comma, 0.34f) && afterDigit(text)
                     || runnerUp(arg, second, secondBest, oo, acute, 0.15f)
                     || runnerUp(arg, second, secondBest, capitalS, capitalSAcute, 0.015f)
                     || runnerUp(arg, second, secondBest, smallO, oo, 0.05f))) {
@@ -143,6 +144,11 @@ public final class Ctc {
             previous = arg;
         }
         return new Result(text.toString(), kept == 0 ? 0f : (float) (score / kept));
+    }
+
+    /** A decimal comma only follows a digit; a period after a word ends a sentence. */
+    private static boolean afterDigit(StringBuilder text) {
+        return text.length() > 0 && Character.isDigit(text.charAt(text.length() - 1));
     }
 
     private static boolean runnerUp(int arg, int second, float secondBest, int from, int to, float min) {
