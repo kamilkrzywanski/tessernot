@@ -70,6 +70,8 @@ public final class ReadingOrder {
     private static final float NARROW_ALIGN = 0.8f;
     private static final float NARROW_SINGLE = 0.8f;
     private static final float NARROW_FILL = 0.6f;
+    /** Between text columns that no box crosses, lines may fill this little: a column of verse. */
+    private static final float OPEN_FILL = 0.3f;
     /**
      * A side whose lines are narrower than this share of the lines beside it is a rail of list
      * numbers or bullets, not a column: "2." to "6." next to the items of the 1921 manual.
@@ -79,9 +81,19 @@ public final class ReadingOrder {
     private static final float WIDTH_SHARE = 0.5f;
     /** Boxes that may still cross the gutter, as a share of the block (a title, two merged lines). */
     private static final float CROSSING = 0.1f;
-    /** A crossing line this many median lines long runs past each edge of the gutter by this share of its width. */
+    /**
+     * Text columns may have more: a title of several lines, a closing sentence and a signature
+     * across the page. Each section between them must still hold two text columns.
+     */
+    private static final float TEXT_CROSSING = 0.35f;
+    /**
+     * A line this many median lines long that reaches past the gutter on one side by less than
+     * {@link #CROSS_SIDE} of its width, and less than {@link #INTRUDE} median lines, picked up a
+     * letter of the other column; it does not cross.
+     */
     private static final float LONG_LINE = 4f;
     private static final float CROSS_SIDE = 0.1f;
+    private static final float INTRUDE = 1.5f;
     /** Nested splits: columns inside a section inside a block. */
     private static final int MAX_DEPTH = 6;
     /** A page turned less than this, in radians (about 0.3 degrees), is read as it is. */
@@ -128,14 +140,6 @@ public final class ReadingOrder {
         List<TextLine> level = level(lines, original);
         Map<TextLine, Float> found = new IdentityHashMap<>();
         order(level, found);
-        float medianH = medianHeight(level);
-        List<TextLine> normal = new ArrayList<>();
-        for (TextLine line : level) {
-            if (!verticalWord(line, medianH)) {
-                normal.add(line);
-            }
-        }
-        widelyMerged(normal, medianH, found);
         for (Map.Entry<TextLine, Float> cut : found.entrySet()) {
             float[] q = cut.getKey().quad();
             float from = (q[0] + q[6]) * 0.5f;
@@ -317,6 +321,9 @@ public final class ReadingOrder {
     private static List<List<TextLine>> orderBlock(List<TextLine> boxes, List<TextLine> vertical,
                                                    float medianH, int depth, Map<TextLine, Float> found) {
         List<List<TextLine>> rows = seedRows(boxes);
+        if (found != null) {
+            widelyMerged(boxes, medianH, found);
+        }
         if (depth < MAX_DEPTH) {
             List<List<TextLine>> columns = textColumns(rows, vertical, medianH, depth, found);
             if (columns != null) {
@@ -401,13 +408,13 @@ public final class ReadingOrder {
      */
     private static List<List<TextLine>> textColumns(List<List<TextLine>> rows, List<TextLine> vertical,
                                                     float medianH, int depth, Map<TextLine, Float> found) {
-        float[] gutter = gutter(rows, medianH, true);
+        float[] gutter = gutter(rows, medianH, true, TEXT_CROSSING);
         if (gutter == null) {
             return null;
         }
         float mid = (gutter[0] + gutter[1]) * 0.5f;
         List<Section> sections = sections(rows, gutter, mid, medianH,
-                (left, right) -> textSplit(left, right, rows, medianH, depth));
+                (left, right) -> textSplit(left, right, rows, medianH, depth, true));
         boolean any = false;
         for (Section section : sections) {
             any |= section.split;
@@ -435,21 +442,25 @@ public final class ReadingOrder {
 
     /**
      * Crossing rows that are two column lines read as one box. A candidate has the height of a text
-     * line, starts on the left column's margin and runs well into both columns. It counts when the
-     * columns go on right above or below it, directly or through another such row.
+     * line, starts on the left column's margin, runs well into both columns and ends inside the
+     * right one. It counts when the columns go on right above or below it, directly or through
+     * another such row.
      */
     private static void mergedLines(List<Section> sections, float[] gutter, float medianH, Map<TextLine, Float> found) {
         float margin = Float.POSITIVE_INFINITY;
+        float end = Float.NEGATIVE_INFINITY;
         for (Section section : sections) {
             if (section.split) {
                 margin = Math.min(margin, minLeft(flatten(section.left)));
+                end = Math.max(end, maxRight(flatten(section.right)));
             }
         }
         int n = sections.size();
         TextLine[] merged = new TextLine[n];
         for (int i = 0; i < n; i++) {
             if (sections.get(i).crossing) {
-                merged[i] = mergedBox(sections.get(i).rows.get(0), gutter, margin, medianH);
+                TextLine box = mergedBox(sections.get(i).rows.get(0), gutter, margin, medianH);
+                merged[i] = box != null && right(box) <= end + ALIGN * medianH ? box : null;
             }
         }
         boolean[] accepted = new boolean[n];
@@ -507,9 +518,9 @@ public final class ReadingOrder {
 
     /**
      * When the detector merged so many lines that the gutter does not show, it is looked for among
-     * the boxes narrower than {@link #WIDE_SHARE} of the page. If those form two text columns,
-     * every box over the gutter with the shape of a merged line and a column line right above or
-     * below it is merged.
+     * the boxes narrower than {@link #WIDE_SHARE} of the block. If those form two text columns,
+     * every box over the gutter with the shape of a merged line, ending inside the right column,
+     * with a column line right above or below it is merged.
      */
     private static void widelyMerged(List<TextLine> boxes, float medianH, Map<TextLine, Float> found) {
         if (boxes.size() < 2 * NARROW_LINES) {
@@ -529,7 +540,7 @@ public final class ReadingOrder {
             return;
         }
         List<List<TextLine>> rows = seedRows(narrow);
-        float[] gutter = gutter(rows, medianH, true);
+        float[] gutter = gutter(rows, medianH, true, CROSSING);
         if (gutter == null) {
             return;
         }
@@ -541,13 +552,15 @@ public final class ReadingOrder {
                 ((left(box) + right(box)) * 0.5f < mid ? leftBoxes : rightBoxes).add(box);
             }
         }
-        if (!textSplit(leftBoxes, rightBoxes, rows, medianH, 0)) {
+        if (!textSplit(leftBoxes, rightBoxes, rows, medianH, 0, gutter[2] == 0f)) {
             return;
         }
         float margin = minLeft(leftBoxes);
+        float end = maxRight(rightBoxes) + ALIGN * medianH;
         List<TextLine> candidates = new ArrayList<>();
         for (TextLine box : boxes) {
-            if (!found.containsKey(box) && reaches(box, gutter) && mergedShape(box, gutter, margin, medianH)) {
+            if (!found.containsKey(box) && reaches(box, gutter) && mergedShape(box, gutter, margin, medianH)
+                    && right(box) <= end) {
                 candidates.add(box);
             }
         }
@@ -592,7 +605,7 @@ public final class ReadingOrder {
     }
 
     private static List<List<TextLine>> orderZone(List<List<TextLine>> zone, List<TextLine> vertical, float medianH) {
-        float[] gutter = gutter(zone, medianH, false);
+        float[] gutter = gutter(zone, medianH, false, CROSSING);
         if (gutter == null) {
             return mergeByTop(zone, vertical);
         }
@@ -662,10 +675,11 @@ public final class ReadingOrder {
 
     /**
      * The x range (inclusive) of the emptiest vertical strip between at least two boxes on each side,
-     * after each box loses its padding. Null for a small block, a block that no strip separates, or
-     * a grid unless {@code grid} allows one (text columns check their sides instead).
+     * after each box loses its padding, and the number of boxes still over it. Null for a small block, a block that no strip separates, or
+     * a grid unless {@code grid} allows one (text columns check their sides instead). At most
+     * {@code crossing} of the boxes may still cross the strip.
      */
-    private static float[] gutter(List<List<TextLine>> zone, float medianH, boolean grid) {
+    private static float[] gutter(List<List<TextLine>> zone, float medianH, boolean grid, float crossing) {
         List<TextLine> boxes = new ArrayList<>();
         for (List<TextLine> row : zone) {
             boxes.addAll(row);
@@ -718,10 +732,10 @@ public final class ReadingOrder {
                 runFrom = -1;
             }
         }
-        if (bestFrom < 0 || least > Math.max(1f, CROSSING * boxes.size())) {
+        if (bestFrom < 0 || least > Math.max(1f, crossing * boxes.size())) {
             return null;
         }
-        return new float[]{zoneLeft + bestFrom, zoneLeft + bestTo};
+        return new float[]{zoneLeft + bestFrom, zoneLeft + bestTo, least};
     }
 
     /** Values strictly below {@code x} in a sorted array. */
@@ -760,9 +774,9 @@ public final class ReadingOrder {
 
     /**
      * The narrowed box reaches into the gutter, as the coverage count saw it. A long line that
-     * runs past one edge of the gutter by less than {@link #CROSS_SIDE} of its width does not:
-     * it is a line of one column that picked up the last letter of the other, where the gutter
-     * is narrow. A page number between the columns still crosses.
+     * runs past one edge of the gutter only a little does not: it is a line of one column that
+     * picked up the last letter of the other, where the gutter is narrow. A page number between
+     * the columns still crosses.
      */
     private static boolean crossing(TextLine line, float[] gutter, float medianH) {
         float pad = BOX_PAD * (bottom(line) - top(line));
@@ -773,7 +787,7 @@ public final class ReadingOrder {
         }
         float width = to - from;
         return width < LONG_LINE * medianH
-                || Math.min(gutter[0] - from, to - gutter[1]) >= CROSS_SIDE * width;
+                || Math.min(gutter[0] - from, to - gutter[1]) >= Math.min(CROSS_SIDE * width, INTRUDE * medianH);
     }
 
     /** Whether the two sides of a section are columns to read one after the other. */
@@ -799,10 +813,11 @@ public final class ReadingOrder {
 
     /**
      * Both sides are text columns of similar width, or split into such columns themselves.
-     * Prices beside item names are a rail, not a column.
+     * Prices beside item names are a rail, not a column. When no box crosses between the sides
+     * ({@code clean}), short lines are allowed: a column of verse fills a third of its width.
      */
     private static boolean textSplit(List<TextLine> leftBoxes, List<TextLine> rightBoxes,
-                                     List<List<TextLine>> rows, float medianH, int depth) {
+                                     List<List<TextLine>> rows, float medianH, int depth, boolean clean) {
         if (leftBoxes.size() < NARROW_LINES || rightBoxes.size() < NARROW_LINES) {
             return false;
         }
@@ -815,32 +830,52 @@ public final class ReadingOrder {
         if (valueRail(rightBoxes, leftBoxes, gap, medianH)) {
             return false;
         }
-        return columnLike(leftBoxes, rows, medianH, depth) && columnLike(rightBoxes, rows, medianH, depth);
+        float minFill = clean ? OPEN_FILL : NARROW_FILL;
+        return columnLike(leftBoxes, rows, medianH, depth, minFill)
+                && columnLike(rightBoxes, rows, medianH, depth, minFill);
     }
 
     /** One text column, or a side that splits again into text columns. */
-    private static boolean columnLike(List<TextLine> side, List<List<TextLine>> rows, float medianH, int depth) {
-        if (textSide(side, rows, medianH)) {
+    private static boolean columnLike(List<TextLine> side, List<List<TextLine>> rows, float medianH, int depth,
+                                      float minFill) {
+        if (textSide(side, rows, medianH, minFill)) {
             return true;
         }
         if (depth + 1 >= MAX_DEPTH || side.size() < 2 * NARROW_LINES) {
             return false;
         }
-        float[] gutter = gutter(seedRows(side), medianH, true);
+        if (splitsInto(side, rows, medianH, depth)) {
+            return true;
+        }
+        // Lines merged over a narrow gutter hide it; the narrower boxes still show it.
+        float span = maxRight(side) - minLeft(side);
+        List<TextLine> narrow = new ArrayList<>();
+        for (TextLine line : side) {
+            if (right(line) - left(line) < WIDE_SHARE * span) {
+                narrow.add(line);
+            }
+        }
+        return narrow.size() < side.size() && narrow.size() >= 2 * NARROW_LINES
+                && splitsInto(narrow, rows, medianH, depth);
+    }
+
+    /** The gutter of {@code boxes} splits them into two text columns. */
+    private static boolean splitsInto(List<TextLine> boxes, List<List<TextLine>> rows, float medianH, int depth) {
+        float[] gutter = gutter(seedRows(boxes), medianH, true, CROSSING);
         if (gutter == null) {
             return false;
         }
         float mid = (gutter[0] + gutter[1]) * 0.5f;
         List<TextLine> leftBoxes = new ArrayList<>();
         List<TextLine> rightBoxes = new ArrayList<>();
-        for (TextLine line : side) {
+        for (TextLine line : boxes) {
             if ((left(line) + right(line)) * 0.5f < mid) {
                 leftBoxes.add(line);
             } else {
                 rightBoxes.add(line);
             }
         }
-        return textSplit(leftBoxes, rightBoxes, rows, medianH, depth + 1);
+        return textSplit(leftBoxes, rightBoxes, rows, medianH, depth + 1, gutter[2] == 0f);
     }
 
     private static boolean formSide(List<TextLine> side, List<List<TextLine>> rows, float medianH) {
@@ -849,10 +884,14 @@ public final class ReadingOrder {
     }
 
     private static boolean textSide(List<TextLine> side, List<List<TextLine>> rows, float medianH) {
+        return textSide(side, rows, medianH, NARROW_FILL);
+    }
+
+    private static boolean textSide(List<TextLine> side, List<List<TextLine>> rows, float medianH, float minFill) {
         return side.size() >= NARROW_LINES
                 && marginShare(side, medianH) >= NARROW_ALIGN
                 && singleLineShare(side, rows, medianH) >= NARROW_SINGLE
-                && fill(side) >= NARROW_FILL;
+                && fill(side) >= minFill;
     }
 
     /**
@@ -887,37 +926,47 @@ public final class ReadingOrder {
     }
 
     /**
-     * Share of lines that start on the side's left margin or end on its right margin. A justified
-     * column has both margins, so an indented first line, a short last line and a signature set
-     * to the right all count; a centred heading does not.
+     * Share of lines that start on one of the side's two most used left margins or end on its
+     * right margin. A justified column has both sides, so an indented first line, a short last line
+     * and a signature set to the right all count, and so does a second margin of hanging indents
+     * or numbered paragraphs. A centred heading does not.
      */
     private static float marginShare(List<TextLine> side, float medianH) {
+        float reach = ALIGN * medianH;
         float[] lefts = new float[side.size()];
         float[] rights = new float[side.size()];
         for (int i = 0; i < lefts.length; i++) {
             lefts[i] = left(side.get(i));
             rights[i] = right(side.get(i));
         }
-        float leftMargin = densest(lefts, ALIGN * medianH);
-        float rightMargin = densest(rights, ALIGN * medianH);
+        float leftMargin = densest(lefts, reach, Float.NaN);
+        float secondMargin = densest(lefts, reach, leftMargin);
+        float rightMargin = densest(rights, reach, Float.NaN);
         int on = 0;
         for (int i = 0; i < lefts.length; i++) {
-            if (Math.abs(lefts[i] - leftMargin) <= ALIGN * medianH
-                    || Math.abs(rights[i] - rightMargin) <= ALIGN * medianH) {
+            if (Math.abs(lefts[i] - leftMargin) <= reach
+                    || Math.abs(lefts[i] - secondMargin) <= reach
+                    || Math.abs(rights[i] - rightMargin) <= reach) {
                 on++;
             }
         }
         return on / (float) lefts.length;
     }
 
-    /** The value with the most others within {@code reach} of it. */
-    private static float densest(float[] values, float reach) {
-        float best = values[0];
-        int bestNear = -1;
+    /**
+     * The value with the most others within {@code reach} of it, leaving out values within reach
+     * of {@code taken}. NaN when nothing is left.
+     */
+    private static float densest(float[] values, float reach, float taken) {
+        float best = Float.NaN;
+        int bestNear = 0;
         for (float a : values) {
+            if (Math.abs(a - taken) <= reach) {
+                continue;
+            }
             int near = 0;
             for (float b : values) {
-                if (Math.abs(a - b) <= reach) {
+                if (Math.abs(a - b) <= reach && !(Math.abs(b - taken) <= reach)) {
                     near++;
                 }
             }
