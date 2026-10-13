@@ -463,6 +463,35 @@ class PostProcessTest {
     }
 
     @Test
+    void runOfMergedLinesIsCutWhereTheGutterHides() {
+        // Four of ten rows are one box over both columns, three of them in a run, so the gutter
+        // only shows among the narrower boxes. The paragraph above the columns stays whole.
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            lines.add(line("P" + i, 0, i * 12, 230, 10));
+        }
+        List<String> merged = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            float y = 50 + i * 12;
+            if (i >= 2 && i <= 4 || i == 6) {
+                lines.add(line("M" + i, 0, y, 230, 10));
+                merged.add("M" + i);
+            } else {
+                lines.add(line("L" + i, 0, y, 100, 10));
+                lines.add(line("R" + i, 130, y, 100, 10));
+            }
+        }
+        Map<TextLine, Float> cuts = ReadingOrder.cuts(lines);
+        List<String> found = new ArrayList<>();
+        for (Map.Entry<TextLine, Float> cut : cuts.entrySet()) {
+            found.add(cut.getKey().text());
+            assertEquals(115f / 230f, cut.getValue(), 0.03f);
+        }
+        found.sort(null);
+        assertEquals(merged, found);
+    }
+
+    @Test
     void readingOrderKeepsAGridInRows() {
         List<TextLine> lines = List.of(
                 line("a", 0, 0, 20, 10),

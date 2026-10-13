@@ -179,7 +179,10 @@ class QualityGateTest {
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void realPrintDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
+        // The rules were measured on crops from detection at 960 px, and the counts below describe
+        // those crops. The default 2048 px draws tighter boxes; the plain gate covers that pipeline.
         OcrConfig polish = OcrConfig.defaults(Path.of("models")).toBuilder()
+                .detLimitSideLen(960)
                 .corrections(Corrections.POLISH)
                 .build();
         try (OcrEngine engine = OcrEngine.create(polish)) {

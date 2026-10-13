@@ -33,7 +33,7 @@ ocr eval [--model dir]
 ## Flags
 
 - `--model dir`: the model directory. A path to a file, or an empty `--model=`, is an error.
-- `--limit N`: longest side for detection (default 960). Use 736 for speed, 1280–1536 for small print.
+- `--limit N`: longest side for detection (default 2048). 960 is about twice as fast on a large page and needs less heap, at a cost in accuracy on small print, dense columns and receipts.
 - `--threads N`: worker threads (default: all cores).
 - `--no-cls`, `--no-det`: skip the 180° classifier, or skip detection and read the image as one line.
 - `--corrections none|polish`: see [corrections.md](corrections.md). The default is `none`.

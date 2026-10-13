@@ -19,13 +19,13 @@ def main():
     ref_dir, image_dir, out_dir = (Path(a) for a in sys.argv[1:4])
     models = Path(sys.argv[4]) if len(sys.argv) > 4 else Path("models")
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Same files and DB settings as OcrConfig.defaults: det limit 960 (max side), thresh 0.35,
+    # Same files and DB settings as OcrConfig.defaults: det limit 2048 (max side), thresh 0.35,
     # the 80x160 text-line orientation model, PP-OCRv6 small recognition. No pre-shrink of the page.
     engine = RapidOCR(params={
         "Global.max_side_len": 100000,
         "Global.log_level": "error",
         "Det.model_path": str(models / "ch_PP-OCRv5_det_mobile.onnx"),
-        "Det.limit_side_len": 960,
+        "Det.limit_side_len": 2048,
         "Det.limit_type": "max",
         "Det.thresh": 0.35,
         "Cls.model_path": str(models / "ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx"),

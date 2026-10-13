@@ -624,10 +624,10 @@ class CliArgsTest {
             OcrException mean = assertThrows(OcrException.class, () -> builder.std(0.5f).mean(Float.NaN).build());
             assertTrue(mean.getMessage().contains("mean"), mean.getMessage());
             OcrConfig.Builder limits = OcrConfig.builder();
-            assertEquals(960, limits.build().detLimitSideLen());
+            assertEquals(2048, limits.build().detLimitSideLen());
             OcrException side = assertThrows(OcrException.class, () -> limits.detLimitSideLen(0).build());
             assertTrue(side.getMessage().contains("detLimitSideLen"), side.getMessage());
-            limits.detLimitSideLen(960);
+            limits.detLimitSideLen(2048);
             OcrException type = assertThrows(OcrException.class, () -> limits.detLimitType("MAX").build());
             assertTrue(type.getMessage().contains("detLimitType"), type.getMessage());
             assertEquals("min", limits.detLimitType("min").build().detLimitType());

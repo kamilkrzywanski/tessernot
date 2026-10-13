@@ -97,6 +97,8 @@ public final class ReadingOrder {
      */
     private static final float MERGED_HEIGHT = 1.5f;
     private static final float MERGED_SIDE = 2f;
+    /** Boxes at least this share of the page wide may be merged lines when the gutter does not show. */
+    private static final float WIDE_SHARE = 0.75f;
 
     private ReadingOrder() {
     }
@@ -126,6 +128,14 @@ public final class ReadingOrder {
         List<TextLine> level = level(lines, original);
         Map<TextLine, Float> found = new IdentityHashMap<>();
         order(level, found);
+        float medianH = medianHeight(level);
+        List<TextLine> normal = new ArrayList<>();
+        for (TextLine line : level) {
+            if (!verticalWord(line, medianH)) {
+                normal.add(line);
+            }
+        }
+        widelyMerged(normal, medianH, found);
         for (Map.Entry<TextLine, Float> cut : found.entrySet()) {
             float[] q = cut.getKey().quad();
             float from = (q[0] + q[6]) * 0.5f;
@@ -467,22 +477,108 @@ public final class ReadingOrder {
     private static TextLine mergedBox(List<TextLine> row, float[] gutter, float margin, float medianH) {
         TextLine merged = null;
         for (TextLine line : row) {
-            float pad = BOX_PAD * (bottom(line) - top(line));
-            if (left(line) + pad <= gutter[1] && right(line) - pad >= gutter[0]) {
+            if (reaches(line, gutter)) {
                 if (merged != null) {
                     return null;
                 }
                 merged = line;
             }
         }
-        if (merged == null || bottom(merged) - top(merged) > MERGED_HEIGHT * medianH) {
-            return null;
+        return merged != null && mergedShape(merged, gutter, margin, medianH) ? merged : null;
+    }
+
+    /** The narrowed box reaches into the gutter. */
+    private static boolean reaches(TextLine line, float[] gutter) {
+        float pad = BOX_PAD * (bottom(line) - top(line));
+        return left(line) + pad <= gutter[1] && right(line) - pad >= gutter[0];
+    }
+
+    /** A text line's height, starting on the left column's margin, with text well into both columns. */
+    private static boolean mergedShape(TextLine line, float[] gutter, float margin, float medianH) {
+        float height = bottom(line) - top(line);
+        if (height > MERGED_HEIGHT * medianH) {
+            return false;
         }
-        float pad = BOX_PAD * (bottom(merged) - top(merged));
-        boolean onMargin = left(merged) <= margin + ALIGN * medianH;
-        boolean bothSides = left(merged) + pad < gutter[0] - MERGED_SIDE * medianH
-                && right(merged) - pad > gutter[1] + MERGED_SIDE * medianH;
-        return onMargin && bothSides ? merged : null;
+        float pad = BOX_PAD * height;
+        return left(line) <= margin + ALIGN * medianH
+                && left(line) + pad < gutter[0] - MERGED_SIDE * medianH
+                && right(line) - pad > gutter[1] + MERGED_SIDE * medianH;
+    }
+
+    /**
+     * When the detector merged so many lines that the gutter does not show, it is looked for among
+     * the boxes narrower than {@link #WIDE_SHARE} of the page. If those form two text columns,
+     * every box over the gutter with the shape of a merged line and a column line right above or
+     * below it is merged.
+     */
+    private static void widelyMerged(List<TextLine> boxes, float medianH, Map<TextLine, Float> found) {
+        if (boxes.size() < 2 * NARROW_LINES) {
+            return;
+        }
+        float span = maxRight(boxes) - minLeft(boxes);
+        List<TextLine> narrow = new ArrayList<>();
+        boolean anyWide = false;
+        for (TextLine box : boxes) {
+            if (right(box) - left(box) >= WIDE_SHARE * span) {
+                anyWide = true;
+            } else {
+                narrow.add(box);
+            }
+        }
+        if (!anyWide || narrow.size() < 2 * NARROW_LINES) {
+            return;
+        }
+        List<List<TextLine>> rows = seedRows(narrow);
+        float[] gutter = gutter(rows, medianH, true);
+        if (gutter == null) {
+            return;
+        }
+        float mid = (gutter[0] + gutter[1]) * 0.5f;
+        List<TextLine> leftBoxes = new ArrayList<>();
+        List<TextLine> rightBoxes = new ArrayList<>();
+        for (TextLine box : narrow) {
+            if (!reaches(box, gutter)) {
+                ((left(box) + right(box)) * 0.5f < mid ? leftBoxes : rightBoxes).add(box);
+            }
+        }
+        if (!textSplit(leftBoxes, rightBoxes, rows, medianH, 0)) {
+            return;
+        }
+        float margin = minLeft(leftBoxes);
+        List<TextLine> candidates = new ArrayList<>();
+        for (TextLine box : boxes) {
+            if (!found.containsKey(box) && reaches(box, gutter) && mergedShape(box, gutter, margin, medianH)) {
+                candidates.add(box);
+            }
+        }
+        // Merged lines often come in runs; one counts next to a column line or next to another that counted.
+        List<TextLine> accepted = new ArrayList<>();
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (int i = candidates.size() - 1; i >= 0; i--) {
+                TextLine box = candidates.get(i);
+                if (nextTo(box, leftBoxes, medianH) || nextTo(box, rightBoxes, medianH) || nextTo(box, accepted, medianH)) {
+                    accepted.add(box);
+                    candidates.remove(i);
+                    changed = true;
+                }
+            }
+        }
+        for (TextLine box : accepted) {
+            found.put(box, mid);
+        }
+    }
+
+    /** Some line of the column sits right above or below the box, with no blank between them. */
+    private static boolean nextTo(TextLine box, List<TextLine> column, float medianH) {
+        for (TextLine line : column) {
+            float blank = Math.max(top(line) - bottom(box), top(box) - bottom(line));
+            if (blank <= ZONE_GAP * medianH && Math.abs(top(line) - top(box)) <= 2f * medianH) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Section {@code j} is split into columns, or an accepted merged row, with no blank between it and {@code i}. */
@@ -754,9 +850,83 @@ public final class ReadingOrder {
 
     private static boolean textSide(List<TextLine> side, List<List<TextLine>> rows, float medianH) {
         return side.size() >= NARROW_LINES
-                && alignedShare(side, medianH) >= NARROW_ALIGN
-                && singleShare(side, rows) >= NARROW_SINGLE
+                && marginShare(side, medianH) >= NARROW_ALIGN
+                && singleLineShare(side, rows, medianH) >= NARROW_SINGLE
                 && fill(side) >= NARROW_FILL;
+    }
+
+    /**
+     * Share of the rows touching this side that hold one line on it. Boxes closer than
+     * {@link #MIN_GUTTER} are pieces of one line: a sharper detection splits "1)" or a wide word
+     * gap off the rest of the line.
+     */
+    private static float singleLineShare(List<TextLine> side, List<List<TextLine>> rows, float medianH) {
+        Set<TextLine> set = Collections.newSetFromMap(new IdentityHashMap<>());
+        set.addAll(side);
+        int touched = 0;
+        int single = 0;
+        for (List<TextLine> row : rows) {
+            int pieces = 0;
+            float end = Float.NEGATIVE_INFINITY;
+            for (TextLine line : row) {
+                if (set.contains(line)) {
+                    if (left(line) - end > MIN_GUTTER * medianH) {
+                        pieces++;
+                    }
+                    end = Math.max(end, right(line));
+                }
+            }
+            if (pieces > 0) {
+                touched++;
+                if (pieces == 1) {
+                    single++;
+                }
+            }
+        }
+        return touched == 0 ? 0f : single / (float) touched;
+    }
+
+    /**
+     * Share of lines that start on the side's left margin or end on its right margin. A justified
+     * column has both margins, so an indented first line, a short last line and a signature set
+     * to the right all count; a centred heading does not.
+     */
+    private static float marginShare(List<TextLine> side, float medianH) {
+        float[] lefts = new float[side.size()];
+        float[] rights = new float[side.size()];
+        for (int i = 0; i < lefts.length; i++) {
+            lefts[i] = left(side.get(i));
+            rights[i] = right(side.get(i));
+        }
+        float leftMargin = densest(lefts, ALIGN * medianH);
+        float rightMargin = densest(rights, ALIGN * medianH);
+        int on = 0;
+        for (int i = 0; i < lefts.length; i++) {
+            if (Math.abs(lefts[i] - leftMargin) <= ALIGN * medianH
+                    || Math.abs(rights[i] - rightMargin) <= ALIGN * medianH) {
+                on++;
+            }
+        }
+        return on / (float) lefts.length;
+    }
+
+    /** The value with the most others within {@code reach} of it. */
+    private static float densest(float[] values, float reach) {
+        float best = values[0];
+        int bestNear = -1;
+        for (float a : values) {
+            int near = 0;
+            for (float b : values) {
+                if (Math.abs(a - b) <= reach) {
+                    near++;
+                }
+            }
+            if (near > bestNear) {
+                bestNear = near;
+                best = a;
+            }
+        }
+        return best;
     }
 
     /** The largest share of lines whose left edges lie within {@link #ALIGN} median lines of one another. */

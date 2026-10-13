@@ -80,29 +80,45 @@ by reflection.
 
 ## Reading order
 
-1. **Rows.** Lines become rows: a line joins a row when it overlaps the row's first box
+1. **Level.** The median angle of the long lines is the page's skew. Between 0.3° and 20°,
+   every box is rotated back by it before anything else, so a gutter that runs at a slant on a
+   photo is vertical again. The output keeps the original boxes.
+2. **Rows.** Lines become rows: a line joins a row when it overlaps the row's first box
    vertically by at least half the smaller height. A tall vertical word stays out of this, so it
    cannot glue the page into one row.
-2. **Blocks.** Rows split into blocks at vertical gaps larger than 0.35 of the median line height.
 3. **Gutter.** Each box first loses a quarter of its height on both sides, which removes the
    unclip padding. The gutter is then the emptiest vertical strip of the block that has at least
-   two boxes on each side. At most one box (or a tenth of the block) may still cross it. A block
-   whose median row holds three or more boxes is a grid and stays in rows.
+   two boxes on each side. At most one box (or a tenth of the block) may still cross it.
 4. **Sections.** A row with a box over the gutter, such as a title across both columns, is read
-   whole. The rows between such titles form sections.
-5. **Split check.** A section is read left column first, then right column, only when both
-   sides look like columns:
+   whole. The rows between such titles form sections. A long line that reaches into the gutter
+   by less than a tenth of its width does not cross: it is a column line that picked up a
+   letter of the other column.
+5. **Text columns first.** The whole page is checked for text columns before blank rows split
+   it. Both sides of a section must be text columns of similar width: five or more lines a side,
+   80 % on one margin, 80 % alone on their rows, and a median line spanning 60 % of the column.
+   A side that splits again into such columns also counts, so three or more columns are read one
+   after another. Each side is then ordered again from step 3. Headings that sit at the same
+   height in both columns leave a blank across the page; finding the columns first keeps that
+   blank from interleaving them.
+6. **Blocks.** Without text columns, rows split into blocks at vertical gaps larger than 0.35 of
+   the median line height, and each block is ordered on its own (from step 3).
+7. **Split check in a block.** A section of a block is read left column first, then right
+   column, only when both sides look like columns:
    - **A wide gutter** (at least 0.8 of the median line) is enough when neither side looks like a
      form. A side with four or more lines needs 60 % of its left edges on one margin and 65 % of
      its rows holding one box on that side. The fare fields of a train ticket fail this; the
      seller and buyer blocks of an invoice pass.
-   - **A narrower gutter** needs two full text columns: five or more lines a side, 80 % on one
-     margin, 80 % alone on their rows, and a median line spanning 60 % of the column.
+   - **A narrower gutter** needs two full text columns, as in step 5.
    - **Never a column:** a side whose lines are less than a quarter as wide as the lines beside
-     it (list numbers, bullets), and a rail of short right-aligned values next to longer names
-     (receipt prices).
+     it (list numbers, bullets), a rail of short right-aligned values next to longer names
+     (receipt prices), and a block whose median row holds three or more boxes (a grid).
 
-Three-column newspapers are not split into three.
+**Merged lines.** Where the gutter is narrow, the detector sometimes draws one box over a line of
+each column. `ReadingOrder.cuts` finds such boxes among the crossing rows of a text-column
+section: a line no taller than 1.5 median lines, starting on the left column's margin, with at
+least two median lines of text on each side of the gutter, and columns going on right above or
+below it. The engine cuts the box on the gutter, reads both halves again and orders the page
+once more. A title across the columns, a full-width paragraph and a running head stay whole.
 
 ## Tables
 
