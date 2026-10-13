@@ -156,6 +156,7 @@ Vertical lines are rotated and read.
 - [docs/corrections.md](docs/corrections.md): the Polish rules
 - [docs/benchmark.md](docs/benchmark.md): the `dev` and `test` sets and how to reproduce the numbers
 - [docs/PLAN.md](docs/PLAN.md): the design decision log, in Polish
+- [docs/HANDOFF.md](docs/HANDOFF.md): what to improve next and how to work on it
 
 ## License
 
