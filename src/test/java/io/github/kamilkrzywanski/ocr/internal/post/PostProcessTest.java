@@ -20,6 +20,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -93,8 +94,11 @@ class PostProcessTest {
         assertEquals("ł", Ctc.greedy(new float[]{0.09f, 0.76f, 0.15f}, 1, 3, Charset.of("t", "ł"), true).text());
         assertEquals("t", Ctc.greedy(new float[]{0.10f, 0.76f, 0.14f}, 1, 3, Charset.of("t", "ł"), true).text());
         assertEquals("t", Ctc.greedy(new float[]{0.05f, 0.50f, 0.40f, 0.05f}, 1, 4, Charset.of("t", "a", "ł"), true).text());
-        assertEquals(",", Ctc.greedy(new float[]{0.01f, 0.65f, 0.34f}, 1, 3, Charset.of(".", ","), true).text());
-        assertEquals(".", Ctc.greedy(new float[]{0.02f, 0.65f, 0.33f}, 1, 3, Charset.of(".", ","), true).text());
+        Charset amount = Charset.of("9", ".", ",", "s");
+        assertEquals("9,", Ctc.greedy(new float[]{0f, 1f, 0f, 0f, 0f, 0.01f, 0f, 0.65f, 0.34f, 0f}, 2, 5, amount, true).text());
+        assertEquals("9.", Ctc.greedy(new float[]{0f, 1f, 0f, 0f, 0f, 0.02f, 0f, 0.65f, 0.33f, 0f}, 2, 5, amount, true).text());
+        // After a letter the period ends a sentence and stays.
+        assertEquals("s.", Ctc.greedy(new float[]{0f, 0f, 0f, 0f, 1f, 0.01f, 0f, 0.65f, 0.34f, 0f}, 2, 5, amount, true).text());
         assertEquals("ć", Ctc.greedy(new float[]{0.12f, 0.71f, 0.17f}, 1, 3, Charset.of("ó", "ć"), true).text());
         assertEquals("ó", Ctc.greedy(new float[]{0.16f, 0.70f, 0.14f}, 1, 3, Charset.of("ó", "ć"), true).text());
         assertEquals("ó", Ctc.greedy(new float[]{0.03f, 0.51f, 0.46f, 0f}, 1, 4, Charset.of("ó", "o", "ć"), true).text());
@@ -325,6 +329,65 @@ class PostProcessTest {
                 line("L4", 0, 72, 20, 10),
                 line("R4", 70, 72, 40, 10));
         assertEquals("L1\nL2\nR1\nR2\nTITLE\nL3\nL4\nR3\nR4", ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void paddedColumnsThatTouchStillSplit() {
+        // A low-resolution page: unclip padding makes the two columns meet at x = 100.
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            lines.add(line("L" + i, 0, i * 12, 100, 10));
+            lines.add(line("R" + i, 99, i * 12, 100, 10));
+        }
+        assertEquals("L0\nL1\nL2\nL3\nL4\nL5\nR0\nR1\nR2\nR3\nR4\nR5",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void titleAcrossColumnsEndsASection() {
+        List<TextLine> lines = List.of(
+                line("L1", 0, 0, 40, 10),
+                line("R1", 70, 0, 25, 10),
+                line("L2", 0, 12, 20, 10),
+                line("R2", 70, 12, 40, 10),
+                line("TITLE", 0, 24, 110, 10),
+                line("L3", 0, 36, 40, 10),
+                line("R3", 70, 36, 25, 10),
+                line("L4", 0, 48, 20, 10),
+                line("R4", 70, 48, 40, 10));
+        assertEquals("L1\nL2\nR1\nR2\nTITLE\nL3\nL4\nR3\nR4", ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void scatteredFormFieldsStayInRows() {
+        // Fields of a ticket on the left (ragged, two to a row), the issuing office on the right.
+        // Most rows hold two boxes, so this is not the grid rule.
+        List<TextLine> lines = List.of(
+                line("Dane", 60, 0, 60, 10),
+                line("Kasa", 200, 0, 40, 10),
+                line("Klasa", 0, 12, 30, 10),
+                line("MENOS", 200, 12, 50, 10),
+                line("2", 5, 24, 6, 10),
+                line("TAM", 40, 24, 40, 10),
+                line("Biala", 200, 24, 45, 10),
+                line("POC", 30, 36, 30, 10),
+                line("8611", 200, 36, 40, 10),
+                line("Wyjazd", 0, 48, 40, 10),
+                line("do", 90, 48, 15, 10),
+                line("data", 200, 48, 40, 10));
+        assertEquals("Dane Kasa\nKlasa MENOS\n2 TAM Biala\nPOC 8611\nWyjazd do data",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void listNumbersAreNotAColumn() {
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            lines.add(line((i + 1) + ".", 0, i * 12, 8, 10));
+            lines.add(line("item " + i, 30, i * 12, 120, 10));
+        }
+        assertEquals("1. item 0\n2. item 1\n3. item 2\n4. item 3\n5. item 4",
+                ReadingOrder.join(ReadingOrder.group(lines)));
     }
 
     @Test
