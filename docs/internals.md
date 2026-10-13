@@ -80,10 +80,29 @@ by reflection.
 
 ## Reading order
 
-Two boxes join one row when their vertical overlap reaches half the smaller height. A vertical
-line gets its own row. Two text columns split by a gutter are read top to bottom, left column
-first. A price aligned to the right margin stays with its item. A grid of three or more columns
-is read by rows.
+1. **Rows.** Lines become rows: a line joins a row when it overlaps the row's first box
+   vertically by at least half the smaller height. A tall vertical word stays out of this, so it
+   cannot glue the page into one row.
+2. **Blocks.** Rows split into blocks at vertical gaps larger than 0.35 of the median line height.
+3. **Gutter.** Each box first loses a quarter of its height on both sides, which removes the
+   unclip padding. The gutter is then the emptiest vertical strip of the block that has at least
+   two boxes on each side. At most one box (or a tenth of the block) may still cross it. A block
+   whose median row holds three or more boxes is a grid and stays in rows.
+4. **Sections.** A row with a box over the gutter, such as a title across both columns, is read
+   whole. The rows between such titles form sections.
+5. **Split check.** A section is read left column first, then right column, only when both
+   sides look like columns:
+   - **A wide gutter** (at least 0.8 of the median line) is enough when neither side looks like a
+     form. A side with four or more lines needs 60 % of its left edges on one margin and 65 % of
+     its rows holding one box on that side. The fare fields of a train ticket fail this; the
+     seller and buyer blocks of an invoice pass.
+   - **A narrower gutter** needs two full text columns: five or more lines a side, 80 % on one
+     margin, 80 % alone on their rows, and a median line spanning 60 % of the column.
+   - **Never a column:** a side whose lines are less than a quarter as wide as the lines beside
+     it (list numbers, bullets), and a rail of short right-aligned values next to longer names
+     (receipt prices).
+
+Three-column newspapers are not split into three.
 
 ## Tables
 

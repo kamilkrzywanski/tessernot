@@ -3,10 +3,10 @@
 OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. You get one JAR and the
 model files. It needs no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
 
-**Status: experimental.** It reads printed pages, receipts, tickets and typed letters. Its
-recognition matches the same models on ONNX Runtime and is ahead of Tesseract on photos and
-receipts. Page layout, such as forms and multi-column pages, is the weak spot. See the
-[benchmark](#accuracy-and-speed).
+**Status: experimental.** It reads printed pages, invoices, receipts, typed letters and
+two-column pages. Its recognition matches the same models on ONNX Runtime and is ahead of
+Tesseract on photos and receipts. Some multi-column layouts still come out in the wrong order.
+See the [benchmark](#accuracy-and-speed).
 
 ## Why
 
@@ -20,9 +20,9 @@ receipts. Page layout, such as forms and multi-column pages, is the weak spot. S
   two-column pages, and ruled tables as cells. PDF input goes through Apache PDFBox. Output is
   plain text or JSON.
 
-Expect about 2 s per page on a laptop CPU. That is the same range as RapidOCR on ONNX Runtime
-and as Tesseract in the benchmark below. It needs Java 21. Without the incubator module, the
-scalar path is slower.
+Expect 1.5–4 s per page on a laptop CPU, depending on how much text the page has. That is the
+same range as RapidOCR on ONNX Runtime and as Tesseract in the benchmark below. It needs Java 21.
+Without the incubator module, the scalar path is slower.
 
 ## Quick start
 
@@ -95,26 +95,27 @@ post-processing) is public only for technical reasons. It may change in any rele
 
 ## Accuracy and speed
 
-These numbers come from 20 public documents the engine was never tuned on, 10 Polish and 10
-English: receipts, tickets, letters, forms, book and newspaper pages, and signs. The references
-were transcribed by hand. Method, per-document results and how to reproduce them are in
+These numbers come from 27 public documents that were collected after the last fix and never used
+for tuning: invoices, bills, receipts, letters, forms, two-column newspapers, dictionaries and
+official gazettes (18 Polish, 9 English). The references were transcribed by hand. Method, a
+second `dev` set, per-document results and how to reproduce them are in
 [docs/benchmark.md](docs/benchmark.md).
 
-| Engine | Word F1 | CER (median per page) | Median time per page |
-| --- | ---: | ---: | ---: |
-| ocr-pro | 0.930 | 0.062 | 2.1 s |
-| ocr-pro + Polish corrections | 0.939 | 0.058 | 2.1 s |
-| RapidOCR, same models on ONNX Runtime | 0.928 | 0.050 | 3.0 s |
-| Tesseract 5 (`pol` / `eng`) | 0.846 | 0.143 | 2.1 s |
+| Engine | Word F1 | CER (median per page) | CER (pooled) | Median time per page |
+| --- | ---: | ---: | ---: | ---: |
+| ocr-pro | 0.915 | 0.087 | 0.214 | 3.6 s |
+| ocr-pro + Polish corrections | 0.920 | 0.087 | 0.214 | 3.5 s |
+| RapidOCR, same models on ONNX Runtime | 0.911 | 0.221 | 0.514 | 3.3 s |
+| Tesseract 5 (`pol` / `eng`) | 0.854 | 0.149 | 0.210 | 2.3 s |
 
-The measurements were taken on an Intel i7-1365U laptop with 12 threads. Word F1 ignores
-reading order; CER does not.
+The test machine was an Intel i7-1365U laptop with 12 threads. Word F1 ignores reading order;
+CER does not.
 
 - The pure-Java runtime reproduces ONNX Runtime's recognition.
-- On photos, thermal receipts and stained paper, it is clearly ahead of Tesseract.
-- It falls behind on reading order. It splits forms into columns that are not there, and it
-  misses the columns of a low-resolution newspaper page. In both cases Tesseract's layout
-  analysis wins.
+- It reads photos, receipts and stained paper clearly better than Tesseract.
+- Its reading order handles two-column pages and forms, which RapidOCR reads row by row.
+- A few two-column pages still come out in the wrong order: a dictionary, a poster photo, a
+  noisy 1952 scan, and a page split by a figure. Tesseract's layout analysis wins on two of those.
 
 ## Polish print corrections
 
@@ -125,9 +126,9 @@ adds:
 - Polish and English word lists, and a list of Polish postal codes
 - second reads of a line crop for invoice details
 
-These rules were tuned on three scans. They are **off by default**. See
-[docs/corrections.md](docs/corrections.md) for the rules and the benchmark for their effect on
-documents they were not tuned on.
+These rules were tuned on three scans and checked on the `dev` set. On the `test` set they add
+0.8 points of word F1 on Polish documents. They are **off by default**. See
+[docs/corrections.md](docs/corrections.md) for the rules and what they get wrong.
 
 ## Not in scope
 
@@ -143,7 +144,7 @@ Vertical lines are rotated and read.
 - [docs/cli.md](docs/cli.md): commands, flags, JSON output
 - [docs/internals.md](docs/internals.md): pipeline, runtime, kernels, concurrency
 - [docs/corrections.md](docs/corrections.md): the Polish rules
-- [docs/benchmark.md](docs/benchmark.md): the held-out set and how to reproduce the numbers
+- [docs/benchmark.md](docs/benchmark.md): the `dev` and `test` sets and how to reproduce the numbers
 - [docs/PLAN.md](docs/PLAN.md): the design decision log, in Polish
 
 ## License

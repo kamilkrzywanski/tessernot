@@ -1,9 +1,13 @@
-# Held-out benchmark
+# Benchmark
 
-These are documents the engine was not tuned on, with hand-made references. Read
+These are public documents with references transcribed by hand. Read
 [docs/benchmark.md](../docs/benchmark.md) for the rules, the results and how to reproduce them.
 
-- `manifest.tsv`: source URL, SHA-256, license and author of every image
-- `ref/`: reference transcriptions (`pl-*`, `en-*`)
-- `fetch.sh`: downloads the images into `data/` (git-ignored)
+- `manifest.tsv`: source URL, SHA-256, license and author of every document, and its set:
+  - `dev` (20 documents): used to find and fix problems. Numbers on it are no longer independent.
+  - `test` (27 documents): scored once per release. Do not tune on it.
+- `ref/dev/`, `ref/test/`: reference transcriptions (`pl-*`, `en-*`)
+- `fetch.sh`: downloads the images into `data/` (git-ignored, about 250 MB) and checks SHA-256.
+  Pages of PDF and DjVu sources are rendered with `pdftoppm` (poppler-utils) and `ddjvu`
+  (djvulibre).
 - `run-rapidocr.py`, `run-tesseract.sh`: baselines that write outputs for `ocr score --hyp`

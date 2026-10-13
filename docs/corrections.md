@@ -16,18 +16,26 @@ receipt and a Polish VAT invoice (`src/test/resources/quality/`). On those scans
 the error count from 0 / 9 / 18 edits (plain pipeline) to 0 / 1 / 0. These scans are the data
 the rules were tuned on, so those numbers say nothing about other documents.
 
-For other documents, see the held-out results in [benchmark.md](benchmark.md). On 20
-documents the rules were not tuned on:
+For other documents, see [benchmark.md](benchmark.md).
 
-- **Overall:** Polish word F1 went from 0.895 to 0.916, CER barely moved, and English text
-  hardly changed.
+**On `dev`** (20 documents) the first version of these rules was checked:
+
+- **Overall:** Polish word F1 rose from 0.895 to 0.916.
 - **What helped:** nearly all of the gain came from the word lists putting back missing
-  diacritics (*połączenia*, *węglowy*, *związku*, *mogą*, *Kołobrzeg*).
+  diacritics.
 - **What hurt:**
-  - the all-capitals rule: ZWIĄZEK became **ZAWIĄZEK**, PŁATNOŚCI became **PŁATNOŚCIĄ**
-  - the dictionary on an abbreviation (*Przewod.* → **Przewód.**) and on a place name
-    (*Maluszyn* → **Małuszyn**)
-  - the period→comma runner-up at the end of an English sentence
+  - the all-capitals rule (ZWIĄZEK became **ZAWIĄZEK**),
+  - the dictionary on an abbreviation (*Przewod.* became **Przewód.**),
+  - the period→comma swap at the end of an English sentence.
+
+  Those three were fixed (rules 1 and 3 below).
+
+**On `test`** (27 documents, collected afterwards):
+
+- **Overall:** the rules give +0.8 points of Polish word F1 (0.893 to 0.901), with CER unchanged.
+- **Cost:** 0.4 points on one English newspaper.
+- **Still open:** a real place name that happens to differ from a dictionary word by one mark
+  can still be changed (*Maluszyn* became *Małuszyn* on `dev`).
 
 Measure on your own documents before you turn this on.
 
@@ -40,7 +48,7 @@ differs from the first read in the one expected way. Any other difference keeps 
 1. **CTC runner-ups.** In greedy decoding, some second-best characters replace the winner when
    their probability is high enough:
    a space after a colon (≥ 0.35 when blank wins), `x` for `×` (≥ 0.35), `ł`/`Ł` for `l`/`L`
-   (≥ 0.34), `ł`/`Ł` for `t`/`T` (≥ 0.15), `,` for `.` (≥ 0.34), `ć` for `ó` (≥ 0.15),
+   (≥ 0.34), `ł`/`Ł` for `t`/`T` (≥ 0.15), `,` for `.` after a digit (≥ 0.34), `ć` for `ó` (≥ 0.15),
    `Ś` for `S` (≥ 0.015) and `ó` for `o` (≥ 0.05).
 2. **Main ink band.** After rotation and before the resize to height 48, a second ink band is
    dropped when at least 20 white rows separate it and it has clearly less ink. A neighbor line
@@ -49,10 +57,16 @@ differs from the first read in the one expected way. Any other difference keeps 
    `lexicon-en.txt.gz` (SCOWL). A token of 4–24 letters that is in neither list gets the only
    dictionary word reachable by one ordered family of OCR confusions. The order is: one Polish
    diacritic, then two, then `t`→`ł`, then `i`→`j`, then `ó`/`e`/`o`→`ć` (optionally with
-   `s`→`ś`), then up to two `l`→`i`/`j`, then one `o`→`c`. A token in capital letters is only
-   changed when exactly one word is one inserted letter and one diacritic away. When several
-   words match, the token stays. A digit glued to a known word gets a space. A one-letter
-   preposition glued to the next word is split off.
+   `s`→`ś`), then up to two `l`→`i`/`j`, then one `o`→`c`. When several words match, the token
+   stays.
+   - **Capital letters.** A token that is a word without its diacritics gets them back only when
+     the same line already prints a Polish diacritic. A fiscal printer that drops them keeps
+     `SPRZEDAZ`, and `PLATNOŚCI` becomes `PŁATNOŚCI`. Otherwise it may get one inserted letter
+     plus one diacritic, when exactly one word fits (`ORYGNAL` → `ORYGINAŁ`).
+   - **Abbreviations.** A token followed by a period that starts a longer dictionary word stays
+     as it is (`Przewod.`).
+   - A digit glued to a known word gets a space. A one-letter preposition glued to the next
+     word is split off.
 4. **Row number.** A narrow digit, a gap and a thin rule at the left edge, as in an invoice
    `Lp` column, are cut off. The line is then read again. The cut is kept when the second read
    is the first read without that leading number.
@@ -85,7 +99,7 @@ only.
 
 ## Turning rules into something general
 
-Most of these rules are guesses from a handful of failures. A rule that also helps on the
-held-out set is a candidate to move into the plain pipeline. A rule that hurts there should
-go. The `score` command (see [benchmark.md](benchmark.md)) reports both profiles, so each change
-can be checked on documents it was not tuned on.
+Most of these rules are guesses from a handful of failures. Develop a rule on `dev`, then check
+it once on `test`. A rule that helps there is a candidate for the plain pipeline; one that hurts
+should go. Run `score` with and without `--corrections polish` (see
+[benchmark.md](benchmark.md)) to compare.

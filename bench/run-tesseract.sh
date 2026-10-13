@@ -9,7 +9,13 @@ OUT=$3
 mkdir -p "$OUT"
 for ref in "$REF"/*.txt; do
   name=$(basename "$ref" .txt)
-  image=$(ls "$DATA/$name".* 2>/dev/null | head -n 1)
+  image=
+  for ext in jpg jpeg png tif tiff bmp gif; do
+    if [ -f "$DATA/$name.$ext" ]; then
+      image="$DATA/$name.$ext"
+      break
+    fi
+  done
   [ -n "$image" ] || { echo "no image for $name" >&2; exit 1; }
   case $name in
     pl-*) lang=pol ;;

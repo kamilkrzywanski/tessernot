@@ -46,6 +46,6 @@ build/
 /.idea/vcs.xml
 /.idea/.gitignore
 
-# Held-out benchmark: images are downloaded by bench/fetch.sh, outputs are local.
+# Benchmark: images are downloaded by bench/fetch.sh, outputs are local.
 /bench/data/
 /bench/out/

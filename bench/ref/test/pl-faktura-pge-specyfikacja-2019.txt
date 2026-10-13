@@ -1,0 +1,67 @@
+Specyfikacja do faktury nr – szczegółowe rozliczenie należności za energię elektryczną
+Punkt poboru energii
+Grupa taryfowa G11 PPE
+Dane pomiarowe
+Nr licznika: , mnożna: 1.
+Data Rodzaj wskazania licznika Wskazanie licznika Kierunek Ilość energii [kWh]
+odczytu 1* 1*
+2018-08-28 poprzednie rozliczeniowe 4,0000 pobór
+2018-12-31 bieżące rozliczeniowe 541,4000 pobór 537
+2018-08-28 poprzednie rozliczeniowe 1,3000 wprowadzanie
+2018-12-31 bieżące rozliczeniowe 1 115,3000 wprowadzanie 1 114
+* Strefa czasowa: 1 - całodobowa
+Rozliczenie energii wprowadzonej do sieci [kWh]
+Data wprowadzenia do sieci Ilość rozliczona Ilość pozostała
+do rozliczenia
+2018-12-31 671 443
+Razem 671 443
+Ilość rozliczonej energii pobranej: 671 x 0,8 = 537 kWh
+Pozostała do rozliczenia ilość energii pobranej: 0 kWh
+Wyliczenie wartości sprzedaży, na podstawie danych pomiarowych za okres od 2018-08-28 do 2018-12-31
+Skladnik opłat Okres j.m. Ilość Cena jedn. Netto % VAT Brutto
+energia całodobowa 2018-08-28–2018-12-31 kWh 0 0,24300 0,00 23 0,00 0,00
+opłata sieciowa stała (ukł. 3-faz) 2018-08-28–2018-12-31 mc 4,129 4,82000 19,90 23 4,58 24,48
+opłata przejściowa (>1200) 2018-08-28–2018-12-31 mc 4,129 6,50000 26,84 23 6,17 33,01
+opłata jakościowa 2018-08-28–2018-12-31 kWh 0 0,01250 0,00 23 0,00 0,00
+opłata sieciowa zmienna 2018-08-28–2018-12-31 kWh 0 0,20960 0,00 23 0,00 0,00
+abonament 2018-08-28–2018-12-31 mc 5 0,80000 4,00 23 0,92 4,92
+opłata OZE 2018-08-28–2018-12-31 kWh 0 0,00000 0,00 23 0,00 0,00
+Razem wartość sprzedaży dla punktu poboru 50,74 11,67 62,41
+Ilość energii zużytej w roku 2017: 0 kWh
+Struktura paliw zużytych do wytwarzania energii elektrycznej w roku 2017: źródła odnawialne 12,72% (w tym: biomasa 3,28%, energetyka wiatrowa 8,44%, energia
+słoneczna 0,02%, duża energetyka wodna 0,85%, mała energetyka wodna 0,13%), węgiel kamienny 20,06%, węgiel brunatny 64,17%, gaz ziemny 2,80%, inne źródła 0,25%.
+Informacje o przeciętnym zużyciu energii elektrycznej dla poszczególnych grup przyłączeniowych odbiorców, środkach poprawy efektywności energetycznej,
+charakterystykach technicznych urządzeń efektywnych energetycznie oraz wpływie wytwarzania energii elektrycznej na środowisko znajdują się na stronie internetowej
+www.pge-obrot.pl.
+nr rachunku odbiorcy
+35 1240 6960
+odbiorca:
+PGE Obrót S.A.
+8 MARCA 6, 35-959 RZESZÓW
+kwota:
+62,41
+sześćdziesiąt dwa złote czterdzieści jeden groszy
+zleceniodawca:
+Tytułem: /KTR/
+Termin płatności: 2019-01-24
+stempel
+dzienny
+opłata
+nazwa odbiorcy
+PGE Obrót S.A.
+nazwa odbiorcy cd.
+8 MARCA 6,35-959 RZESZÓW
+nr rachunku odbiorcy
+waluta kwot
+W P P L N 62,41
+nr rachunku zleceniodawcy (przelew) / kwota słownie (wpłata)
+sześćdziesiąt dwa złote czterdzieści jeden groszy
+nazwa zleceniodawcy
+nazwa zleceniodawcy cd.
+tytułem
+Tytułem: /KTR/
+Termin płatności: 2019-01-24
+06
+Opłata:
+Strona 2/
+pieczęć, data i podpis(y) zleceniodawcy
