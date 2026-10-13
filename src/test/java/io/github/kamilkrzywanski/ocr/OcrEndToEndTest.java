@@ -40,7 +40,7 @@ class OcrEndToEndTest {
     @BeforeAll
     static void open() {
         assumeTrue(modelsPresent(), "models/ is missing");
-        engine = OcrEngine.create(OcrConfig.latin(Path.of("models")));
+        engine = OcrEngine.create(OcrConfig.defaults(Path.of("models")));
     }
 
     @AfterAll

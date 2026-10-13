@@ -42,7 +42,7 @@ public final class ModelFiles {
     private ModelFiles() {
     }
 
-    public static Path ensureLatin(Path directory) {
+    public static Path ensure(Path directory) {
         if (directory == null) {
             throw new OcrException("model directory is null");
         }

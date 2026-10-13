@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Printed text on three public scans. The ceiling is the edit count of the current
+ * Printed text on three public scans, read with {@link Corrections#POLISH}: these are the scans
+ * those rules were measured on, so the ceilings guard the rules, not general accuracy
+ * (that is the held-out set in {@code bench/}). The ceiling is the edit count of the current
  * PP-OCRv6 small reader. A larger count fails. Handwriting, stamps, and the invoice
  * table grid are not part of the reference, and extra detections do not add edits.
  * Ruled cells are checked on the same result and do not change that count.
@@ -67,6 +69,9 @@ class QualityGateTest {
     private static final int INVOICE_MAX_EDITS_WITHOUT_POSTAL = 1;
     private static final int INVOICE_MAX_EDITS_WITHOUT_LEXICON = 0;
     private static final int INVOICE_MAX_EDITS_WITHOUT_LISTS = 2;
+    private static final int PLAIN_NIXON_MAX_EDITS = 0;
+    private static final int PLAIN_RECEIPT_MAX_EDITS = 9;
+    private static final int PLAIN_INVOICE_MAX_EDITS = 18;
 
     private static final List<String> NIXON = List.of(
             "THE WHITE HOUSE",
@@ -174,7 +179,10 @@ class QualityGateTest {
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void realPrintDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
-        try (OcrEngine engine = OcrEngine.create(OcrConfig.latin(Path.of("models")))) {
+        OcrConfig polish = OcrConfig.defaults(Path.of("models")).toBuilder()
+                .corrections(Corrections.POLISH)
+                .build();
+        try (OcrEngine engine = OcrEngine.create(polish)) {
             boolean lexicon = lexiconPresent();
             boolean postal = postalPresent();
             OcrResult nixon = check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
@@ -186,6 +194,22 @@ class QualityGateTest {
             assertTrue(nixon.tables().isEmpty(), dump(nixon.tables()));
             assertTrue(receipt.tables().isEmpty(), dump(receipt.tables()));
             assertRuledInvoice(invoice);
+        }
+    }
+
+    /**
+     * The same scans without corrections: detection, angle classifier, recognition, greedy CTC.
+     * The ceilings are the edit counts of PP-OCRv6 small with nothing on top, so a change
+     * in the runtime or pre-processing that costs characters fails here.
+     */
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void plainPipelineDoesNotRegress() throws Exception {
+        assumeTrue(modelsPresent(), "models/ is missing");
+        try (OcrEngine engine = OcrEngine.create(OcrConfig.defaults(Path.of("models")))) {
+            check(engine, "nixon-resign.jpg", NIXON, PLAIN_NIXON_MAX_EDITS);
+            check(engine, "receipt-biedronka.jpg", RECEIPT, PLAIN_RECEIPT_MAX_EDITS);
+            check(engine, "faktura-klodzka.jpg", INVOICE, PLAIN_INVOICE_MAX_EDITS);
         }
     }
 

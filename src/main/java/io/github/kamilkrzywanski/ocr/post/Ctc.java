@@ -7,10 +7,11 @@ import java.util.Arrays;
 
 /**
  * Greedy CTC. Blank is index 0. Repeats are collapsed and blanks are dropped.
- * After a colon, a blank that only barely beats a space is read as that space.
- * A few other runner-up characters replace the winner when the margin was measured
- * on the printed scans: x for a multiplication sign, ł for l or t, ć for ó, a comma
- * for a period, Ś for a capital S, and ó for o.
+ * <p>
+ * With {@code corrected}, used by {@code Corrections.POLISH}, a few runner-ups win:
+ * after a colon, a blank that only barely beats a space is read as that space, and
+ * x for a multiplication sign, ł for l or t, ć for ó, a comma for a period, Ś for a
+ * capital S, and ó for o replace the winner when the margin was measured on the printed scans.
  */
 public final class Ctc {
     public record Result(String text, float score) {
@@ -20,6 +21,10 @@ public final class Ctc {
     }
 
     public static Result greedy(Tensor tensor, Charset charset) {
+        return greedy(tensor, charset, false);
+    }
+
+    public static Result greedy(Tensor tensor, Charset charset, boolean corrected) {
         if (tensor == null || tensor.f == null) {
             throw new OcrException("CTC expects a float tensor");
         }
@@ -55,10 +60,14 @@ public final class Ctc {
                 }
             }
         }
-        return greedy(packed, time, classes, charset);
+        return greedy(packed, time, classes, charset, corrected);
     }
 
     public static Result greedy(float[] data, int time, int classes, Charset charset) {
+        return greedy(data, time, classes, charset, false);
+    }
+
+    public static Result greedy(float[] data, int time, int classes, Charset charset, boolean corrected) {
         if (time <= 0 || classes <= 0) {
             return new Result("", 0f);
         }
@@ -103,7 +112,7 @@ public final class Ctc {
             // Both NIP lines on the scanned invoice drop the space after the colon.
             // Blank wins there, and the space is the runner-up at 0.35 or more.
             // The same timestep on Nixon and on the receipt stays under that.
-            if (arg == 0 && second == space && secondBest >= 0.35f && text.length() > 0
+            if (corrected && arg == 0 && second == space && secondBest >= 0.35f && text.length() > 0
                     && text.charAt(text.length() - 1) == ':') {
                 arg = space;
                 best = secondBest;
@@ -114,7 +123,7 @@ public final class Ctc {
             // ó in dziewięćdziesiąt is 0.17 for ć. A bar of 0.10 for t adds nothing on these scans.
             // Capital S in Świat is 0.023 for Ś. The next capital S on these scans is 0.0023.
             // o in Spółka is 0.061 for ó. No other o on these scans reaches 0.04.
-            if (runnerUp(arg, second, secondBest, times, ex, 0.35f)
+            if (corrected && (runnerUp(arg, second, secondBest, times, ex, 0.35f)
                     || runnerUp(arg, second, secondBest, el, ell, 0.34f)
                     || runnerUp(arg, second, secondBest, capitalEl, capitalEll, 0.34f)
                     || runnerUp(arg, second, secondBest, tee, ell, 0.15f)
@@ -122,7 +131,7 @@ public final class Ctc {
                     || runnerUp(arg, second, secondBest, dot, comma, 0.34f)
                     || runnerUp(arg, second, secondBest, oo, acute, 0.15f)
                     || runnerUp(arg, second, secondBest, capitalS, capitalSAcute, 0.015f)
-                    || runnerUp(arg, second, secondBest, smallO, oo, 0.05f)) {
+                    || runnerUp(arg, second, secondBest, smallO, oo, 0.05f))) {
                 arg = second;
                 best = secondBest;
             }

@@ -63,12 +63,12 @@ public final class OcrPool implements AutoCloseable {
         return new OcrPool(config, size);
     }
 
-    /** Latin models from {@code modelDirectory}, one engine per slot. */
+    /** Default models from {@code modelDirectory}, no corrections, one engine per slot. */
     public static OcrPool open(Path modelDirectory, int size) {
         if (modelDirectory == null) {
             throw new OcrException("model directory is null");
         }
-        return open(OcrConfig.latin(modelDirectory), size);
+        return open(OcrConfig.defaults(modelDirectory), size);
     }
 
     public OcrConfig config() {

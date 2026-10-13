@@ -69,42 +69,51 @@ class PostProcessTest {
                 0f, 1f, 0f, 0f,
                 0.60f, 0f, 0f, 0.40f
         };
-        assertEquals(": ", Ctc.greedy(kept, 2, 4, charset).text());
+        assertEquals(": ", Ctc.greedy(kept, 2, 4, charset, true).text());
 
         float[] below = {
                 0f, 1f, 0f, 0f,
                 0.66f, 0f, 0f, 0.34f
         };
-        assertEquals(":", Ctc.greedy(below, 2, 4, charset).text());
+        assertEquals(":", Ctc.greedy(below, 2, 4, charset, true).text());
 
         float[] notAfterColon = {
                 0f, 0f, 1f, 0f,
                 0.60f, 0f, 0f, 0.40f
         };
-        assertEquals("a", Ctc.greedy(notAfterColon, 2, 4, charset).text());
+        assertEquals("a", Ctc.greedy(notAfterColon, 2, 4, charset, true).text());
     }
 
     @Test
     void ctcSwapsAListedRunnerUpAboveItsMargin() {
-        assertEquals("x", Ctc.greedy(new float[]{0.03f, 0.61f, 0.36f}, 1, 3, Charset.of("×", "x")).text());
-        assertEquals("×", Ctc.greedy(new float[]{0.05f, 0.61f, 0.34f}, 1, 3, Charset.of("×", "x")).text());
-        assertEquals("ł", Ctc.greedy(new float[]{0f, 0.65f, 0.35f}, 1, 3, Charset.of("l", "ł")).text());
-        assertEquals("l", Ctc.greedy(new float[]{0.02f, 0.65f, 0.33f}, 1, 3, Charset.of("l", "ł")).text());
-        assertEquals("ł", Ctc.greedy(new float[]{0.09f, 0.76f, 0.15f}, 1, 3, Charset.of("t", "ł")).text());
-        assertEquals("t", Ctc.greedy(new float[]{0.10f, 0.76f, 0.14f}, 1, 3, Charset.of("t", "ł")).text());
-        assertEquals("t", Ctc.greedy(new float[]{0.05f, 0.50f, 0.40f, 0.05f}, 1, 4, Charset.of("t", "a", "ł")).text());
-        assertEquals(",", Ctc.greedy(new float[]{0.01f, 0.65f, 0.34f}, 1, 3, Charset.of(".", ",")).text());
-        assertEquals(".", Ctc.greedy(new float[]{0.02f, 0.65f, 0.33f}, 1, 3, Charset.of(".", ",")).text());
-        assertEquals("ć", Ctc.greedy(new float[]{0.12f, 0.71f, 0.17f}, 1, 3, Charset.of("ó", "ć")).text());
-        assertEquals("ó", Ctc.greedy(new float[]{0.16f, 0.70f, 0.14f}, 1, 3, Charset.of("ó", "ć")).text());
-        assertEquals("ó", Ctc.greedy(new float[]{0.03f, 0.51f, 0.46f, 0f}, 1, 4, Charset.of("ó", "o", "ć")).text());
-        assertEquals("Ś", Ctc.greedy(new float[]{0.010f, 0.975f, 0.015f}, 1, 3, Charset.of("S", "Ś")).text());
-        assertEquals("S", Ctc.greedy(new float[]{0.020f, 0.966f, 0.014f}, 1, 3, Charset.of("S", "Ś")).text());
-        assertEquals("S", Ctc.greedy(new float[]{0.02f, 0.80f, 0.16f, 0.02f}, 1, 4, Charset.of("S", "A", "Ś")).text());
-        assertEquals("s", Ctc.greedy(new float[]{0.0095f, 0.983f, 0.0075f}, 1, 3, Charset.of("s", "ś")).text());
-        assertEquals("ó", Ctc.greedy(new float[]{0.02f, 0.93f, 0.05f}, 1, 3, Charset.of("o", "ó")).text());
-        assertEquals("o", Ctc.greedy(new float[]{0.031f, 0.920f, 0.049f}, 1, 3, Charset.of("o", "ó")).text());
-        assertEquals("o", Ctc.greedy(new float[]{0.02f, 0.70f, 0.20f, 0.08f}, 1, 4, Charset.of("o", "a", "ó")).text());
+        assertEquals("x", Ctc.greedy(new float[]{0.03f, 0.61f, 0.36f}, 1, 3, Charset.of("×", "x"), true).text());
+        assertEquals("×", Ctc.greedy(new float[]{0.05f, 0.61f, 0.34f}, 1, 3, Charset.of("×", "x"), true).text());
+        assertEquals("ł", Ctc.greedy(new float[]{0f, 0.65f, 0.35f}, 1, 3, Charset.of("l", "ł"), true).text());
+        assertEquals("l", Ctc.greedy(new float[]{0.02f, 0.65f, 0.33f}, 1, 3, Charset.of("l", "ł"), true).text());
+        assertEquals("ł", Ctc.greedy(new float[]{0.09f, 0.76f, 0.15f}, 1, 3, Charset.of("t", "ł"), true).text());
+        assertEquals("t", Ctc.greedy(new float[]{0.10f, 0.76f, 0.14f}, 1, 3, Charset.of("t", "ł"), true).text());
+        assertEquals("t", Ctc.greedy(new float[]{0.05f, 0.50f, 0.40f, 0.05f}, 1, 4, Charset.of("t", "a", "ł"), true).text());
+        assertEquals(",", Ctc.greedy(new float[]{0.01f, 0.65f, 0.34f}, 1, 3, Charset.of(".", ","), true).text());
+        assertEquals(".", Ctc.greedy(new float[]{0.02f, 0.65f, 0.33f}, 1, 3, Charset.of(".", ","), true).text());
+        assertEquals("ć", Ctc.greedy(new float[]{0.12f, 0.71f, 0.17f}, 1, 3, Charset.of("ó", "ć"), true).text());
+        assertEquals("ó", Ctc.greedy(new float[]{0.16f, 0.70f, 0.14f}, 1, 3, Charset.of("ó", "ć"), true).text());
+        assertEquals("ó", Ctc.greedy(new float[]{0.03f, 0.51f, 0.46f, 0f}, 1, 4, Charset.of("ó", "o", "ć"), true).text());
+        assertEquals("Ś", Ctc.greedy(new float[]{0.010f, 0.975f, 0.015f}, 1, 3, Charset.of("S", "Ś"), true).text());
+        assertEquals("S", Ctc.greedy(new float[]{0.020f, 0.966f, 0.014f}, 1, 3, Charset.of("S", "Ś"), true).text());
+        assertEquals("S", Ctc.greedy(new float[]{0.02f, 0.80f, 0.16f, 0.02f}, 1, 4, Charset.of("S", "A", "Ś"), true).text());
+        assertEquals("s", Ctc.greedy(new float[]{0.0095f, 0.983f, 0.0075f}, 1, 3, Charset.of("s", "ś"), true).text());
+        assertEquals("ó", Ctc.greedy(new float[]{0.02f, 0.93f, 0.05f}, 1, 3, Charset.of("o", "ó"), true).text());
+        assertEquals("o", Ctc.greedy(new float[]{0.031f, 0.920f, 0.049f}, 1, 3, Charset.of("o", "ó"), true).text());
+        assertEquals("o", Ctc.greedy(new float[]{0.02f, 0.70f, 0.20f, 0.08f}, 1, 4, Charset.of("o", "a", "ó"), true).text());
+    }
+
+    @Test
+    void ctcWithoutCorrectionsKeepsTheWinner() {
+        Charset colon = Charset.of(":", "a", " ");
+        assertEquals(":", Ctc.greedy(new float[]{0f, 1f, 0f, 0f, 0.60f, 0f, 0f, 0.40f}, 2, 4, colon).text());
+        assertEquals("l", Ctc.greedy(new float[]{0f, 0.65f, 0.35f}, 1, 3, Charset.of("l", "ł")).text());
+        assertEquals("S", Ctc.greedy(new float[]{0.010f, 0.975f, 0.015f}, 1, 3, Charset.of("S", "Ś")).text());
+        assertEquals(".", Ctc.greedy(new float[]{0.01f, 0.65f, 0.34f}, 1, 3, Charset.of(".", ",")).text());
     }
 
     @Test

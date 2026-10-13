@@ -54,6 +54,8 @@ public final class OcrEngine implements AutoCloseable {
     private static final int POSTAL_INK = 220;
 
     private final OcrConfig cfg;
+    /** {@link Corrections#POLISH}: CTC runner-ups, word lists, and the second reads in {@link #decode}. */
+    private final boolean corrected;
     private final ExecutorService pool;
     private Session det;
     private Session rec;
@@ -72,6 +74,7 @@ public final class OcrEngine implements AutoCloseable {
 
     private OcrEngine(OcrConfig cfg) {
         this.cfg = cfg;
+        this.corrected = cfg.corrections == Corrections.POLISH;
         ExecutorService workers = cfg.threads > 1
                 ? Executors.newFixedThreadPool(cfg.threads, task -> {
                     Thread thread = new Thread(task, "ocr-worker");
@@ -107,8 +110,9 @@ public final class OcrEngine implements AutoCloseable {
             this.recInput = rec.inputName();
             this.charset = Charset.load(cfg.dict, cfg.useSpaceChar);
             Path models = cfg.dict.getParent();
-            this.lexicon = models == null ? null : Lexicon.optional(models);
-            this.postal = models == null ? null : PostalCities.optional(models);
+            // The word lists belong to the Polish corrections. Without them the files are not read.
+            this.lexicon = models == null || !corrected ? null : Lexicon.optional(models);
+            this.postal = models == null || !corrected ? null : PostalCities.optional(models);
             int classes = staticDim(rec.outputSig(), rec.outputSig().dims == null ? -1 : rec.outputSig().dims.length - 1);
             if (classes > 0 && classes != charset.size()) {
                 throw new OcrException("REC classes " + classes + " != charset " + charset.size());
@@ -163,7 +167,7 @@ public final class OcrEngine implements AutoCloseable {
         if (modelDirectory == null) {
             throw new OcrException("model directory is null");
         }
-        return create(OcrConfig.latin(modelDirectory));
+        return create(OcrConfig.defaults(modelDirectory));
     }
 
     public static OcrEngine create(OcrConfig config) {
@@ -299,7 +303,9 @@ public final class OcrEngine implements AutoCloseable {
         long detectionNanos = System.nanoTime() - detStart;
         long recStart = System.nanoTime();
         List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
-        recognized = splitAmounts(bgr, recognized);
+        if (corrected) {
+            recognized = splitAmounts(bgr, recognized);
+        }
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized);
         List<TextLine> flat = ReadingOrder.flatten(rows);
@@ -497,7 +503,7 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight);
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight, width}, data);
         Tensor output = only(session.run(Map.of(recInput, input)));
-        Ctc.Result result = Ctc.greedy(output, charset);
+        Ctc.Result result = Ctc.greedy(output, charset, corrected);
         if (result.text().isEmpty() || result.score() < cfg.recThresh) {
             return "";
         }
@@ -600,11 +606,16 @@ public final class OcrEngine implements AutoCloseable {
         if (clsSession != null) {
             crop = orient(crop, clsSession);
         }
-        // A neighbor line split off by a tall white gap is dropped before the resize.
-        crop = Images.mainInkBand(crop);
+        if (corrected) {
+            // A neighbor line split off by a tall white gap is dropped before the resize.
+            crop = Images.mainInkBand(crop);
+        }
         Ctc.Result result = recognizeCrop(crop, recSession);
         if (result.text().isEmpty() || result.score() < cfg.recThresh) {
             return null;
+        }
+        if (!corrected) {
+            return textLine(box, result.text(), result.score());
         }
         String text = applyLexicon(result.text());
         float score = result.score();
@@ -891,7 +902,7 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight);
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight, width}, data);
         Tensor output = only(recSession.run(Map.of(recInput, input)));
-        return Ctc.greedy(output, charset);
+        return Ctc.greedy(output, charset, corrected);
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {

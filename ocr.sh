@@ -20,7 +20,7 @@ for arg in "$@"; do
   case $arg in
     --model=*) has_model=1 ;;
     --model) has_model=1; skip=1 ;;
-    --limit|--threads|--dpi) skip=1 ;;
+    --limit|--threads|--dpi|--corrections|--hyp|--out) skip=1 ;;
     --*) ;;
     *)
       if [ -z "$cmd" ]; then
@@ -32,7 +32,7 @@ done
 
 if [ "$has_model" -eq 0 ]; then
   case $cmd in
-    ocr|bench|pdf|eval|download)
+    ocr|bench|pdf|eval|score|download)
       set -- "$@" --model "$ROOT/models"
       ;;
   esac

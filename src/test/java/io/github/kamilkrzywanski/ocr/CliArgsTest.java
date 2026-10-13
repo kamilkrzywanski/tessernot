@@ -53,6 +53,49 @@ class CliArgsTest {
     }
 
     @Test
+    void correctionsAreNamedAndCheckedBeforeAFileIsOpened() {
+        Run bad = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--corrections", "german"}));
+        assertEquals(1, bad.code);
+        assertTrue(bad.err.contains("corrections must be none or polish"), bad.err);
+
+        Run pdf = run(() -> Cli.execute(new String[]{"pdf", "missing.pdf", "--corrections="}));
+        assertEquals(1, pdf.code);
+        assertTrue(pdf.err.contains("corrections must be none or polish"), pdf.err);
+
+        assertEquals(Corrections.POLISH, Corrections.parse("Polish"));
+        assertEquals(Corrections.NONE, Corrections.parse(" none "));
+        assertThrows(OcrException.class, () -> OcrConfig.builder().corrections(null).build());
+    }
+
+    @Test
+    void scoreComparesReadyOutputsWithReferences() throws IOException {
+        Path dir = Files.createTempDirectory("score");
+        Path refs = Files.createDirectories(dir.resolve("ref"));
+        Path hyps = Files.createDirectories(dir.resolve("hyp"));
+        Files.writeString(refs.resolve("pl-a.txt"), "Zażółć  gęślą\njaźń „x”\n", StandardCharsets.UTF_8);
+        Files.writeString(refs.resolve("en-b.txt"), "one two three four\n", StandardCharsets.UTF_8);
+        Files.writeString(hyps.resolve("pl-a.txt"), "Zażółć gęślą jaźń \"x\"", StandardCharsets.UTF_8);
+        Files.writeString(hyps.resolve("en-b.txt"), "four three two", StandardCharsets.UTF_8);
+
+        Run score = run(() -> Cli.execute(new String[]{"score", refs.toString(), "--hyp", hyps.toString()}));
+        assertEquals(0, score.code, score.err);
+        assertTrue(score.out.contains("pl-a\t21\t0.0000\t1.0000\t-"), score.out);
+        // Reading order costs characters but not words: 3 of 4 words, all 3 output words right.
+        assertTrue(score.out.contains("en-b\t18\t"), score.out);
+        assertTrue(score.out.contains("\t0.8571\t-"), score.out);
+        assertTrue(score.out.contains("all\t2\t39\t"), score.out);
+
+        Run usage = run(() -> Cli.execute(new String[]{"score", refs.toString()}));
+        assertEquals(1, usage.code);
+        assertTrue(usage.err.contains("usage: ocr score"), usage.err);
+
+        Run noModels = run(() -> Cli.execute(new String[]{"score", refs.toString(), dir.toString(),
+                "--model", dir.toString(), "--no-det", "--no-cls"}));
+        assertEquals(1, noModels.code);
+        assertTrue(noModels.err.contains("ocr download"), noModels.err);
+    }
+
+    @Test
     void selfcheckPrintsTheScalarOrVectorDot() {
         Run check = run(() -> Cli.execute(new String[]{"selfcheck"}));
         assertEquals(0, check.code, check.out + check.err);
@@ -329,8 +372,8 @@ class CliArgsTest {
         assertTrue(download.err.contains("model directory is empty"), download.err);
         assertFalse(download.err.contains("cannot prepare"), download.err);
 
-        OcrException latin = assertThrows(OcrException.class, () -> OcrConfig.latin(Path.of("")));
-        assertTrue(latin.getMessage().contains("model directory is empty"), latin.getMessage());
+        OcrException rejected = assertThrows(OcrException.class, () -> OcrConfig.defaults(Path.of("")));
+        assertTrue(rejected.getMessage().contains("model directory is empty"), rejected.getMessage());
 
         Run extra = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "also.png"}));
         assertEquals(1, extra.code);
@@ -550,9 +593,9 @@ class CliArgsTest {
             assertEquals(1, downloadFlag.code);
             assertTrue(downloadFlag.err.contains("not a directory"), downloadFlag.err);
 
-            OcrException latin = assertThrows(OcrException.class, () -> OcrConfig.latin(file));
-            assertTrue(latin.getMessage().contains("not a directory"), latin.getMessage());
-            assertEquals(ModelFiles.DET, OcrConfig.latin(dir.resolve("absent")).detModel.getFileName().toString());
+            OcrException rejected = assertThrows(OcrException.class, () -> OcrConfig.defaults(file));
+            assertTrue(rejected.getMessage().contains("not a directory"), rejected.getMessage());
+            assertEquals(ModelFiles.DET, OcrConfig.defaults(dir.resolve("absent")).detModel.getFileName().toString());
         } finally {
             Files.deleteIfExists(file);
             Files.deleteIfExists(dir);
@@ -572,8 +615,8 @@ class CliArgsTest {
             assertThrows(OcrException.class, () -> OcrEngine.load(null));
             OcrException config = assertThrows(OcrException.class, () -> OcrEngine.create(null));
             assertTrue(config.getMessage().contains("config is null"), config.getMessage());
-            assertThrows(OcrException.class, () -> OcrConfig.latin(null));
-            OcrConfig.Builder builder = OcrConfig.latin(Path.of("models")).toBuilder();
+            assertThrows(OcrException.class, () -> OcrConfig.defaults(null));
+            OcrConfig.Builder builder = OcrConfig.defaults(Path.of("models")).toBuilder();
             OcrException std = assertThrows(OcrException.class, () -> builder.std(0f).build());
             assertTrue(std.getMessage().contains("std"), std.getMessage());
             assertThrows(OcrException.class, () -> builder.std(-0.5f).build());
@@ -605,7 +648,7 @@ class CliArgsTest {
             OcrException huge = assertThrows(OcrException.class,
                     () -> limits.recHeight(1_000_000).recMaxWidth(1_000_000).build());
             assertTrue(huge.getMessage().contains("too large"), huge.getMessage());
-            OcrException download = assertThrows(OcrException.class, () -> ModelFiles.ensureLatin(null));
+            OcrException download = assertThrows(OcrException.class, () -> ModelFiles.ensure(null));
             assertTrue(download.getMessage().contains("model directory is null"), download.getMessage());
         } finally {
             Files.deleteIfExists(png);

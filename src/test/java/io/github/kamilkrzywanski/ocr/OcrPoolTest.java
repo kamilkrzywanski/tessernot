@@ -42,7 +42,7 @@ class OcrPoolTest {
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void parallelCallsMatchASingleEngine() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
-        OcrConfig cfg = OcrConfig.latin(Path.of("models")).toBuilder().threads(1).build();
+        OcrConfig cfg = OcrConfig.defaults(Path.of("models")).toBuilder().threads(1).build();
         BufferedImage image = Samples.invoice();
         OcrResult alone;
         OcrResult aloneLine;
