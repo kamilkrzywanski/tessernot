@@ -198,6 +198,13 @@ to 0.026, Arct's dictionary 0.735 to 0.068, the 1981 poster photo 0.669 to 0.095
   receipt. The same holds on `test`.
 - **Reading order is far ahead of RapidOCR**, which reads the same models row by row: pooled CER
   0.123 against 0.656 on `test2`.
+- **Why RapidOCR still scores higher on a few business documents** (on `test2` its invoices and
+  receipts reach 92 % against 90 %): it has no layout analysis, and on a single-column receipt or
+  memo plain row order is the right answer. ocr-pro's text-column detection fired falsely on the
+  Smyk receipt at 2048 px: it took the item names for a column and read them before the shop's
+  header (CER 0.166 against 0.007). There is no heuristic to borrow from RapidOCR; the column
+  detection has to be more careful on narrow pages and on lines that end in prices (see
+  [HANDOFF.md](HANDOFF.md)).
 - **Tesseract still orders dense historical newspapers and gazettes better.** On `test2` its
   pooled CER is 0.070 against 0.123, and its median 0.033 against 0.068. The pages where ocr-pro
   loses: Scientific American 1850 (four narrow columns, 0.264 against 0.013), The Crisis 1910
