@@ -22,7 +22,7 @@ mvn -DskipTests package
 `selfcheck` bez modułu wektorowego, żeby potwierdzić zapasową ścieżkę:
 
 ```bash
-java -cp target/classes org.krzywanski.ocr.Cli selfcheck
+java -cp target/classes io.github.kamilkrzywanski.ocr.Cli selfcheck
 ```
 
 Testy (mają dostęp do modułu wektorowego):

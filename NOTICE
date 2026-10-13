@@ -1,0 +1,18 @@
+ocr-pro
+Copyright 2026 Kamil Krzywański
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party content distributed with this repository:
+
+- Apache PDFBox (Apache-2.0) is bundled into the shaded JAR.
+- models/: PaddleOCR / RapidOCR weights and character dictionaries (Apache-2.0),
+  the sjp.pl Polish word list (Apache-2.0, among other licenses),
+  the SCOWL English word list (Copyright 2000-2011 Kevin Atkinson, permissive),
+  and GeoNames postal codes for Poland (CC BY 4.0, https://www.geonames.org/).
+  Details are in models/NOTICE.
+- src/test/resources/quality/: three scans from Wikimedia Commons used only as
+  test fixtures (public domain and CC BY-SA 4.0). Details are in
+  src/test/resources/quality/ATTRIBUTION.md.
+- bench/: the held-out benchmark lists Wikimedia Commons files by URL and
+  license in bench/manifest.tsv. The images are downloaded, not stored here.
