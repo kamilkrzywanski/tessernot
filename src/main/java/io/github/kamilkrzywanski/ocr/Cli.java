@@ -1,9 +1,11 @@
 package io.github.kamilkrzywanski.ocr;
 
-import io.github.kamilkrzywanski.ocr.image.Images;
-import io.github.kamilkrzywanski.ocr.pdf.PdfPages;
-import io.github.kamilkrzywanski.ocr.runtime.Session;
-import io.github.kamilkrzywanski.ocr.runtime.Tensor;
+import io.github.kamilkrzywanski.ocr.internal.eval.Samples;
+import io.github.kamilkrzywanski.ocr.internal.eval.Metrics;
+import io.github.kamilkrzywanski.ocr.internal.image.Images;
+import io.github.kamilkrzywanski.ocr.internal.pdf.PdfPages;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Session;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Tensor;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
@@ -213,12 +215,12 @@ public final class Cli {
 
     private static int selfcheck(Parsed parsed) {
         only(parsed);
-        var graph = new io.github.kamilkrzywanski.ocr.runtime.Graph();
-        graph.inputs.add(new io.github.kamilkrzywanski.ocr.runtime.Sig("x", Tensor.F32, new int[]{1, 1, 1, 1}));
-        graph.outputs.add(new io.github.kamilkrzywanski.ocr.runtime.Sig("y", Tensor.F32, new int[]{1, 1, 1, 1}));
+        var graph = new io.github.kamilkrzywanski.ocr.internal.runtime.Graph();
+        graph.inputs.add(new io.github.kamilkrzywanski.ocr.internal.runtime.Sig("x", Tensor.F32, new int[]{1, 1, 1, 1}));
+        graph.outputs.add(new io.github.kamilkrzywanski.ocr.internal.runtime.Sig("y", Tensor.F32, new int[]{1, 1, 1, 1}));
         graph.initializers.put("w", Tensor.f32(new int[]{1, 1, 1, 1}, new float[]{2f}));
         graph.initializers.put("b", Tensor.f32(new int[]{1}, new float[]{3f}));
-        graph.nodes.add(io.github.kamilkrzywanski.ocr.runtime.Node.of(
+        graph.nodes.add(io.github.kamilkrzywanski.ocr.internal.runtime.Node.of(
                 "Conv", "dot", new String[]{"x", "w", "b"}, new String[]{"y"}));
         Session session = Session.create(graph, new Session.Options(true, 1, null, false, false, true));
         float y = session.run(Map.of("x", Tensor.f32(new int[]{1, 1, 1, 1}, new float[]{4f}))).get("y").f[0];

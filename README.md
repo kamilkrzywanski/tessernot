@@ -53,7 +53,7 @@ The library is not on Maven Central yet. Run `mvn install` and depend on
 
 ```java
 try (OcrEngine engine = OcrEngine.load(Path.of("models"))) {
-    OcrResult result = engine.recognize(Images.read(Path.of("scan.jpg")));
+    OcrResult result = engine.recognize(OcrImages.read(Path.of("scan.jpg")));
     String text = result.text();                  // page text in reading order
     for (TextLine line : result.lines()) {
         // line.text(), line.score(), line.detScore(), line.quad(), line.bounds()
@@ -76,6 +76,22 @@ try (OcrPool pool = OcrPool.open(Path.of("models"), 4)) {
 
 To change models or thresholds, start from `OcrConfig.defaults(dir).toBuilder()`. For another
 language, swap the recognition model and its dictionary.
+
+### Public API
+
+The public API is in `io.github.kamilkrzywanski.ocr`:
+
+| Class | Role |
+| --- | --- |
+| `OcrEngine`, `OcrPool` | run OCR, one caller at a time or several in parallel |
+| `OcrConfig`, `Corrections` | models, thresholds, threads and the optional Polish rules |
+| `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, ruled tables |
+| `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
+| `ModelFiles` | download and check the default models |
+| `OcrException`, `Cli` | the single exception type, and the command-line entry point |
+
+Everything under `io.github.kamilkrzywanski.ocr.internal` (runtime, kernels, pre- and
+post-processing) is public only for technical reasons. It may change in any release.
 
 ## Accuracy and speed
 

@@ -49,7 +49,7 @@ Operatory, które muszą działać: Identity, Add, Sub, Mul, Div, Pow, Sqrt, Erf
 
 ## Faza 1 — runtime
 
-Zrobione w pakiecie `io.github.kamilkrzywanski.ocr.runtime`:
+Zrobione w pakiecie `io.github.kamilkrzywanski.ocr.internal.runtime`:
 
 - parser ONNX i zapis/odczyt JIR. Wymiar wagi albo sygnatury, który jest ujemny albo nie mieści się w `int`, jest odrzucany, także gdy obcięcie do 32 bitów wygląda na zero albo na mały bok. Symboliczny `dim_param` zostaje wymiarem dynamicznym. Opset spoza zakresu `int` też jest odrzucany, zamiast stać się małym numerem opsetu.
 - optymalizacja grafu (Identity, Conv+BN, bias Add, epilog aktywacji, rozłożony HardSwish)

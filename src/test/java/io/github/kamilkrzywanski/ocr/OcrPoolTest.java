@@ -1,5 +1,6 @@
 package io.github.kamilkrzywanski.ocr;
 
+import io.github.kamilkrzywanski.ocr.internal.eval.Samples;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 

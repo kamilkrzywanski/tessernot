@@ -1,19 +1,19 @@
 package io.github.kamilkrzywanski.ocr;
 
-import io.github.kamilkrzywanski.ocr.image.Bgr;
-import io.github.kamilkrzywanski.ocr.image.Geometry;
-import io.github.kamilkrzywanski.ocr.image.Images;
-import io.github.kamilkrzywanski.ocr.pdf.PdfPages;
-import io.github.kamilkrzywanski.ocr.post.Charset;
-import io.github.kamilkrzywanski.ocr.post.Ctc;
-import io.github.kamilkrzywanski.ocr.post.DbPost;
-import io.github.kamilkrzywanski.ocr.post.Lexicon;
-import io.github.kamilkrzywanski.ocr.post.PostalCities;
-import io.github.kamilkrzywanski.ocr.post.ReadingOrder;
-import io.github.kamilkrzywanski.ocr.post.Tables;
-import io.github.kamilkrzywanski.ocr.runtime.Session;
-import io.github.kamilkrzywanski.ocr.runtime.Sig;
-import io.github.kamilkrzywanski.ocr.runtime.Tensor;
+import io.github.kamilkrzywanski.ocr.internal.image.Bgr;
+import io.github.kamilkrzywanski.ocr.internal.image.Geometry;
+import io.github.kamilkrzywanski.ocr.internal.image.Images;
+import io.github.kamilkrzywanski.ocr.internal.pdf.PdfPages;
+import io.github.kamilkrzywanski.ocr.internal.post.Charset;
+import io.github.kamilkrzywanski.ocr.internal.post.Ctc;
+import io.github.kamilkrzywanski.ocr.internal.post.DbPost;
+import io.github.kamilkrzywanski.ocr.internal.post.Lexicon;
+import io.github.kamilkrzywanski.ocr.internal.post.PostalCities;
+import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
+import io.github.kamilkrzywanski.ocr.internal.post.Tables;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Session;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Sig;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Tensor;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -74,9 +74,9 @@ public final class OcrEngine implements AutoCloseable {
 
     private OcrEngine(OcrConfig cfg) {
         this.cfg = cfg;
-        this.corrected = cfg.corrections == Corrections.POLISH;
-        ExecutorService workers = cfg.threads > 1
-                ? Executors.newFixedThreadPool(cfg.threads, task -> {
+        this.corrected = cfg.corrections() == Corrections.POLISH;
+        ExecutorService workers = cfg.threads() > 1
+                ? Executors.newFixedThreadPool(cfg.threads(), task -> {
                     Thread thread = new Thread(task, "ocr-worker");
                     thread.setDaemon(true);
                     return thread;
@@ -94,22 +94,22 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private void loadModels() {
-        if (cfg.useDet) {
-            requireModel(cfg.detModel, "detection model");
-            this.det = Session.load(cfg.detModel, new Session.Options(
-                    cfg.useVector, cfg.threads, pool, cfg.quantize, cfg.opDebug, true));
+        if (cfg.useDet()) {
+            requireModel(cfg.detModel(), "detection model");
+            this.det = Session.load(cfg.detModel(), new Session.Options(
+                    cfg.useVector(), cfg.threads(), pool, cfg.quantize(), cfg.opDebug(), true));
             this.detInput = det.inputName();
         } else {
             this.det = null;
             this.detInput = null;
         }
-        if (cfg.useRec) {
-            requireModel(cfg.recModel, "recognition model");
-            requireModel(cfg.dict, "recognition dict");
-            this.rec = Session.load(cfg.recModel, lineOptions());
+        if (cfg.useRec()) {
+            requireModel(cfg.recModel(), "recognition model");
+            requireModel(cfg.dict(), "recognition dict");
+            this.rec = Session.load(cfg.recModel(), lineOptions());
             this.recInput = rec.inputName();
-            this.charset = Charset.load(cfg.dict, cfg.useSpaceChar);
-            Path models = cfg.dict.getParent();
+            this.charset = Charset.load(cfg.dict(), cfg.useSpaceChar());
+            Path models = cfg.dict().getParent();
             // The word lists belong to the Polish corrections. Without them the files are not read.
             this.lexicon = models == null || !corrected ? null : Lexicon.optional(models);
             this.postal = models == null || !corrected ? null : PostalCities.optional(models);
@@ -123,8 +123,8 @@ public final class OcrEngine implements AutoCloseable {
                     modelHeight = staticDim(sig, 2);
                 }
             }
-            if (modelHeight > 0 && modelHeight != cfg.recHeight) {
-                throw new OcrException("REC height " + cfg.recHeight + " != model input " + modelHeight);
+            if (modelHeight > 0 && modelHeight != cfg.recHeight()) {
+                throw new OcrException("REC height " + cfg.recHeight() + " != model input " + modelHeight);
             }
             this.recPool = pool == null ? null : sessions(rec);
         } else {
@@ -133,9 +133,9 @@ public final class OcrEngine implements AutoCloseable {
             this.charset = null;
             this.recPool = null;
         }
-        if (cfg.useCls) {
-            requireModel(cfg.clsModel, "classifier model");
-            this.cls = Session.load(cfg.clsModel, lineOptions());
+        if (cfg.useCls()) {
+            requireModel(cfg.clsModel(), "classifier model");
+            this.cls = Session.load(cfg.clsModel(), lineOptions());
             this.clsInput = cls.inputName();
             int height = 80;
             int width = 160;
@@ -220,7 +220,7 @@ public final class OcrEngine implements AutoCloseable {
                 return results;
             }
             int[] index = {0};
-            return joinWindow(pool, cfg.threads, pages, i -> {
+            return joinWindow(pool, cfg.threads(), pages, i -> {
                 BufferedImage image = source.render(i);
                 if (i + 1 == pages) {
                     source.close();
@@ -283,7 +283,7 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private OcrResult run(BufferedImage image, boolean lineParallel) {
-        return run(image, lineParallel, cfg.useDet && det != null);
+        return run(image, lineParallel, cfg.useDet() && det != null);
     }
 
     private OcrResult run(BufferedImage image, boolean lineParallel, boolean detect) {
@@ -292,10 +292,10 @@ public final class OcrEngine implements AutoCloseable {
         }
         long totalStart = System.nanoTime();
         Bgr bgr = Images.toBgr(image);
-        if (cfg.deskew) {
+        if (cfg.deskew()) {
             bgr = Images.deskew(bgr);
         }
-        if (cfg.adaptiveThreshold) {
+        if (cfg.adaptiveThreshold()) {
             bgr = Images.sauvola(bgr);
         }
         long detStart = totalStart;
@@ -324,7 +324,7 @@ public final class OcrEngine implements AutoCloseable {
      * Anything else, including a half that does not match, stays one line.
      */
     private List<TextLine> splitAmounts(Bgr page, List<TextLine> lines) {
-        if (!cfg.useRec || rec == null || lines.isEmpty()) {
+        if (!cfg.useRec() || rec == null || lines.isEmpty()) {
             return lines;
         }
         boolean any = false;
@@ -481,7 +481,7 @@ public final class OcrEngine implements AutoCloseable {
      * A ruled box is sliced and read again; the joined page text keeps the original line.
      */
     private List<TextTable> readTables(Bgr page, List<TextLine> lines) {
-        if (!cfg.useRec || rec == null || charset == null) {
+        if (!cfg.useRec() || rec == null || charset == null) {
             return Tables.find(page, lines, null);
         }
         boolean borrowed = recPool != null;
@@ -499,12 +499,12 @@ public final class OcrEngine implements AutoCloseable {
         if (crop.width() < 2 || crop.height() < 2) {
             return "";
         }
-        float[] data = Images.recTensor(crop, cfg.recHeight, cfg.recMinWidth, cfg.recMaxWidth, cfg.mean, cfg.std);
-        int width = data.length / (3 * cfg.recHeight);
-        Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight, width}, data);
+        float[] data = Images.recTensor(crop, cfg.recHeight(), cfg.recMinWidth(), cfg.recMaxWidth(), cfg.mean(), cfg.std());
+        int width = data.length / (3 * cfg.recHeight());
+        Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(session.run(Map.of(recInput, input)));
         Ctc.Result result = Ctc.greedy(output, charset, corrected);
-        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+        if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return "";
         }
         // The piece is not the line. The same dictionary pass the line already had
@@ -513,10 +513,10 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private List<DbPost.Box> detect(Bgr bgr, boolean lineParallel) {
-        int[] size = Images.detSize(bgr.width(), bgr.height(), cfg.detLimitSideLen, cfg.detLimitType);
+        int[] size = Images.detSize(bgr.width(), bgr.height(), cfg.detLimitSideLen(), cfg.detLimitType());
         // Page workers already occupy pool, so they keep this resize on their own thread.
-        float[] input = Images.resizeNormalize(bgr, size[0], size[1], cfg.mean, cfg.std,
-                lineParallel ? pool : null, cfg.threads);
+        float[] input = Images.resizeNormalize(bgr, size[0], size[1], cfg.mean(), cfg.std(),
+                lineParallel ? pool : null, cfg.threads());
         Tensor tensor = Tensor.f32(new int[]{1, 3, size[1], size[0]}, input);
         Session session = lineParallel ? det : det.fork();
         Tensor output = only(session.run(Map.of(detInput, tensor)));
@@ -524,7 +524,7 @@ public final class OcrEngine implements AutoCloseable {
         DbPost.asProbability(map.data);
         List<DbPost.Box> found = DbPost.find(
                 map.data, map.width, map.height,
-                cfg.detThresh, cfg.boxThresh, cfg.unclipRatio, cfg.useDilation, cfg.maxCandidates);
+                cfg.detThresh(), cfg.boxThresh(), cfg.unclipRatio(), cfg.useDilation(), cfg.maxCandidates());
         float scaleX = bgr.width() / (float) map.width;
         float scaleY = bgr.height() / (float) map.height;
         List<DbPost.Box> scaled = new ArrayList<>(found.size());
@@ -538,7 +538,7 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private List<TextLine> recognizeBoxes(Bgr page, List<DbPost.Box> boxes, boolean lineParallel) {
-        if (!cfg.useRec || rec == null) {
+        if (!cfg.useRec() || rec == null) {
             List<TextLine> lines = new ArrayList<>(boxes.size());
             for (DbPost.Box box : boxes) {
                 lines.add(textLine(box, "", 0f));
@@ -600,7 +600,7 @@ public final class OcrEngine implements AutoCloseable {
         if (crop == null) {
             return null;
         }
-        if (cfg.rotateVertical && crop.height() >= crop.width() * 1.5f) {
+        if (cfg.rotateVertical() && crop.height() >= crop.width() * 1.5f) {
             crop = Images.rot90ccw(crop);
         }
         if (clsSession != null) {
@@ -611,7 +611,7 @@ public final class OcrEngine implements AutoCloseable {
             crop = Images.mainInkBand(crop);
         }
         Ctc.Result result = recognizeCrop(crop, recSession);
-        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+        if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return null;
         }
         if (!corrected) {
@@ -629,7 +629,7 @@ public final class OcrEngine implements AutoCloseable {
             String stripped = text.replaceFirst("^[0-9]+\\s+", "");
             if (!stripped.equals(text)) {
                 Ctc.Result again = recognizeCrop(indexed, recSession);
-                if (!again.text().isEmpty() && again.score() >= cfg.recThresh) {
+                if (!again.text().isEmpty() && again.score() >= cfg.recThresh()) {
                     String second = applyLexicon(again.text());
                     if (IndexKeep.agrees(stripped, second)) {
                         text = stripped;
@@ -641,7 +641,7 @@ public final class OcrEngine implements AutoCloseable {
         Matcher coded = POSTAL_CITY.matcher(text.trim());
         if (coded.matches() && hasDigit(coded.group(2))) {
             Ctc.Result again = recognizeCrop(inkThreshold(crop, POSTAL_INK), recSession);
-            if (!again.text().isEmpty() && again.score() >= cfg.recThresh) {
+            if (!again.text().isEmpty() && again.score() >= cfg.recThresh()) {
                 String second = applyLexicon(again.text()).trim();
                 Matcher city = POSTAL_CITY.matcher(second);
                 if (city.matches() && city.group(1).equals(coded.group(1))
@@ -658,7 +658,7 @@ public final class OcrEngine implements AutoCloseable {
             Bgr painted = NotchedZ.paint(crop, result.text());
             if (painted != null) {
                 Ctc.Result again = recognizeCrop(painted, recSession);
-                if (!again.text().isEmpty() && again.score() >= cfg.recThresh) {
+                if (!again.text().isEmpty() && again.score() >= cfg.recThresh()) {
                     String merged = NotchedZ.keep(text, applyLexicon(again.text()));
                     if (merged != null) {
                         text = merged;
@@ -719,7 +719,7 @@ public final class OcrEngine implements AutoCloseable {
         }
         blank = Images.mainInkBand(blank);
         Ctc.Result result = recognizeCrop(blank, recSession);
-        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+        if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return null;
         }
         String second = ParenSpace.apply(FieldLabels.apply(applyLexicon(result.text())));
@@ -796,7 +796,7 @@ public final class OcrEngine implements AutoCloseable {
         if (again == null) {
             return null;
         }
-        if (cfg.rotateVertical && again.height() >= again.width() * 1.5f) {
+        if (cfg.rotateVertical() && again.height() >= again.width() * 1.5f) {
             again = Images.rot90ccw(again);
         }
         if (clsSession != null) {
@@ -804,7 +804,7 @@ public final class OcrEngine implements AutoCloseable {
         }
         again = Images.mainInkBand(again);
         Ctc.Result result = recognizeCrop(again, recSession);
-        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+        if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return null;
         }
         String second = ParenSpace.apply(FieldLabels.apply(applyLexicon(result.text())));
@@ -839,7 +839,7 @@ public final class OcrEngine implements AutoCloseable {
 
     private String readMargin(Bgr image, Session recSession) {
         Ctc.Result again = recognizeCrop(image, recSession);
-        if (again.text().isEmpty() || again.score() < cfg.recThresh) {
+        if (again.text().isEmpty() || again.score() < cfg.recThresh()) {
             return "";
         }
         return again.text();
@@ -898,15 +898,15 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private Ctc.Result recognizeCrop(Bgr crop, Session recSession) {
-        float[] data = Images.recTensor(crop, cfg.recHeight, cfg.recMinWidth, cfg.recMaxWidth, cfg.mean, cfg.std);
-        int width = data.length / (3 * cfg.recHeight);
-        Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight, width}, data);
+        float[] data = Images.recTensor(crop, cfg.recHeight(), cfg.recMinWidth(), cfg.recMaxWidth(), cfg.mean(), cfg.std());
+        int width = data.length / (3 * cfg.recHeight());
+        Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(recSession.run(Map.of(recInput, input)));
         return Ctc.greedy(output, charset, corrected);
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {
-        float[] data = Images.clsTensor(crop, clsHeight, clsWidth, cfg.mean, cfg.std);
+        float[] data = Images.clsTensor(crop, clsHeight, clsWidth, cfg.mean(), cfg.std());
         Tensor input = Tensor.f32(new int[]{1, 3, clsHeight, clsWidth}, data);
         Tensor output = only(clsSession.run(Map.of(clsInput, input)));
         int classes = output.dims[output.dims.length - 1];
@@ -921,7 +921,7 @@ public final class OcrEngine implements AutoCloseable {
             }
         }
         if (classes == 2) {
-            if (arg == 1 && probs[1] > cfg.clsThresh) {
+            if (arg == 1 && probs[1] > cfg.clsThresh()) {
                 return Images.rot180(crop);
             }
             return crop;
@@ -1074,13 +1074,13 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private Session.Options lineOptions() {
-        return new Session.Options(cfg.useVector, 1, null, cfg.quantize, cfg.opDebug, true);
+        return new Session.Options(cfg.useVector(), 1, null, cfg.quantize(), cfg.opDebug(), true);
     }
 
     private ArrayBlockingQueue<Session> sessions(Session primary) {
-        ArrayBlockingQueue<Session> queue = new ArrayBlockingQueue<>(cfg.threads);
+        ArrayBlockingQueue<Session> queue = new ArrayBlockingQueue<>(cfg.threads());
         queue.add(primary);
-        for (int i = 1; i < cfg.threads; i++) {
+        for (int i = 1; i < cfg.threads(); i++) {
             queue.add(primary.fork());
         }
         return queue;

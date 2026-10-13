@@ -16,7 +16,7 @@ BufferedImage
 
 ## Runtime
 
-`io.github.kamilkrzywanski.ocr.runtime` is a small inference runtime. It runs the graphs these
+`io.github.kamilkrzywanski.ocr.internal.runtime` is a small inference runtime. It runs the graphs these
 models need and nothing more. It is not a general ONNX runtime.
 
 - **ONNX parsing** uses its own protobuf reader, with no protobuf library and no Python. Weight

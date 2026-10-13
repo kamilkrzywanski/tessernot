@@ -139,7 +139,7 @@ public final class ModelFiles {
         }
     }
 
-    public static String sha256(Path path) {
+    static String sha256(Path path) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (InputStream in = Files.newInputStream(path)) {

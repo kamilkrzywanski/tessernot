@@ -6,8 +6,8 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.junit.jupiter.api.Test;
-import io.github.kamilkrzywanski.ocr.image.Images;
-import io.github.kamilkrzywanski.ocr.pdf.PdfPages;
+import io.github.kamilkrzywanski.ocr.internal.image.Images;
+import io.github.kamilkrzywanski.ocr.internal.pdf.PdfPages;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -595,7 +595,7 @@ class CliArgsTest {
 
             OcrException rejected = assertThrows(OcrException.class, () -> OcrConfig.defaults(file));
             assertTrue(rejected.getMessage().contains("not a directory"), rejected.getMessage());
-            assertEquals(ModelFiles.DET, OcrConfig.defaults(dir.resolve("absent")).detModel.getFileName().toString());
+            assertEquals(ModelFiles.DET, OcrConfig.defaults(dir.resolve("absent")).detModel().getFileName().toString());
         } finally {
             Files.deleteIfExists(file);
             Files.deleteIfExists(dir);
@@ -624,18 +624,18 @@ class CliArgsTest {
             OcrException mean = assertThrows(OcrException.class, () -> builder.std(0.5f).mean(Float.NaN).build());
             assertTrue(mean.getMessage().contains("mean"), mean.getMessage());
             OcrConfig.Builder limits = OcrConfig.builder();
-            assertEquals(960, limits.build().detLimitSideLen);
+            assertEquals(960, limits.build().detLimitSideLen());
             OcrException side = assertThrows(OcrException.class, () -> limits.detLimitSideLen(0).build());
             assertTrue(side.getMessage().contains("detLimitSideLen"), side.getMessage());
             limits.detLimitSideLen(960);
             OcrException type = assertThrows(OcrException.class, () -> limits.detLimitType("MAX").build());
             assertTrue(type.getMessage().contains("detLimitType"), type.getMessage());
-            assertEquals("min", limits.detLimitType("min").build().detLimitType);
+            assertEquals("min", limits.detLimitType("min").build().detLimitType());
             limits.detLimitType("max");
             assertThrows(OcrException.class, () -> limits.detThresh(Float.NaN).build());
             limits.detThresh(0.3f);
             assertThrows(OcrException.class, () -> limits.unclipRatio(Float.POSITIVE_INFINITY).build());
-            assertEquals(0f, limits.unclipRatio(0f).build().unclipRatio, 0f);
+            assertEquals(0f, limits.unclipRatio(0f).build().unclipRatio(), 0f);
             limits.unclipRatio(1.6f);
             assertThrows(OcrException.class, () -> limits.clsThresh(Float.NaN).build());
             limits.clsThresh(0.9f);

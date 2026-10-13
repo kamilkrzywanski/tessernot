@@ -1,7 +1,7 @@
 package io.github.kamilkrzywanski.ocr;
 
 import org.junit.jupiter.api.Test;
-import io.github.kamilkrzywanski.ocr.image.Bgr;
+import io.github.kamilkrzywanski.ocr.internal.image.Bgr;
 
 import java.util.Arrays;
 

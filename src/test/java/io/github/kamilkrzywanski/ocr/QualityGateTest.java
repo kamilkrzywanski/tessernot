@@ -2,9 +2,9 @@ package io.github.kamilkrzywanski.ocr;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import io.github.kamilkrzywanski.ocr.image.Images;
-import io.github.kamilkrzywanski.ocr.post.Lexicon;
-import io.github.kamilkrzywanski.ocr.post.PostalCities;
+import io.github.kamilkrzywanski.ocr.internal.image.Images;
+import io.github.kamilkrzywanski.ocr.internal.post.Lexicon;
+import io.github.kamilkrzywanski.ocr.internal.post.PostalCities;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;

@@ -1,5 +1,6 @@
 package io.github.kamilkrzywanski.ocr;
 
+import io.github.kamilkrzywanski.ocr.internal.eval.Metrics;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

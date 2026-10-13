@@ -1,6 +1,7 @@
 package io.github.kamilkrzywanski.ocr;
 
-import io.github.kamilkrzywanski.ocr.image.Images;
+import io.github.kamilkrzywanski.ocr.internal.eval.Metrics;
+import io.github.kamilkrzywanski.ocr.internal.image.Images;
 
 import java.io.IOException;
 import java.io.PrintStream;

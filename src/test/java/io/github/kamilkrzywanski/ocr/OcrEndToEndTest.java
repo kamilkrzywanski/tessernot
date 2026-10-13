@@ -1,15 +1,17 @@
 package io.github.kamilkrzywanski.ocr;
 
+import io.github.kamilkrzywanski.ocr.internal.eval.Samples;
+import io.github.kamilkrzywanski.ocr.internal.eval.Metrics;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import io.github.kamilkrzywanski.ocr.image.Images;
-import io.github.kamilkrzywanski.ocr.runtime.Graph;
-import io.github.kamilkrzywanski.ocr.runtime.Jir;
-import io.github.kamilkrzywanski.ocr.runtime.Node;
-import io.github.kamilkrzywanski.ocr.runtime.Sig;
-import io.github.kamilkrzywanski.ocr.runtime.Tensor;
+import io.github.kamilkrzywanski.ocr.internal.image.Images;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Graph;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Jir;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Node;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Sig;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Tensor;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;

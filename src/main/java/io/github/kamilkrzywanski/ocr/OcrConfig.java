@@ -7,36 +7,36 @@ import java.nio.file.Path;
  * det limit 960, DB thresh 0.35 / box 0.5 / unclip 1.6, REC height 48, BGR normalize 0.5/0.5.
  */
 public final class OcrConfig {
-    public final Path detModel;
-    public final Path recModel;
-    public final Path clsModel;
-    public final Path dict;
-    public final boolean useVector;
-    public final int threads;
-    public final int detLimitSideLen;
-    public final String detLimitType;
-    public final float detThresh;
-    public final float boxThresh;
-    public final float unclipRatio;
-    public final boolean useDilation;
-    public final int maxCandidates;
-    public final float clsThresh;
-    public final boolean useCls;
-    public final boolean useDet;
-    public final boolean useRec;
-    public final int recHeight;
-    public final int recMinWidth;
-    public final int recMaxWidth;
-    public final float recThresh;
-    public final boolean useSpaceChar;
-    public final boolean rotateVertical;
-    public final boolean deskew;
-    public final boolean adaptiveThreshold;
-    public final boolean quantize;
-    public final float mean;
-    public final float std;
-    public final boolean opDebug;
-    public final Corrections corrections;
+    private final Path detModel;
+    private final Path recModel;
+    private final Path clsModel;
+    private final Path dict;
+    private final boolean useVector;
+    private final int threads;
+    private final int detLimitSideLen;
+    private final String detLimitType;
+    private final float detThresh;
+    private final float boxThresh;
+    private final float unclipRatio;
+    private final boolean useDilation;
+    private final int maxCandidates;
+    private final float clsThresh;
+    private final boolean useCls;
+    private final boolean useDet;
+    private final boolean useRec;
+    private final int recHeight;
+    private final int recMinWidth;
+    private final int recMaxWidth;
+    private final float recThresh;
+    private final boolean useSpaceChar;
+    private final boolean rotateVertical;
+    private final boolean deskew;
+    private final boolean adaptiveThreshold;
+    private final boolean quantize;
+    private final float mean;
+    private final float std;
+    private final boolean opDebug;
+    private final Corrections corrections;
 
     private OcrConfig(Builder b) {
         this.detModel = b.detModel;
@@ -70,6 +70,37 @@ public final class OcrConfig {
         this.opDebug = b.opDebug;
         this.corrections = b.corrections;
     }
+
+    public Path detModel() { return detModel; }
+    public Path recModel() { return recModel; }
+    public Path clsModel() { return clsModel; }
+    public Path dict() { return dict; }
+    public boolean useVector() { return useVector; }
+    public int threads() { return threads; }
+    public int detLimitSideLen() { return detLimitSideLen; }
+    public String detLimitType() { return detLimitType; }
+    public float detThresh() { return detThresh; }
+    public float boxThresh() { return boxThresh; }
+    public float unclipRatio() { return unclipRatio; }
+    public boolean useDilation() { return useDilation; }
+    public int maxCandidates() { return maxCandidates; }
+    public float clsThresh() { return clsThresh; }
+    public boolean useCls() { return useCls; }
+    public boolean useDet() { return useDet; }
+    public boolean useRec() { return useRec; }
+    public int recHeight() { return recHeight; }
+    public int recMinWidth() { return recMinWidth; }
+    public int recMaxWidth() { return recMaxWidth; }
+    public float recThresh() { return recThresh; }
+    public boolean useSpaceChar() { return useSpaceChar; }
+    public boolean rotateVertical() { return rotateVertical; }
+    public boolean deskew() { return deskew; }
+    public boolean adaptiveThreshold() { return adaptiveThreshold; }
+    public boolean quantize() { return quantize; }
+    public float mean() { return mean; }
+    public float std() { return std; }
+    public boolean opDebug() { return opDebug; }
+    public Corrections corrections() { return corrections; }
 
     public static Builder builder() {
         return new Builder();
