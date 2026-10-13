@@ -24,8 +24,8 @@ them. This benchmark uses public documents with references transcribed by hand, 
 
 `bench/manifest.tsv` lists every document with its source URL, SHA-256, license, author and
 set. The page images are stored in `bench/data/` (about 75 MB). Pages of PDF and DjVu documents
-are stored as lossless PNG renders. The originals are not stored: `bench/fetch.sh` downloads them,
-checks the digests and renders a page again when its image is missing. The references are in
+are stored as lossless PNG renders, next to their originals (about 90 MB). `bench/fetch.sh` checks
+the digests and renders a page again when its image is missing. The references are in
 `bench/ref/dev/` and `bench/ref/test/` and carry the same attribution.
 
 | Kind | dev | test |
