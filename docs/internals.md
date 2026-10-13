@@ -95,7 +95,10 @@ by reflection.
    letter of the other column.
 5. **Text columns first.** The whole page is checked for text columns before blank rows split
    it. Both sides of a section must be text columns of similar width: five or more lines a side,
-   80 % on one margin, 80 % alone on their rows, and a median line spanning 60 % of the column.
+   80 % starting on the left margin or ending on the right one (a justified column has both, so
+   indents, short last lines and right-set signatures count), 80 % of rows holding one line on
+   that side (pieces closer than the gutter are one line), and a median line spanning 60 % of
+   the column.
    A side that splits again into such columns also counts, so three or more columns are read one
    after another. Each side is then ordered again from step 3. Headings that sit at the same
    height in both columns leave a blank across the page; finding the columns first keeps that
@@ -117,8 +120,12 @@ by reflection.
 each column. `ReadingOrder.cuts` finds such boxes among the crossing rows of a text-column
 section: a line no taller than 1.5 median lines, starting on the left column's margin, with at
 least two median lines of text on each side of the gutter, and columns going on right above or
-below it. The engine cuts the box on the gutter, reads both halves again and orders the page
-once more. A title across the columns, a full-width paragraph and a running head stay whole.
+below it. When so many lines are merged that the gutter does not show at all, it is looked for
+among the boxes narrower than three quarters of the page. If those form two text columns, the
+wide boxes over that gutter are checked the same way, and a run of them counts when one of the
+run touches a column line. The engine cuts the box on the gutter, reads both halves again and
+orders the page once more. A title across the columns, a full-width paragraph and a running
+head stay whole.
 
 ## Tables
 
