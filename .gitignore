@@ -38,8 +38,7 @@ build/
 ### Mac OS ###
 .DS_Store
 
-# Downloaded OCR weights (see README). Do not commit.
-/models/
+# Converted runtime graphs stay local. The ONNX weights and dictionaries in models/ are tracked.
 *.jir
 /.idea/codeStyles/codeStyleConfig.xml
 /.idea/encodings.xml

@@ -1,0 +1,6 @@
+Wagi i słowniki w tym katalogu.
+
+- ch_PP-OCRv5_det_mobile.onnx, ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx, PP-OCRv6_rec_small.onnx, ppocrv6_dict.txt oraz latin_PP-OCRv5_rec_mobile.onnx i ppocrv5_latin_dict.txt pochodzą z RapidOCR (Apache-2.0). Cztery pierwsze pliki mają skróty SHA-256 zapisane w ModelFiles.
+- lexicon-pl.txt.gz to słownik alternatywny sjp.pl. Autorzy udostępniają go na Apache-2.0, a także GPL-2, LGPL-2.1, MPL-1.1 i CC-BY-4.0.
+- lexicon-en.txt.gz to SCOWL. Copyright 2000-2011 Kevin Atkinson. Wolno go używać w dowolnym celu, gdy ta informacja zostaje przy pliku.
+- postal-pl.txt.gz jest zrzutem kodów pocztowych GeoNames dla Polski, CC-BY-4.0, https://www.geonames.org/. Zostają kody o jednej pisowni miejscowości po zdjęciu ogonków.

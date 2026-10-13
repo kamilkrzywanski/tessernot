@@ -8,7 +8,7 @@ To nie jest ogólny runtime ONNX. Interpreter wykonuje grafy wykrywania i klasyf
 
 - Java 21 (Temurin albo inny JDK z `jdk.incubator.vector`)
 - Maven 3.9
-- Modele nie wchodzą do gita. Leżą w `models/` i są pobierane ręcznie.
+- Modele, słownik znaków, listy słów i spis miast leżą w `models/`. Brakujące wagi RapidOCR silnik dociąga i sprawdza SHA-256.
 
 Szybka ścieżka używa Vector API. Bez `--add-modules jdk.incubator.vector` silnik sam schodzi na kod skalarny (Java 8+ w sensie algorytmu; artefakt jest skompilowany na 21).
 
