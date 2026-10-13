@@ -7,6 +7,8 @@ import org.krzywanski.ocr.pdf.PdfPages;
 import org.krzywanski.ocr.post.Charset;
 import org.krzywanski.ocr.post.Ctc;
 import org.krzywanski.ocr.post.DbPost;
+import org.krzywanski.ocr.post.Lexicon;
+import org.krzywanski.ocr.post.PostalCities;
 import org.krzywanski.ocr.post.ReadingOrder;
 import org.krzywanski.ocr.post.Tables;
 import org.krzywanski.ocr.runtime.Session;
@@ -17,6 +19,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -28,6 +31,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * One engine is not safe for concurrent {@link #recognize} calls; the methods are synchronized.
@@ -39,12 +44,23 @@ import java.util.function.IntFunction;
  * Do not call {@link #recognize} from an {@code ocr-worker} thread.
  */
 public final class OcrEngine implements AutoCloseable {
+    /** A Polish postal code and the city token after it. */
+    private static final Pattern POSTAL_CITY = Pattern.compile("^(\\d{2}-\\d{3})\\s+(\\S.*)$");
+    /**
+     * Black-and-white cut for a dot-matrix city that is still full of digits.
+     * On the measured invoice 195–240 read Łódź apart from the capital L.
+     * 190 turns the last letter into ż, and 245 collapses the code.
+     */
+    private static final int POSTAL_INK = 220;
+
     private final OcrConfig cfg;
     private final ExecutorService pool;
     private Session det;
     private Session rec;
     private Session cls;
     private Charset charset;
+    private Lexicon lexicon;
+    private PostalCities postal;
     private ArrayBlockingQueue<Session> recPool;
     private ArrayBlockingQueue<Session> clsPool;
     private String detInput;
@@ -90,6 +106,9 @@ public final class OcrEngine implements AutoCloseable {
             this.rec = Session.load(cfg.recModel, lineOptions());
             this.recInput = rec.inputName();
             this.charset = Charset.load(cfg.dict, cfg.useSpaceChar);
+            Path models = cfg.dict.getParent();
+            this.lexicon = models == null ? null : Lexicon.optional(models);
+            this.postal = models == null ? null : PostalCities.optional(models);
             int classes = staticDim(rec.outputSig(), rec.outputSig().dims == null ? -1 : rec.outputSig().dims.length - 1);
             if (classes > 0 && classes != charset.size()) {
                 throw new OcrException("REC classes " + classes + " != charset " + charset.size());
@@ -280,6 +299,7 @@ public final class OcrEngine implements AutoCloseable {
         long detectionNanos = System.nanoTime() - detStart;
         long recStart = System.nanoTime();
         List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
+        recognized = splitAmounts(bgr, recognized);
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized);
         List<TextLine> flat = ReadingOrder.flatten(rows);
@@ -290,6 +310,164 @@ public final class OcrEngine implements AutoCloseable {
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart);
+    }
+
+    /**
+     * A box that reads as an amount and a VAT rate is cut on the vertical rule between
+     * them when each side reads back as that same token. {@code 8.13 23} becomes two lines.
+     * Anything else, including a half that does not match, stays one line.
+     */
+    private List<TextLine> splitAmounts(Bgr page, List<TextLine> lines) {
+        if (!cfg.useRec || rec == null || lines.isEmpty()) {
+            return lines;
+        }
+        boolean any = false;
+        for (TextLine line : lines) {
+            if (AmountSplit.parts(line.text()) != null) {
+                any = true;
+                break;
+            }
+        }
+        if (!any) {
+            return lines;
+        }
+        boolean borrowed = recPool != null;
+        Session session = borrowed ? borrow(recPool) : rec;
+        try {
+            List<TextLine> out = new ArrayList<>(lines.size() + 1);
+            for (TextLine line : lines) {
+                TextLine[] pair = splitAmount(page, line, session);
+                if (pair == null) {
+                    out.add(line);
+                } else {
+                    out.add(pair[0]);
+                    out.add(pair[1]);
+                }
+            }
+            return out;
+        } finally {
+            if (borrowed) {
+                recPool.offer(session);
+            }
+        }
+    }
+
+    private TextLine[] splitAmount(Bgr page, TextLine line, Session session) {
+        String[] parts = AmountSplit.parts(line.text());
+        if (parts == null || line.bounds() == null) {
+            return null;
+        }
+        // The detector quad leans a few pixels, so the upright crop is the bounds.
+        // That rectangle is the one whose rule separates 8.13 from 23.
+        Rectangle bounds = line.bounds();
+        float x0 = bounds.x;
+        float y0 = bounds.y;
+        float x1 = bounds.x + bounds.width - 1f;
+        float y1 = bounds.y + bounds.height - 1f;
+        if (x1 <= x0 || y1 <= y0) {
+            return null;
+        }
+        Bgr crop = crop(page, new float[] {x0, y0, x1, y0, x1, y1, x0, y1});
+        if (crop == null) {
+            return null;
+        }
+        int[] cut = ruleCut(crop);
+        if (cut == null) {
+            return null;
+        }
+        Bgr leftImage = sliceX(crop, 0, cut[0]);
+        Bgr rightImage = sliceX(crop, cut[1], crop.width());
+        if (leftImage == null || rightImage == null) {
+            return null;
+        }
+        leftImage = Images.mainInkBand(leftImage);
+        rightImage = Images.mainInkBand(rightImage);
+        Ctc.Result left = recognizeCrop(leftImage, session);
+        Ctc.Result right = recognizeCrop(rightImage, session);
+        if (!parts[0].equals(left.text()) || !parts[1].equals(right.text())) {
+            return null;
+        }
+        float span = x1 - x0;
+        if (crop.width() < 1) {
+            return null;
+        }
+        float cutLeft = x0 + cut[0] * span / crop.width();
+        float cutRight = x0 + cut[1] * span / crop.width();
+        if (cutLeft <= x0 + 2f || cutRight >= x1 - 2f || cutRight <= cutLeft) {
+            return null;
+        }
+        return new TextLine[] {
+                lineBox(parts[0], left.score(), line.detScore(), x0, y0, cutLeft, y1),
+                lineBox(parts[1], right.score(), line.detScore(), cutRight, y0, x1, y1)
+        };
+    }
+
+    /** Left edge of the rule and the first column after it, or null. */
+    private static int[] ruleCut(Bgr crop) {
+        int width = crop.width();
+        int height = crop.height();
+        if (width < 40 || height < 16) {
+            return null;
+        }
+        int from = width / 5;
+        int to = width - from;
+        byte[] data = crop.data();
+        int[] dark = new int[width];
+        for (int y = 0; y < height; y++) {
+            int row = y * width * 3;
+            for (int x = from; x < to; x++) {
+                if (luma(data, row + x * 3) < 160) {
+                    dark[x]++;
+                }
+            }
+        }
+        int best = -1;
+        int bestDark = 0;
+        for (int x = from; x < to; x++) {
+            if (dark[x] > bestDark) {
+                bestDark = dark[x];
+                best = x;
+            }
+        }
+        if (best < 0 || bestDark * 2 < height) {
+            return null;
+        }
+        int left = best;
+        while (left > from && dark[left - 1] * 3 >= bestDark) {
+            left--;
+        }
+        int right = best;
+        while (right + 1 < to && dark[right + 1] * 3 >= bestDark) {
+            right++;
+        }
+        if (right - left > 4 || left < 8 || width - right < 8) {
+            return null;
+        }
+        return new int[] {left, right + 1};
+    }
+
+    private static Bgr sliceX(Bgr src, int x0, int x1) {
+        int width = x1 - x0;
+        int height = src.height();
+        if (width < 2 || height < 2) {
+            return null;
+        }
+        byte[] out = new byte[width * height * 3];
+        byte[] in = src.data();
+        for (int y = 0; y < height; y++) {
+            System.arraycopy(in, (y * src.width() + x0) * 3, out, y * width * 3, width * 3);
+        }
+        return new Bgr(out, width, height);
+    }
+
+    private static TextLine lineBox(String text, float score, float detScore,
+                                    float x0, float y0, float x1, float y1) {
+        float[] quad = {x0, y0, x1, y0, x1, y1, x0, y1};
+        int x = (int) Math.floor(Math.min(x0, x1));
+        int y = (int) Math.floor(Math.min(y0, y1));
+        int w = Math.max(1, (int) Math.ceil(Math.max(x0, x1)) - x);
+        int h = Math.max(1, (int) Math.ceil(Math.max(y0, y1)) - y);
+        return new TextLine(text, score, detScore, quad, new Rectangle(x, y, w, h));
     }
 
     /**
@@ -323,7 +501,9 @@ public final class OcrEngine implements AutoCloseable {
         if (result.text().isEmpty() || result.score() < cfg.recThresh) {
             return "";
         }
-        return result.text();
+        // The piece is not the line. The same dictionary pass the line already had
+        // puts the ł back on Wysyłka; the joined page text is unchanged.
+        return applyLexicon(result.text());
     }
 
     private List<DbPost.Box> detect(Bgr bgr, boolean lineParallel) {
@@ -420,15 +600,298 @@ public final class OcrEngine implements AutoCloseable {
         if (clsSession != null) {
             crop = orient(crop, clsSession);
         }
+        // A neighbor line split off by a tall white gap is dropped before the resize.
+        crop = Images.mainInkBand(crop);
+        Ctc.Result result = recognizeCrop(crop, recSession);
+        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+            return null;
+        }
+        String text = applyLexicon(result.text());
+        float score = result.score();
+        Bgr indexed = Images.cutLeftIndex(crop);
+        if (indexed != crop) {
+            // The row number is real ink in the same box as the name. A second read is kept
+            // only when it is this text without that leading number, so a letter stem stays.
+            // On the measured invoice the cut drops ł and ó. The lexicon puts them back.
+            // Without the lists the first read already has both, so a shorter read that
+            // only lost those two marks still confirms the cut.
+            String stripped = text.replaceFirst("^[0-9]+\\s+", "");
+            if (!stripped.equals(text)) {
+                Ctc.Result again = recognizeCrop(indexed, recSession);
+                if (!again.text().isEmpty() && again.score() >= cfg.recThresh) {
+                    String second = applyLexicon(again.text());
+                    if (IndexKeep.agrees(stripped, second)) {
+                        text = stripped;
+                        score = again.score();
+                    }
+                }
+            }
+        }
+        Matcher coded = POSTAL_CITY.matcher(text.trim());
+        if (coded.matches() && hasDigit(coded.group(2))) {
+            Ctc.Result again = recognizeCrop(inkThreshold(crop, POSTAL_INK), recSession);
+            if (!again.text().isEmpty() && again.score() >= cfg.recThresh) {
+                String second = applyLexicon(again.text()).trim();
+                Matcher city = POSTAL_CITY.matcher(second);
+                if (city.matches() && city.group(1).equals(coded.group(1))
+                        && !hasDigit(city.group(2)) && city.group(2).length() >= 3) {
+                    text = second;
+                    score = again.score();
+                }
+            }
+        }
+        // Żyt's caron is a light gap in the top bar and disappears at height 48.
+        // A dot above that gap is kept only when the second read adds ż or ź on this Z and nothing else.
+        // On the measured scans that restores Żyt. SPRZEDAZ, Ziemia and Zapłacono stay.
+        if (text.indexOf('Z') >= 0) {
+            Bgr painted = NotchedZ.paint(crop, result.text());
+            if (painted != null) {
+                Ctc.Result again = recognizeCrop(painted, recSession);
+                if (!again.text().isEmpty() && again.score() >= cfg.recThresh) {
+                    String merged = NotchedZ.keep(text, applyLexicon(again.text()));
+                    if (merged != null) {
+                        text = merged;
+                        score = again.score();
+                    }
+                }
+            }
+        }
+        // One official spelling for this code replaces the city when the letters
+        // already match and the list does not remove a diacritic. 90-031 is Łódź.
+        // A code shared by several places is absent, so that line stays.
+        if (postal != null) {
+            text = postal.apply(text);
+        }
+        // Without the word lists, white above and below lets the ł stroke survive
+        // the resize to 48, a 4px shift down opens the gap in "i magazyn", and
+        // eight white rows under the line open the gap before Wspólnicy as well.
+        // Each second string is kept only when the only changes are that stroke
+        // or a space between letters. The read with more of those repairs wins,
+        // so the ł in Spółka is not kept at the cost of the missing space.
+        // A plain margin also turns x into × and drops ł in Kłodzka, so those
+        // reads are discarded. The lists already repair these lines, and a postal
+        // line belongs to the threshold read above. Table cells never get here.
+        text = marginText(crop, recSession, text);
+        // A VAT field label one edit from exactly one known label takes that spelling.
+        // Lines with a digit, and any label that is already exact, stay as read.
+        text = FieldLabels.apply(text);
+        text = ParenSpace.apply(text);
+        // The j in j.m. hangs out of a short header box. A second read 16 px to the
+        // left and below is kept only when the whole line was ".x." and the new
+        // text adds one letter in front of that dot. A cell rule read as 1 stays out.
+        Ctc.Result hooked = rereadDot(page, box, recSession, clsSession, text);
+        if (hooked != null) {
+            text = hooked.text();
+            score = hooked.score();
+        }
+        // A cell rule at the side of the crop is read as [ or |. Whitening those
+        // tall edge strokes and reading again is kept only when the text loses
+        // exactly that one fence character on a side. [VAT (%)| becomes VAT (%).
+        Ctc.Result ruled = rereadEdge(crop, recSession, clsSession, text);
+        if (ruled != null) {
+            text = ruled.text();
+            score = ruled.score();
+        }
+        return textLine(box, text, score);
+    }
+
+    private Ctc.Result rereadEdge(Bgr crop, Session recSession, Session clsSession, String text) {
+        if (!EdgeRule.candidate(text)) {
+            return null;
+        }
+        Bgr blank = blankEdgeRules(crop);
+        if (blank == null) {
+            return null;
+        }
+        if (clsSession != null) {
+            blank = orient(blank, clsSession);
+        }
+        blank = Images.mainInkBand(blank);
+        Ctc.Result result = recognizeCrop(blank, recSession);
+        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+            return null;
+        }
+        String second = ParenSpace.apply(FieldLabels.apply(applyLexicon(result.text())));
+        if (EdgeRule.keep(text, second) == null) {
+            return null;
+        }
+        return new Ctc.Result(second, result.score());
+    }
+
+    /** Tall dark columns in the outer 16 px become white. Null when none qualify. */
+    private static Bgr blankEdgeRules(Bgr src) {
+        int width = src.width();
+        int height = src.height();
+        if (width < 48 || height < 16) {
+            return null;
+        }
+        int edge = Math.min(16, width / 5);
+        byte[] in = src.data();
+        int[] dark = new int[width];
+        for (int y = 0; y < height; y++) {
+            int row = y * width * 3;
+            for (int x = 0; x < edge; x++) {
+                if (luma(in, row + x * 3) < 160) {
+                    dark[x]++;
+                }
+            }
+            for (int x = width - edge; x < width; x++) {
+                if (luma(in, row + x * 3) < 160) {
+                    dark[x]++;
+                }
+            }
+        }
+        boolean[] cut = new boolean[width];
+        boolean any = false;
+        for (int x = 0; x < edge; x++) {
+            if (dark[x] * 4 > height) {
+                cut[x] = true;
+                any = true;
+            }
+        }
+        for (int x = width - edge; x < width; x++) {
+            if (dark[x] * 4 > height) {
+                cut[x] = true;
+                any = true;
+            }
+        }
+        if (!any) {
+            return null;
+        }
+        byte[] out = in.clone();
+        for (int x = 0; x < width; x++) {
+            if (!cut[x]) {
+                continue;
+            }
+            for (int y = 0; y < height; y++) {
+                int offset = (y * width + x) * 3;
+                out[offset] = (byte) 255;
+                out[offset + 1] = (byte) 255;
+                out[offset + 2] = (byte) 255;
+            }
+        }
+        return new Bgr(out, width, height);
+    }
+
+    private static int luma(byte[] data, int offset) {
+        return ((data[offset + 2] & 255) * 54 + (data[offset + 1] & 255) * 183 + (data[offset] & 255) * 19) >> 8;
+    }
+
+    private Ctc.Result rereadDot(Bgr page, DbPost.Box box, Session recSession, Session clsSession, String text) {
+        if (!DotKeep.candidate(text) || !axisAligned(box.quad())) {
+            return null;
+        }
+        Bgr again = crop(page, DotKeep.grow(box.quad()));
+        if (again == null) {
+            return null;
+        }
+        if (cfg.rotateVertical && again.height() >= again.width() * 1.5f) {
+            again = Images.rot90ccw(again);
+        }
+        if (clsSession != null) {
+            again = orient(again, clsSession);
+        }
+        again = Images.mainInkBand(again);
+        Ctc.Result result = recognizeCrop(again, recSession);
+        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
+            return null;
+        }
+        String second = ParenSpace.apply(FieldLabels.apply(applyLexicon(result.text())));
+        if (DotKeep.keep(text, second) == null) {
+            return null;
+        }
+        return new Ctc.Result(second, result.score());
+    }
+
+
+    private String marginText(Bgr crop, Session recSession, String text) {
+        if (lexicon != null || !MarginKeep.candidate(text) || POSTAL_CITY.matcher(text.trim()).matches()) {
+            return text;
+        }
+        String best = text;
+        int bestRepairs = 0;
+        Bgr[] alts = {
+                padVertical(crop, 4, 4),
+                shiftDown(crop, 4),
+                padVertical(crop, 0, 8)
+        };
+        for (Bgr alt : alts) {
+            String again = readMargin(alt, recSession);
+            int repairs = MarginKeep.repairs(text, again);
+            if (repairs > bestRepairs) {
+                best = again;
+                bestRepairs = repairs;
+            }
+        }
+        return best;
+    }
+
+    private String readMargin(Bgr image, Session recSession) {
+        Ctc.Result again = recognizeCrop(image, recSession);
+        if (again.text().isEmpty() || again.score() < cfg.recThresh) {
+            return "";
+        }
+        return again.text();
+    }
+
+    /** White rows above and below. The ink itself is not scaled yet. */
+    private static Bgr padVertical(Bgr src, int top, int bottom) {
+        int width = src.width();
+        int height = src.height();
+        byte[] out = new byte[width * (height + top + bottom) * 3];
+        Arrays.fill(out, (byte) 255);
+        System.arraycopy(src.data(), 0, out, top * width * 3, width * height * 3);
+        return new Bgr(out, width, height + top + bottom);
+    }
+
+    /** Move the ink down by {@code dy} rows. The bottom rows fall outside the crop. */
+    private static Bgr shiftDown(Bgr src, int dy) {
+        int width = src.width();
+        int height = src.height();
+        if (dy <= 0 || dy >= height) {
+            return src;
+        }
+        byte[] out = new byte[width * height * 3];
+        Arrays.fill(out, (byte) 255);
+        System.arraycopy(src.data(), 0, out, dy * width * 3, (height - dy) * width * 3);
+        return new Bgr(out, width, height);
+    }
+
+    private String applyLexicon(String text) {
+        return lexicon == null ? text : lexicon.apply(text);
+    }
+
+    private static boolean hasDigit(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (Character.isDigit(text.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** One global cut. Gray ink becomes black and the paper becomes white. */
+    private static Bgr inkThreshold(Bgr src, int threshold) {
+        byte[] in = src.data();
+        byte[] out = new byte[in.length];
+        int pixels = src.width() * src.height();
+        for (int i = 0; i < pixels; i++) {
+            int o = i * 3;
+            int luma = ((in[o + 2] & 255) * 54 + (in[o + 1] & 255) * 183 + (in[o] & 255) * 19) >> 8;
+            byte v = (byte) (luma < threshold ? 0 : 255);
+            out[o] = v;
+            out[o + 1] = v;
+            out[o + 2] = v;
+        }
+        return new Bgr(out, src.width(), src.height());
+    }
+
+    private Ctc.Result recognizeCrop(Bgr crop, Session recSession) {
         float[] data = Images.recTensor(crop, cfg.recHeight, cfg.recMinWidth, cfg.recMaxWidth, cfg.mean, cfg.std);
         int width = data.length / (3 * cfg.recHeight);
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight, width}, data);
         Tensor output = only(recSession.run(Map.of(recInput, input)));
-        Ctc.Result result = Ctc.greedy(output, charset);
-        if (result.text().isEmpty() || result.score() < cfg.recThresh) {
-            return null;
-        }
-        return textLine(box, result.text(), result.score());
+        return Ctc.greedy(output, charset);
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {

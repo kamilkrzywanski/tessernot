@@ -27,6 +27,14 @@ public final class Tables {
     private static final int RUN_GAP = 4;
     /** Collinear pieces farther apart than this are two rules. */
     private static final int MERGE_GAP = 18;
+    /**
+     * One pixel more, and only when both pieces are at least {@link #LONG_PIECE} long.
+     * Eighteen white rows is a letter on the line between Liczba and j.m. The same
+     * extra pixel on a short piece joins digit stems and splits the VAT amounts.
+     */
+    private static final int LETTER_GAP = 19;
+    /** Shorter than this, a piece is a stem, not a broken rule. */
+    private static final int LONG_PIECE = 48;
     /** Hairlines whose centers are this close are one rule. */
     private static final int ALIGN = 4;
     /** A line must reach the crossing within this slack. */
@@ -43,9 +51,11 @@ public final class Tables {
     private static final int STICK = 3;
     /**
      * Both sides of a cut must be at least this wide. Unclip lets a box overlap the next
-     * rule by a few pixels, and that sliver is not a cell.
+     * rule by a few pixels, and that sliver is not a cell. The unit Szt. overlaps the
+     * j.m. rule by 23 pixels, and that sliver reads as a digit; the row number beside
+     * a name is 36 pixels and still has to be cut.
      */
-    private static final int MIN_PIECE = 20;
+    private static final int MIN_PIECE = 28;
 
     private Tables() {
     }
@@ -198,9 +208,10 @@ public final class Tables {
             Rule host = null;
             int center = rule.pos();
             for (Rule prev : out) {
+                int gap = rule.length() >= LONG_PIECE && prev.length() >= LONG_PIECE ? LETTER_GAP : MERGE_GAP;
                 if (Math.abs(prev.pos() - center) <= ALIGN
-                        && rule.from <= prev.to + MERGE_GAP
-                        && prev.from <= rule.to + MERGE_GAP) {
+                        && rule.from <= prev.to + gap
+                        && prev.from <= rule.to + gap) {
                     host = prev;
                     break;
                 }
@@ -338,7 +349,11 @@ public final class Tables {
             List<Integer> xs = cuts(grid.vertical, box.x, x1, box.y, y1);
             List<Integer> ys = cuts(grid.horizontal, box.y, y1, box.x, x1);
             if (reader == null || xs.size() < 3 && ys.size() < 3) {
-                place(cells, grid, cx, cy, line.text());
+                String text = line.text();
+                if (reader != null && ruleThroughGlyph(grid.vertical, box.x, x1, box.y, y1)) {
+                    text = preferCase(text, readCell(page, grid, cx, cy, reader));
+                }
+                place(cells, grid, cx, cy, text);
                 continue;
             }
             boolean any = false;
@@ -373,16 +388,21 @@ public final class Tables {
             }
         }
         int filled = 0;
-        List<List<String>> copy = new ArrayList<>(rows);
         for (int row = 0; row < rows; row++) {
-            List<String> texts = new ArrayList<>(columns);
             for (int column = 0; column < columns; column++) {
                 if (!cells[row][column].isEmpty()) {
                     filled++;
                 }
-                texts.add(cells[row][column]);
             }
-            copy.add(texts);
+        }
+        // A grid with one line is not a table. Filling its empty cells would promote
+        // letter strokes into a second table.
+        if (filled >= 2 && reader != null) {
+            fillEmpty(page, grid, cells, reader);
+        }
+        List<List<String>> copy = new ArrayList<>(rows);
+        for (int row = 0; row < rows; row++) {
+            copy.add(new ArrayList<>(Arrays.asList(cells[row])));
         }
         if (filled < 2) {
             return null;
@@ -394,6 +414,129 @@ public final class Tables {
         Rectangle bounds = new Rectangle(
                 left.pos(), top.pos(), Math.max(1, right.pos() - left.pos()), Math.max(1, bottom.pos() - top.pos()));
         return new TextTable(copy, bounds);
+    }
+
+    /**
+     * A vertical rule this far inside the box, but not far enough to split it, runs through
+     * the glyph. The detector box then reads Szt.; the cell interior, clear of that rule, reads szt.
+     */
+    private static final int RULE_THROUGH = 20;
+    /** A missed glyph inside a ruled cell, clear of the rules. */
+    private static final int CELL_INSET = 8;
+    /** Fewer dark pixels than this is paper, not a character. */
+    private static final int MIN_CELL_INK = 40;
+
+    /**
+     * An empty cell that still holds ink is read once. Only a short number or a short
+     * word is kept, so a rule fragment cannot become a sentence. On the invoice this
+     * is the 1 in Liczba and the Lp header, both missed by the detector.
+     */
+    private static void fillEmpty(Bgr page, Grid grid, String[][] cells, Function<Bgr, String> reader) {
+        int rows = cells.length;
+        int columns = cells[0].length;
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
+                if (!cells[row][column].isEmpty()) {
+                    continue;
+                }
+                int left = grid.vertical.get(column).pos() + CELL_INSET;
+                int right = grid.vertical.get(column + 1).pos() - CELL_INSET;
+                int top = grid.horizontal.get(row).pos() + CELL_INSET;
+                int bottom = grid.horizontal.get(row + 1).pos() - CELL_INSET;
+                if (right - left < 8 || bottom - top < 8) {
+                    continue;
+                }
+                Bgr crop = slice(page, left, top, right, bottom);
+                if (crop == null || !textInk(crop)) {
+                    continue;
+                }
+                String text = reader.apply(crop);
+                if (cellToken(text)) {
+                    cells[row][column] = text.trim();
+                }
+            }
+        }
+    }
+
+    private static boolean textInk(Bgr crop) {
+        byte[] data = crop.data();
+        int dark = 0;
+        int pixels = crop.width() * crop.height();
+        for (int i = 0; i < pixels; i++) {
+            if (luma(data, i) < 160) {
+                dark++;
+            }
+        }
+        return dark >= MIN_CELL_INK && dark * 5 < pixels;
+    }
+
+    /**
+     * The cell read replaces the line only when the letters match and the case does not.
+     * Any other difference keeps the line, which already went through the dictionary.
+     */
+    static String preferCase(String line, String cell) {
+        if (line == null || cell == null) {
+            return line;
+        }
+        String trimmed = cell.trim();
+        if (!trimmed.isEmpty() && !trimmed.equals(line) && trimmed.equalsIgnoreCase(line)) {
+            return trimmed;
+        }
+        return line;
+    }
+
+    private static boolean ruleThroughGlyph(List<Rule> vertical, int start, int end, int along0, int along1) {
+        for (Rule rule : vertical) {
+            if (rule.to < along0 || rule.from > along1) {
+                continue;
+            }
+            if (!(rule.from <= along0 - STICK || rule.to >= along1 + STICK)) {
+                continue;
+            }
+            int pos = rule.pos();
+            int left = pos - start;
+            int right = end - pos;
+            if (left >= RULE_THROUGH && left < MIN_PIECE && right >= MIN_PIECE) {
+                return true;
+            }
+            if (right >= RULE_THROUGH && right < MIN_PIECE && left >= MIN_PIECE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String readCell(Bgr page, Grid grid, float x, float y, Function<Bgr, String> reader) {
+        int column = slot(grid.vertical, x);
+        int row = slot(grid.horizontal, y);
+        if (row < 0 || column < 0) {
+            return "";
+        }
+        int left = grid.vertical.get(column).pos() + CELL_INSET;
+        int right = grid.vertical.get(column + 1).pos() - CELL_INSET;
+        int top = grid.horizontal.get(row).pos() + CELL_INSET;
+        int bottom = grid.horizontal.get(row + 1).pos() - CELL_INSET;
+        Bgr crop = slice(page, left, top, right, bottom);
+        if (crop == null) {
+            return "";
+        }
+        String text = reader.apply(crop);
+        return text == null ? "" : text;
+    }
+
+    /** A number, or a short word. A single odd mark, including a false digit, is not. */
+    static boolean cellToken(String text) {
+        if (text == null) {
+            return false;
+        }
+        String token = text.trim();
+        if (token.isEmpty() || token.length() > 8) {
+            return false;
+        }
+        if (token.matches("[0-9]{1,6}([.,][0-9]{1,2})?")) {
+            return true;
+        }
+        return token.matches("[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]{1,6}\\.?");
     }
 
     /**

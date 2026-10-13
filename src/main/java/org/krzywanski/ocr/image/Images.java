@@ -692,6 +692,226 @@ public final class Images {
         return new Bgr(out, w, h);
     }
 
+    /**
+     * Keeps the heavier ink band when a second band is split off by at least 20 white rows.
+     * A shorter gap stays, so a dot over a letter is not cut away. Two bands of similar
+     * weight stay as well. Recognition then scales the remaining glyphs to the model height
+     * instead of sharing that height with a neighbor line.
+     */
+    public static Bgr mainInkBand(Bgr image) {
+        int w = image.width();
+        int h = image.height();
+        if (h < 16 || w < 8) {
+            return image;
+        }
+        byte[] data = image.data();
+        int[] dark = new int[h];
+        for (int y = 0; y < h; y++) {
+            int row = y * w * 3;
+            int count = 0;
+            for (int x = 0; x < w; x++) {
+                if (inkLuma(data, row + x * 3) < 150) {
+                    count++;
+                }
+            }
+            dark[y] = count;
+        }
+        boolean[] rule = hairline(dark, w);
+        int[] start = new int[h];
+        int[] end = new int[h];
+        int bands = 0;
+        for (int y = 0; y < h;) {
+            if (rule[y] || dark[y] == 0) {
+                y++;
+                continue;
+            }
+            int a = y;
+            while (y < h && !rule[y] && dark[y] > 0) {
+                y++;
+            }
+            // Nineteen white rows still belong to one line. Twenty is the next line.
+            if (bands > 0 && a - end[bands - 1] - 1 < 20) {
+                end[bands - 1] = y - 1;
+            } else {
+                start[bands] = a;
+                end[bands] = y - 1;
+                bands++;
+            }
+        }
+        if (bands < 2) {
+            return image;
+        }
+        int keep = 0;
+        int keepInk = -1;
+        int secondInk = -1;
+        for (int i = 0; i < bands; i++) {
+            int ink = 0;
+            for (int y = start[i]; y <= end[i]; y++) {
+                ink += dark[y];
+            }
+            if (ink > keepInk) {
+                secondInk = keepInk;
+                keepInk = ink;
+                keep = i;
+            } else if (ink > secondInk) {
+                secondInk = ink;
+            }
+        }
+        if (secondInk > 0 && keepInk < secondInk * 1.4f) {
+            return image;
+        }
+        int y0 = start[keep];
+        int y1 = end[keep];
+        if (y0 > 0 && !rule[y0 - 1] && dark[y0 - 1] == 0) {
+            y0--;
+        }
+        if (y1 + 1 < h && !rule[y1 + 1] && dark[y1 + 1] == 0) {
+            y1++;
+        }
+        if (y0 == 0 && y1 == h - 1) {
+            return image;
+        }
+        return copyRows(image, y0, y1 - y0 + 1);
+    }
+
+    /**
+     * Cuts a row index glued to the words on its right.
+     * The index is a narrow dark blob, then at least four white columns, then a vertical rule
+     * at most four pixels wide. The rule lies in the left eighth of the crop and not past x = 56.
+     * A letter stem, a wide blob, or a missing gap returns the same image.
+     * The caller keeps the shorter crop only when a second read is the first read without that number.
+     */
+    public static Bgr cutLeftIndex(Bgr image) {
+        int w = image.width();
+        int h = image.height();
+        if (w < 80 || h < 16) {
+            return image;
+        }
+        int from = 4;
+        int to = Math.min(w / 8, 56);
+        if (to <= from + 2) {
+            return image;
+        }
+        byte[] data = image.data();
+        int[] dark = new int[w];
+        int limit = Math.min(w, to + 8);
+        for (int x = 0; x < limit; x++) {
+            int count = 0;
+            for (int y = 0; y < h; y++) {
+                if (inkLuma(data, (y * w + x) * 3) < 140) {
+                    count++;
+                }
+            }
+            dark[x] = count;
+        }
+        int bestX = -1;
+        int best = 0;
+        for (int x = from; x < to; x++) {
+            if (dark[x] > best) {
+                best = dark[x];
+                bestX = x;
+            }
+        }
+        // The rule on the measured row is about two fifths of the crop height.
+        if (bestX < 0 || best * 100 < h * 36) {
+            return image;
+        }
+        int left = bestX;
+        while (left > 0 && dark[left - 1] * 3 >= best) {
+            left--;
+        }
+        int right = bestX;
+        while (right + 1 < limit && dark[right + 1] * 3 >= best) {
+            right++;
+        }
+        if (right - left + 1 > 4) {
+            return image;
+        }
+        int x = left - 1;
+        int gap = 0;
+        while (x >= 0 && dark[x] * 10 < h) {
+            gap++;
+            x--;
+        }
+        if (gap < 4) {
+            return image;
+        }
+        int blob = 0;
+        int blobRight = x;
+        int blobLeft = -1;
+        while (x >= 0) {
+            if (dark[x] > blob) {
+                blob = dark[x];
+            }
+            if (dark[x] * 10 >= h * 2) {
+                blobLeft = x;
+            }
+            x--;
+        }
+        // A digit is a few pixels wide. The letter before a stem is wider, so it stays.
+        if (blob * 10 < h * 3 || blobLeft < 0 || blobRight - blobLeft + 1 > 12) {
+            return image;
+        }
+        int start = right + 2;
+        if (start >= w - 1) {
+            return image;
+        }
+        return copyColumns(image, start, w - start);
+    }
+
+    /** A full-width stroke of at most four rows is a rule, not a second text line. */
+    private static boolean[] hairline(int[] dark, int w) {
+        int ruleCut = Math.max(4, (w * 7) / 10);
+        boolean[] rule = new boolean[dark.length];
+        for (int y = 0; y < dark.length;) {
+            if (dark[y] < ruleCut) {
+                y++;
+                continue;
+            }
+            int a = y;
+            while (y < dark.length && dark[y] >= ruleCut) {
+                y++;
+            }
+            if (y - a <= 4) {
+                for (int i = a; i < y; i++) {
+                    rule[i] = true;
+                }
+            }
+        }
+        return rule;
+    }
+
+    private static int inkLuma(byte[] data, int i) {
+        int b = data[i] & 255;
+        int g = data[i + 1] & 255;
+        int r = data[i + 2] & 255;
+        return (r * 54 + g * 183 + b * 19) >> 8;
+    }
+
+    private static Bgr copyColumns(Bgr src, int x, int w) {
+        int h = src.height();
+        byte[] out = new byte[packedBytes(w, h)];
+        byte[] data = src.data();
+        int sw = src.width();
+        for (int row = 0; row < h; row++) {
+            System.arraycopy(data, (row * sw + x) * 3, out, row * w * 3, w * 3);
+        }
+        return new Bgr(out, w, h);
+    }
+
+    private static Bgr copyRows(Bgr src, int y, int h) {
+        int w = src.width();
+        if (h < 2) {
+            return src;
+        }
+        byte[] out = new byte[packedBytes(w, h)];
+        byte[] data = src.data();
+        for (int row = 0; row < h; row++) {
+            System.arraycopy(data, (y + row) * w * 3, out, row * w * 3, w * 3);
+        }
+        return new Bgr(out, w, h);
+    }
+
     private static long rect(long[] integral, int stride, int x0, int y0, int x1, int y1) {
         int a = y0 * stride + x0;
         int b = y0 * stride + (x1 + 1);

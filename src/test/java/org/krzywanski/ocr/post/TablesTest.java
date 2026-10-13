@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,6 +41,47 @@ class TablesTest {
         assertEquals("C", table.cell(1, 0));
         assertEquals("", table.cell(1, 1));
         assertTrue(table.bounds().contains(40, 30), table.bounds().toString());
+    }
+
+    @Test
+    void letterHoleInARuleStillSplitsTheColumns() {
+        Bgr page = page(220, 160);
+        v(page, 10, 10, 140);
+        v(page, 80, 10, 60);
+        v(page, 80, 79, 140);
+        v(page, 160, 10, 140);
+        h(page, 10, 10, 160);
+        h(page, 70, 10, 160);
+        h(page, 140, 10, 160);
+        TextTable table = Tables.find(page, List.of(
+                line("Liczba", 16, 30, 40, 16),
+                line("jm", 96, 30, 24, 16)), null).get(0);
+        assertEquals(2, table.columns(), dump(table));
+        assertEquals("Liczba", table.cell(0, 0), dump(table));
+        assertEquals("jm", table.cell(0, 1), dump(table));
+    }
+
+    @Test
+    void onePixelPastTheLetterHoleStaysTwoRules() {
+        Bgr page = page(220, 160);
+        v(page, 10, 10, 140);
+        v(page, 80, 10, 60);
+        v(page, 80, 80, 140);
+        v(page, 160, 10, 140);
+        h(page, 10, 10, 160);
+        h(page, 70, 10, 160);
+        h(page, 140, 10, 160);
+        assertTrue(Tables.find(page, List.of(
+                line("Liczba", 16, 30, 40, 16),
+                line("jm", 96, 30, 24, 16)), null).isEmpty());
+    }
+
+    private static String dump(TextTable table) {
+        StringBuilder out = new StringBuilder();
+        for (List<String> row : table.cells()) {
+            out.append(String.join(" | ", row)).append('\n');
+        }
+        return out.toString();
     }
 
     @Test
@@ -100,6 +142,118 @@ class TablesTest {
         assertEquals(0, reads.get());
         assertEquals("NAME", table.cell(1, 1));
         assertEquals("", table.cell(1, 0));
+    }
+
+    @Test
+    void missedDigitInAnEmptyCellIsRead() {
+        Bgr page = page(220, 140);
+        grid(page);
+        stroke(page, 100, 28, 112, 46);
+        AtomicInteger reads = new AtomicInteger();
+        TextTable table = Tables.find(page, List.of(
+                line("A", 20, 25, 20, 14),
+                line("C", 20, 75, 20, 14)), crop -> {
+            reads.incrementAndGet();
+            return "1";
+        }).get(0);
+        assertEquals(1, reads.get());
+        assertEquals("1", table.cell(0, 1));
+        assertEquals("", table.cell(1, 1));
+    }
+
+    @Test
+    void oddMarkInAnEmptyCellIsDropped() {
+        Bgr page = page(220, 140);
+        grid(page);
+        stroke(page, 100, 28, 112, 46);
+        TextTable table = Tables.find(page, List.of(
+                line("A", 20, 25, 20, 14),
+                line("C", 20, 75, 20, 14)), crop -> "一").get(0);
+        assertEquals("", table.cell(0, 1));
+        assertFalse(Tables.cellToken("一"));
+        assertTrue(Tables.cellToken("1"));
+        assertTrue(Tables.cellToken("LP"));
+        assertTrue(Tables.cellToken("76.19"));
+        assertFalse(Tables.cellToken("Wysyłka"));
+        assertFalse(Tables.cellToken(""));
+    }
+
+    @Test
+    void oneLineAndSomeInkIsNotATable() {
+        Bgr page = page(220, 140);
+        grid(page);
+        stroke(page, 100, 28, 112, 46);
+        assertTrue(Tables.find(page, List.of(line("A", 20, 25, 20, 14)), crop -> "1").isEmpty());
+    }
+
+    @Test
+    void glyphOnTheRuleKeepsTheCellCase() {
+        Bgr page = page(220, 140);
+        grid(page);
+        AtomicInteger reads = new AtomicInteger();
+        TextTable table = Tables.find(page, List.of(
+                line("Szt.", 57, 22, 80, 20),
+                line("Z", 20, 75, 20, 14)), crop -> {
+            reads.incrementAndGet();
+            return "szt.";
+        }).get(0);
+        assertEquals(1, reads.get());
+        assertEquals("szt.", table.cell(0, 1));
+        assertEquals("szt.", Tables.preferCase("Szt.", "szt."));
+        assertEquals("Szt.", Tables.preferCase("Szt.", "Szt."));
+        assertEquals("Szt.", Tables.preferCase("Szt.", "zt."));
+    }
+
+    @Test
+    void shallowOverlapKeepsTheLineCase() {
+        Bgr page = page(220, 140);
+        grid(page);
+        AtomicInteger reads = new AtomicInteger();
+        TextTable table = Tables.find(page, List.of(
+                line("Szt.", 72, 22, 60, 20),
+                line("Z", 20, 75, 20, 14)), crop -> {
+            reads.incrementAndGet();
+            return "szt.";
+        }).get(0);
+        assertEquals(0, reads.get());
+        assertEquals("Szt.", table.cell(0, 1));
+    }
+
+    @Test
+    void letterStemOnTheRuleStaysOneCell() {
+        Bgr page = page(220, 140);
+        v(page, 10, 10, 110);
+        v(page, 80, 10, 110);
+        v(page, 160, 10, 110);
+        h(page, 10, 10, 160);
+        h(page, 55, 10, 160);
+        h(page, 110, 10, 160);
+        AtomicInteger reads = new AtomicInteger();
+        TextTable table = Tables.find(page, List.of(
+                line("Szt.", 57, 20, 80, 24),
+                line("Z", 20, 70, 20, 16)), crop -> {
+            reads.incrementAndGet();
+            return "PIECE";
+        }).get(0);
+        assertEquals(1, reads.get());
+        assertEquals("", table.cell(0, 0));
+        assertEquals("Szt.", table.cell(0, 1));
+    }
+
+    @Test
+    void rowNumberBesideTheNameIsCut() {
+        Bgr page = page(240, 140);
+        v(page, 10, 10, 110);
+        v(page, 80, 10, 110);
+        v(page, 200, 10, 110);
+        h(page, 10, 10, 200);
+        h(page, 55, 10, 200);
+        h(page, 110, 10, 200);
+        TextTable table = Tables.find(page, List.of(
+                line("1 Ziemia", 44, 20, 120, 24)), crop -> "w" + crop.width()).get(0);
+        assertTrue(table.cell(0, 0).startsWith("w"), table.cell(0, 0));
+        assertTrue(table.cell(0, 1).startsWith("w"), table.cell(0, 1));
+        assertTrue(!table.cell(0, 0).equals(table.cell(0, 1)));
     }
 
     @Test

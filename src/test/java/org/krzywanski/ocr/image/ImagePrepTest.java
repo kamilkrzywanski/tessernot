@@ -184,6 +184,126 @@ class ImagePrepTest {
         assertArrayEquals(new byte[2 * 2 * 3], warped.data());
     }
 
+    @Test
+    void separatedInkBandKeepsTheHeavierRun() {
+        int w = 20;
+        byte[] split = bandPage(w, 56, 20);
+        Bgr out = Images.mainInkBand(new Bgr(split, w, 56));
+        // One white row of padding stays above and below the heavy band at y=30..45.
+        assertEquals(18, out.height());
+        assertEquals(0, darkPixels(out, 0));
+        assertEquals(16, darkPixels(out, 1));
+        assertEquals(16, darkPixels(out, 16));
+        assertEquals(0, darkPixels(out, 17));
+
+        Bgr close = new Bgr(bandPage(w, 55, 19), w, 55);
+        assertSame(close, Images.mainInkBand(close));
+    }
+
+    @Test
+    void shortGapAndAHairlineStayOnTheLine() {
+        int w = 20;
+        int h = 40;
+        byte[] data = white(w, h);
+        paint(data, w, 4, 12, 0, 8);
+        paint(data, w, 23, 32, 0, 8);
+        Bgr dotted = new Bgr(data, w, h);
+        assertSame(dotted, Images.mainInkBand(dotted));
+
+        byte[] ruled = white(w, 48);
+        paint(ruled, w, 4, 14, 0, 10);
+        paint(ruled, w, 39, 41, 0, w - 1);
+        Bgr rule = new Bgr(ruled, w, 48);
+        assertSame(rule, Images.mainInkBand(rule));
+
+        byte[] tied = white(w, 48);
+        paint(tied, w, 2, 9, 0, 9);
+        paint(tied, w, 30, 37, 0, 9);
+        Bgr similar = new Bgr(tied, w, 48);
+        assertSame(similar, Images.mainInkBand(similar));
+
+        Bgr tiny = new Bgr(white(w, 10), w, 10);
+        assertSame(tiny, Images.mainInkBand(tiny));
+    }
+
+    @Test
+    void cutLeftIndexDropsANarrowDigitAndKeepsTheWord() {
+        int w = 120;
+        int h = 60;
+        byte[] data = white(w, h);
+        paint(data, w, 20, 44, 4, 6);
+        paint(data, w, 10, 49, 12, 14);
+        paint(data, w, 18, 45, 20, 28);
+        Bgr image = new Bgr(data, w, h);
+        Bgr cut = Images.cutLeftIndex(image);
+        assertEquals(104, cut.width());
+        assertEquals(h, cut.height());
+        assertEquals(0, columnDark(cut, 0));
+        assertTrue(columnDark(cut, 4) > 0);
+
+        byte[] stem = white(w, h);
+        paint(stem, w, 10, 49, 8, 20);
+        Bgr letter = new Bgr(stem, w, h);
+        assertSame(letter, Images.cutLeftIndex(letter));
+
+        byte[] wide = white(200, h);
+        paint(wide, 200, 15, 44, 4, 18);
+        paint(wide, 200, 8, 50, 24, 24);
+        Bgr blob = new Bgr(wide, 200, h);
+        assertSame(blob, Images.cutLeftIndex(blob));
+
+        Bgr narrow = new Bgr(white(40, h), 40, h);
+        assertSame(narrow, Images.cutLeftIndex(narrow));
+    }
+
+    /** Light band at y=2..9, then {@code gap} white rows, then a heavy band of 16 rows. */
+    private static byte[] bandPage(int w, int h, int gap) {
+        byte[] data = white(w, h);
+        paint(data, w, 2, 9, 0, 3);
+        int heavy = 10 + gap;
+        paint(data, w, heavy, heavy + 15, 0, 15);
+        return data;
+    }
+
+    private static byte[] white(int w, int h) {
+        byte[] data = new byte[w * h * 3];
+        Arrays.fill(data, (byte) 255);
+        return data;
+    }
+
+    private static void paint(byte[] data, int w, int y0, int y1, int x0, int x1) {
+        for (int y = y0; y <= y1; y++) {
+            for (int x = x0; x <= x1; x++) {
+                int o = (y * w + x) * 3;
+                data[o] = data[o + 1] = data[o + 2] = 0;
+            }
+        }
+    }
+
+    private static int columnDark(Bgr image, int x) {
+        int n = 0;
+        byte[] data = image.data();
+        int w = image.width();
+        for (int y = 0; y < image.height(); y++) {
+            if ((data[(y * w + x) * 3] & 255) == 0) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static int darkPixels(Bgr image, int y) {
+        int n = 0;
+        byte[] data = image.data();
+        int row = y * image.width() * 3;
+        for (int x = 0; x < image.width(); x++) {
+            if ((data[row + x * 3] & 255) == 0) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     private static float[] oracle(byte[] src, int sw, int sh, int dw, int dh, float mean, float std) {
         float[] out = new float[3 * dw * dh];
         int plane = dw * dh;

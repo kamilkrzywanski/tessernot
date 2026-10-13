@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 /**
  * Inference settings. Defaults follow RapidOCR mobile:
- * det limit 960, DB thresh 0.3 / box 0.5 / unclip 1.6, REC height 48, BGR normalize 0.5/0.5.
+ * det limit 960, DB thresh 0.35 / box 0.5 / unclip 1.6, REC height 48, BGR normalize 0.5/0.5.
  */
 public final class OcrConfig {
     public final Path detModel;
@@ -103,7 +103,7 @@ public final class OcrConfig {
         private int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
         private int detLimitSideLen = 960;
         private String detLimitType = "max";
-        private float detThresh = 0.3f;
+        private float detThresh = 0.35f;
         private float boxThresh = 0.5f;
         private float unclipRatio = 1.6f;
         private boolean useDilation = true;

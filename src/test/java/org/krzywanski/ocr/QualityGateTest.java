@@ -3,6 +3,8 @@ package org.krzywanski.ocr;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.krzywanski.ocr.image.Images;
+import org.krzywanski.ocr.post.Lexicon;
+import org.krzywanski.ocr.post.PostalCities;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -28,16 +30,43 @@ class QualityGateTest {
     /** Typed letter, read exactly. The signature and the blue time stamp are not scored. */
     private static final int NIXON_MAX_EDITS = 0;
     /**
-     * Thermal receipt. The budget is the letters the model still misses:
-     * Wrocław, Żniwna, Żyt, Świat, Polędw łos, łącznie, and two {@code x} read as {@code ×}.
+     * Thermal receipt with the optional lexicon. The ł in łos remains.
+     * The stem polędw puts the ogonek back on Polędw. A dot above the notched Z restores Żyt.
+     * Without the lists, Żniwna and Poledw remain. Świat is the capital-S runner-up,
+     * so it does not need the lists. The dot still restores Żyt.
+     * Wrocław, łącznie, and both {@code x} rows match.
      */
-    private static final int RECEIPT_MAX_EDITS = 10;
+    private static final int RECEIPT_MAX_EDITS = 1;
+    private static final int RECEIPT_MAX_EDITS_WITHOUT_LEXICON = 3;
     /**
      * Invoice fields outside the table, plus the product name and the amount due.
-     * The budget is the current misses: spaces, ł and ó, Łódź, and the {@code 1 } glued
-     * to Ziemia Kłodzka. The grid, the stamp, and the signature are not scored.
+     * With the lexicon and {@code postal-pl.txt.gz} the invoice matches: 90-031 is Łódź
+     * when the letters already agree. Without that file the capital stays L, one edit.
+     * A postal code whose city still contains a digit is read again at ink threshold 220,
+     * and kept when the code matches and the city is letters. The Lp digit glued to
+     * Ziemia Kłodzka is cut when a second read is the first read without the digit.
+     * The cut drops ł and ó. Without the word lists the first read already has both,
+     * so a shorter read that only lost those marks still confirms the cut and the digit
+     * goes. The postal list still writes Łódź without the word lists, so that line is
+     * not two edits. Without the word lists the line is read again with four white rows
+     * above and below, then with the ink shifted down four pixels, then with eight white
+     * rows underneath. A read stays only when the only changes are ł for t or l, or a
+     * space between letters, and the read that repairs more of those wins. That restores
+     * the warehouse space, usługi, and the whole of Spółka, including the space before
+     * Wspólnicy. The ó in that word is the runner-up on o. A usual VAT label that is
+     * one edit from exactly one known label takes that label, so Miejsce and Słownie
+     * match without the word lists. With the postal list the invoice then matches.
+     * A line that is only a postal code skips the margin read, and a label step skips
+     * any line with a digit, so without either file the city stays {@code Lodz} with
+     * an ascii z and the invoice is two edits. Both NIP lines keep the
+     * space after the colon. zapłaty, Zapłacono, dziewięćdziesiąt, and both amounts
+     * match. The grid and the signature are not scored. The red stamp is scored only
+     * as ORYGINAŁ.
      */
-    private static final int INVOICE_MAX_EDITS = 18;
+    private static final int INVOICE_MAX_EDITS = 0;
+    private static final int INVOICE_MAX_EDITS_WITHOUT_POSTAL = 1;
+    private static final int INVOICE_MAX_EDITS_WITHOUT_LEXICON = 0;
+    private static final int INVOICE_MAX_EDITS_WITHOUT_LISTS = 2;
 
     private static final List<String> NIXON = List.of(
             "THE WHITE HOUSE",
@@ -146,9 +175,13 @@ class QualityGateTest {
     void realPrintDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         try (OcrEngine engine = OcrEngine.create(OcrConfig.latin(Path.of("models")))) {
+            boolean lexicon = lexiconPresent();
+            boolean postal = postalPresent();
             OcrResult nixon = check(engine, "nixon-resign.jpg", NIXON, NIXON_MAX_EDITS);
-            OcrResult receipt = check(engine, "receipt-biedronka.jpg", RECEIPT, RECEIPT_MAX_EDITS);
-            OcrResult invoice = check(engine, "faktura-klodzka.jpg", INVOICE, INVOICE_MAX_EDITS);
+            OcrResult receipt = check(engine, "receipt-biedronka.jpg", RECEIPT,
+                    lexicon ? RECEIPT_MAX_EDITS : RECEIPT_MAX_EDITS_WITHOUT_LEXICON);
+            OcrResult invoice = check(engine, "faktura-klodzka.jpg", INVOICE,
+                    invoiceCeiling(lexicon, postal));
             assertJoinedReadingOrder(nixon.text(), receipt.text(), invoice.text());
             assertTrue(nixon.tables().isEmpty(), dump(nixon.tables()));
             assertTrue(receipt.tables().isEmpty(), dump(receipt.tables()));
@@ -249,7 +282,7 @@ class QualityGateTest {
         assertDifferentLines(invoice, "Sprzedawca:", "Nabywca:");
         assertSameLine(invoice, "Ziemia", "80.00");
         assertSameLine(invoice, "Razem do zap", "90,00");
-        assertSameLine(invoice, "przelewem:", "90.00");
+        assertSameLine(invoice, "przelewem:", "90,00");
     }
 
     private static void assertInOrder(String text, List<String> parts) {
@@ -308,5 +341,28 @@ class QualityGateTest {
                 && Files.exists(Path.of("models", ModelFiles.REC))
                 && Files.exists(Path.of("models", ModelFiles.CLS))
                 && Files.exists(Path.of("models", ModelFiles.DICT));
+    }
+
+    private static boolean lexiconPresent() {
+        return Files.isRegularFile(Path.of("models", Lexicon.POLISH_FILE))
+                && Files.isRegularFile(Path.of("models", Lexicon.ENGLISH_FILE));
+    }
+
+    private static boolean postalPresent() {
+        return Files.isRegularFile(Path.of("models", PostalCities.FILE));
+    }
+
+    /** Word lists and the postal list are independent. The ceiling is the run that had both, one, or neither. */
+    private static int invoiceCeiling(boolean lexicon, boolean postal) {
+        if (lexicon && postal) {
+            return INVOICE_MAX_EDITS;
+        }
+        if (lexicon) {
+            return INVOICE_MAX_EDITS_WITHOUT_POSTAL;
+        }
+        if (postal) {
+            return INVOICE_MAX_EDITS_WITHOUT_LEXICON;
+        }
+        return INVOICE_MAX_EDITS_WITHOUT_LISTS;
     }
 }

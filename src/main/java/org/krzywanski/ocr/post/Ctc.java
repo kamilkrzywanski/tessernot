@@ -5,7 +5,13 @@ import org.krzywanski.ocr.runtime.Tensor;
 
 import java.util.Arrays;
 
-/** Greedy CTC. Blank is index 0. Repeats are collapsed and blanks are dropped. */
+/**
+ * Greedy CTC. Blank is index 0. Repeats are collapsed and blanks are dropped.
+ * After a colon, a blank that only barely beats a space is read as that space.
+ * A few other runner-up characters replace the winner when the margin was measured
+ * on the printed scans: x for a multiplication sign, ł for l or t, ć for ó, a comma
+ * for a period, Ś for a capital S, and ó for o.
+ */
 public final class Ctc {
     public record Result(String text, float score) {
     }
@@ -57,6 +63,22 @@ public final class Ctc {
             return new Result("", 0f);
         }
         float[] probs = probabilities(data, time, classes) ? data : softmax(data, time, classes);
+        int space = charset.indexOf(" ");
+        int times = charset.indexOf("×");
+        int ex = charset.indexOf("x");
+        int el = charset.indexOf("l");
+        int ell = charset.indexOf("ł");
+        int tee = charset.indexOf("t");
+        int capitalEl = charset.indexOf("L");
+        int capitalEll = charset.indexOf("Ł");
+        int capitalTee = charset.indexOf("T");
+        int dot = charset.indexOf(".");
+        int comma = charset.indexOf(",");
+        int oo = charset.indexOf("ó");
+        int acute = charset.indexOf("ć");
+        int capitalS = charset.indexOf("S");
+        int capitalSAcute = charset.indexOf("Ś");
+        int smallO = charset.indexOf("o");
         StringBuilder text = new StringBuilder();
         double score = 0;
         int kept = 0;
@@ -64,12 +86,45 @@ public final class Ctc {
         for (int t = 0; t < time; t++) {
             int arg = 0;
             float best = probs[t * classes];
+            int second = -1;
+            float secondBest = -1f;
             for (int c = 1; c < classes; c++) {
                 float v = probs[t * classes + c];
                 if (v > best) {
+                    secondBest = best;
+                    second = arg;
                     best = v;
                     arg = c;
+                } else if (v > secondBest) {
+                    secondBest = v;
+                    second = c;
                 }
+            }
+            // Both NIP lines on the scanned invoice drop the space after the colon.
+            // Blank wins there, and the space is the runner-up at 0.35 or more.
+            // The same timestep on Nixon and on the receipt stays under that.
+            if (arg == 0 && second == space && secondBest >= 0.35f && text.length() > 0
+                    && text.charAt(text.length() - 1) == ':') {
+                arg = space;
+                best = secondBest;
+            }
+            // Measured on the three scans. Each swap hits only a real miss, and a lower bar does not.
+            // × on the 4,99 row is 0.36 for x. l in zapłaty is 0.35 for ł.
+            // t in Wrocław, łącznie and Zapłacono is at least 0.16 for ł. The period in 90.00 is 0.35 for a comma.
+            // ó in dziewięćdziesiąt is 0.17 for ć. A bar of 0.10 for t adds nothing on these scans.
+            // Capital S in Świat is 0.023 for Ś. The next capital S on these scans is 0.0023.
+            // o in Spółka is 0.061 for ó. No other o on these scans reaches 0.04.
+            if (runnerUp(arg, second, secondBest, times, ex, 0.35f)
+                    || runnerUp(arg, second, secondBest, el, ell, 0.34f)
+                    || runnerUp(arg, second, secondBest, capitalEl, capitalEll, 0.34f)
+                    || runnerUp(arg, second, secondBest, tee, ell, 0.15f)
+                    || runnerUp(arg, second, secondBest, capitalTee, capitalEll, 0.15f)
+                    || runnerUp(arg, second, secondBest, dot, comma, 0.34f)
+                    || runnerUp(arg, second, secondBest, oo, acute, 0.15f)
+                    || runnerUp(arg, second, secondBest, capitalS, capitalSAcute, 0.015f)
+                    || runnerUp(arg, second, secondBest, smallO, oo, 0.05f)) {
+                arg = second;
+                best = secondBest;
             }
             if (arg != 0 && arg != previous) {
                 text.append(charset.at(arg));
@@ -79,6 +134,10 @@ public final class Ctc {
             previous = arg;
         }
         return new Result(text.toString(), kept == 0 ? 0f : (float) (score / kept));
+    }
+
+    private static boolean runnerUp(int arg, int second, float secondBest, int from, int to, float min) {
+        return from >= 0 && arg == from && second == to && secondBest >= min;
     }
 
     /** True when the first few timesteps already look like a probability distribution. */
