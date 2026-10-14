@@ -101,9 +101,12 @@ failures come down to one share just under its threshold.
    for each page are in `bench/out/*-fast.tsv` and `*-plain.tsv` after a benchmark run.
 4. **Speed and memory.** Done so far: `Alphabet.LATIN` (15–33 % on text-heavy pages, same
    accuracy) and faster `ReduceMean` / `MaxPool` (a few %). The profile is in
-   [internals.md](internals.md#performance-notes). Next, by expected gain: a 6×2 register tile
-   in `VectorKernels.gemm` (1×1 convolutions are 41 % of CPU; AVX2 has room for 12 accumulators,
-   the kernel uses 8), and recognizing lines in batches of similar width as PaddleOCR does.
+   [internals.md](internals.md#performance-notes). Tried and dropped: 6×2 and 4×3 register
+   tiles in `VectorKernels.gemm`. With 12 vector accumulators C2 on JDK 21 is 20–25 % slower
+   than the 4×2 tile (6×2 only ties on JDK 25); the kernel reaches 70–80 GFLOPS on one P-core,
+   about half the AVX2 peak. Batching lines does not raise GEMM speed either: the recognizer's
+   1×1 convolutions already have 400–1,300 columns, and the kernel runs as fast at 160. What is
+   left is to skip work: two-pass detection, and fewer second reads in the Polish profile.
    About 1.5 GB of heap at 2048 px; a two-pass detection would also save time on large print.
 5. **Polish corrections at 2048 px.** The rules were measured on 960 px crops; at 2048 px the
    Biedronka receipt has three edits instead of one. Re-check `Corrections.POLISH` on `dev`.
