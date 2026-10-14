@@ -12,7 +12,9 @@ These are public documents with references transcribed by hand. Read
   - `test3` (100 documents: 50 PL, 50 EN): held out. Not scored. Do not tune on it.
 - `ref/dev/`, `ref/test/`, `ref/test2/`, `ref/test3/`: reference transcriptions (`pl-*`, `en-*`)
 - `data/`: the page images (about 350 MB) and the PDF and DjVu originals of rendered pages (about
-  860 MB). Licenses and authors are in `manifest.tsv`.
+  860 MB), kept in their own repository [ocr-pro-bench](https://github.com/kamilkrzywanski/ocr-pro-bench)
+  and mounted here as a submodule: `git submodule update --init bench/data`. Licenses and authors
+  are in `manifest.tsv`.
 - `fetch.sh`: rebuilds a missing image from its source and checks SHA-256. Pages of PDF and DjVu
   sources are rendered to PNG with `pdftoppm` (poppler-utils) and `ddjvu` (djvulibre). A source
   that is missing is downloaded again.

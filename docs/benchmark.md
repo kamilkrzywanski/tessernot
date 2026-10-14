@@ -26,7 +26,8 @@ them. This benchmark uses public documents with references transcribed by hand, 
 
 `bench/manifest.tsv` lists every document with its source URL, SHA-256, license, author and
 set. The page images and the PDF and DjVu originals of rendered pages are stored in
-`bench/data/`. `bench/fetch.sh` checks the digests and renders a page again when its image is
+`bench/data/`, the submodule [ocr-pro-bench](https://github.com/kamilkrzywanski/ocr-pro-bench)
+(`git submodule update --init bench/data`). `bench/fetch.sh` checks the digests and renders a page again when its image is
 missing. The references are in `bench/ref/<set>/` and carry the same attribution.
 
 | Kind | dev | test | test2 | test3 |
@@ -251,7 +252,8 @@ to 0.026, Arct's dictionary 0.735 to 0.048, the 1981 poster photo 0.669 to 0.095
 
 ```bash
 mvn -DskipTests package
-# The images are in bench/data. bench/fetch.sh rebuilds a missing one from its source
+# The images are in the submodule bench/data: git submodule update --init bench/data.
+# bench/fetch.sh rebuilds a missing one from its source
 # (curl; pdftoppm for PDF; ddjvu and pnmtopng, ImageMagick or Pillow for DjVu).
 
 ./ocr.sh score bench/ref/test2 bench/data --out bench/out/test2-plain > bench/out/test2-plain.tsv

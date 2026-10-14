@@ -1,6 +1,7 @@
 #!/bin/sh
-# Restores the benchmark images listed in bench/manifest.tsv into bench/data. The images are
-# tracked in git, so this is needed only to check them against the sources or to rebuild one.
+# Restores the benchmark images listed in bench/manifest.tsv into bench/data. The images are in
+# the submodule bench/data (git submodule update --init bench/data), so this is needed only to
+# check them against the sources or to rebuild one.
 # Empty fields are written as "-" (read would merge two tabs). A row without a page number is an
 # image: it is downloaded and checked against SHA-256. A row with a page number is a document: the
 # original is downloaded and checked, then that page is rendered to PNG.
