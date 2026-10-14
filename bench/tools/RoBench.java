@@ -5,7 +5,8 @@ import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
 import java.nio.file.*;
 import java.util.*;
 
-/** RoBench <tsv-dir> <ref-dir>... : CER of the reading order on cached lines, per document and pooled per ref dir. */
+/** RoBench <tsv-dir> <ref-dir>... : CER of the reading order on cached lines, per document and pooled per ref dir.
+ * -Drows=true reads row by row (Layout.ROWS); -Ddump=dir writes the texts; -Donly=part picks documents. */
 public class RoBench {
     public static void main(String[] args) throws Exception {
         Path tsv = Path.of(args[0]);
@@ -28,7 +29,7 @@ public class RoBench {
                     for (int i = 0; i < 8; i++) q[i] = Float.parseFloat(p[i]);
                     lines.add(new TextLine(p.length > 8 ? p[8] : "", 1f, 1f, q, null));
                 }
-                String text = ReadingOrder.join(ReadingOrder.group(lines));
+                String text = ReadingOrder.join(ReadingOrder.group(lines, !Boolean.getBoolean("rows")));
                 if (check) {
                     String old = Files.readString(tsv.resolve(name + ".txt"));
                     if (!old.equals(text)) System.out.println("DIFFERS from engine: " + name);

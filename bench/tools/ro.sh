@@ -2,6 +2,7 @@
 # Reading-order workbench. Run from the repo root after `mvn -DskipTests package`.
 #   bench/tools/ro.sh dump <ref-dir>...   OCR every reference's image once, cache lines in bench/out/ro/tsv
 #   bench/tools/ro.sh score <ref-dir>...  order the cached lines with the current ReadingOrder source, print CER
+#                                         (RO_OPTS=-Drows=true reads row by row, as Layout.ROWS)
 #   bench/tools/ro.sh cuts                lines ReadingOrder.cuts would split on the cached pages
 #   bench/tools/ro.sh show <name>         picture of the current order in bench/out/ro/viz/<name>.png
 # The cache holds the engine's lines (text and quads). Only ReadingOrder.java is recompiled, so a change
@@ -30,7 +31,7 @@ case $cmd in
       done
     done
     python3 -I "$T/totsv.py" "$W/json" "$W/tsv" ;;
-  score) compile; "$J/java" -cp "$W/classes:target/classes" RoBench "$W/tsv" "$@" ;;
+  score) compile; "$J/java" -cp "$W/classes:target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
   cuts) compile; "$J/java" -cp "$W/classes:target/classes" RoCuts "$W/tsv" ;;
   show)
     compile
