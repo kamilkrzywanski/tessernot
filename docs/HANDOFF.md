@@ -10,8 +10,10 @@ and the working method.
   user.email=...`; the global git config holds a work address). **No `Co-Authored-By` or any AI
   attribution.** Commit messages in Polish, imperative, like the existing history.
 - Talk to the owner in Polish. Push to `origin master` only when asked.
-- All benchmark data (page images, PDF/DjVu originals, references) is tracked in the repository on
-  purpose. Keep every file under 50 MB.
+- All benchmark data is tracked on purpose. Page images and PDF/DjVu originals live in the
+  submodule `bench/data` (its own repository, `ocr-pro-bench`); references and the manifest live
+  here. A new image is committed in the submodule first (on its `master`, not a detached HEAD),
+  then the submodule pointer here. Keep every file under 50 MB.
 - The system `java`, `javac` and Maven's JDK may be an older release (8 or 11 on this machine).
   `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` before `mvn` and `ocr.sh`; `ocr.sh` uses
   `$JAVA_HOME/bin/java` when it is set.
@@ -24,13 +26,13 @@ Sets and their status, see [benchmark.md](benchmark.md):
 
 | Set | Use |
 | --- | --- |
-| `dev` (36) | Look at it, debug on it, tune on it. |
+| `dev` (39) | Look at it, debug on it, tune on it. |
 | `test` (27) | Spent: its failures drove the last round. Use it as a regression check, like `dev`. |
 | `test2` (20) | Scored once. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
+| `test3` (97) | Held out, never scored, checked twice against the images (2026-10-15). Score it once at the end of the next round and report it next to `test2`, with `bench/report.py --manifest`: its headline number is the mean of the three document groups, because 77 of its pages are books, newspapers and gazettes and only 15 are invoices and receipts. |
 
-**Before the next release, collect `test3`** (about 20 new documents, half business documents,
-half multi-column pages) the same way, score it once at the end, and report it next to `test2`.
-Without a fresh set, any number you publish is optimistic.
+Business documents are thin in every set. More invoices, receipts, letters and forms can still go
+into `test3` before it is scored for the first time, never after.
 
 ### Collecting documents
 
@@ -62,7 +64,11 @@ The English dev agent listed spots worth a look in `en-newspaper-bristol-mercury
   per-document CER and word F1.
 - `bench/run-tesseract.sh`, `bench/run-rapidocr.py`: baselines (RapidOCR needs
   `pip install rapidocr==3.10.0 onnxruntime==1.31.0`).
-- `bench/report.py`: Markdown tables from score files. `bench/chart.py`: the README chart.
+- `bench/report.py`: Markdown tables from score files; `--manifest bench/manifest.tsv` adds the
+  CER per document group and their mean. `bench/chart.py`: the README chart. Both take the
+  groups from `bench/kinds.py`.
+- `bench/tools/tessline.py`: reads the `ro.sh` line cache with Tesseract, for comparing
+  recognizers on identical lines (see "Tried and dropped").
 - **`bench/tools/ro.sh`: the reading-order workbench.** `dump` runs OCR once per page and caches
   the lines with their boxes; `score` recompiles only `ReadingOrder.java` and scores every cached
   page in seconds; `cuts` lists merged lines it would split; `show <name>` draws a page's boxes
@@ -122,6 +128,20 @@ failures come down to one share just under its threshold.
    drop such lines.
 7. **Release.** Version is still `1.0-SNAPSHOT`: set 0.1.0, add CI (GitHub Actions running
    `mvn test` with the models), and decide on Maven Central and on hosting the models.
+
+## Tried and dropped
+
+- **Tesseract's LSTM as the line recognizer** (2026-10-15). `bench/tools/tessline.py` crops every
+  line box from the `ro.sh` cache the way the engine does, reads it with `tesseract --psm 7`
+  (`pol` or `eng`) and keeps ocr-pro's reading order, so only recognition differs. Word F1 on
+  `test` / `dev`: ocr-pro 0.930 / 0.956, Tesseract `tessdata_best` 0.870 / 0.884,
+  `tessdata_fast` (the Debian packages) 0.866 / 0.881. ocr-pro wins 26 of 27 English pages
+  (one tie) and 24 of 36 Polish ones; Tesseract wins 8 Polish pages, mostly on Polish marks in
+  capitals and typescript (ŁOWISKA, mogą, kąpieli), and partly by returning nothing for stamps
+  that the references leave out. Turning its dictionaries off changed no output, so the edge on
+  Polish marks comes from its network. `tessdata_best` costs about 11 s of CPU per page for the
+  lines alone. Porting the LSTM (own file format, LSTM layers, int8 weights, Tesseract's line
+  normalization) is not worth it; Polish marks are the job of `Corrections.POLISH`.
 
 ## Things that cost time in this round
 

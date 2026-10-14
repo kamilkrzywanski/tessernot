@@ -49,3 +49,4 @@ build/
 # Benchmark outputs are local. The images and the PDF and DjVu originals are the submodule
 # bench/data, which ignores the partial downloads of bench/fetch.sh itself.
 /bench/out/
+__pycache__/

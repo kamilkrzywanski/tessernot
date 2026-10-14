@@ -6,10 +6,10 @@ them. This benchmark uses public documents with references transcribed by hand, 
 
 | Set | Documents | Role |
 | --- | --- | --- |
-| `dev` | 36 (18 PL, 18 EN), 101,047 characters | Used to find and fix problems: the first 20 documents, plus 16 multi-column pages added for the reading-order work. Its numbers are **not independent**. |
+| `dev` | 39 (21 PL, 18 EN), 110,882 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, and 3 Official Journal pages moved from `test3` on 2026-10-15. Its numbers are **not independent**. The `dev` results below were computed on the first 36. |
 | `test` | 27 (18 PL, 9 EN), 59,772 characters | Scored once, before the reading-order work. Its failures then pointed at what to fix, so it is **no longer independent** either. |
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below). **The honest number.** Do not tune on it. |
-| `test3` | 100 (50 PL, 50 EN), 255,474 characters | Held out for a later round. Collected without looking at any engine output and not scored. `test2` stays the scored set. Do not tune on it. |
+| `test3` | 97 (47 PL, 50 EN), 245,601 characters | Held out for a later round. Collected without looking at any engine output, checked a second time against the images, and not scored. `test2` stays the scored set. Do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups (see below). |
 
 ## Rules for using the sets
 
@@ -20,7 +20,12 @@ them. This benchmark uses public documents with references transcribed by hand, 
   pages, proofread by volunteers, and text layers of born-digital PDFs served as drafts and were
   rebuilt line by line against the image; where the print differs, the print wins.
 - Disputed spots, and three references whose second check was not finished, are listed in the
-  manifest notes.
+  manifest notes. `test3` had its second check on 2026-10-15: 393 flagged spots, 61 corrections,
+  and the two spots that stayed unclear are in its notes.
+- **Report a set by document group when one kind dominates it.** `bench/report.py --manifest`
+  adds the pooled CER of each group (invoices and receipts; letters, forms and notices; books,
+  newspapers and gazettes) and their mean. For `test3` that mean is the headline number, so its
+  31 book pages do not drown its 15 invoices and receipts.
 
 ## The documents
 
@@ -36,7 +41,7 @@ missing. The references are in `bench/ref/<set>/` and carry the same attribution
 | letters, forms, notices | 5 PL, 5 EN | 4 PL, 4 EN | 1 PL, 1 EN | 2 PL, 1 EN |
 | books, dictionaries, encyclopedias | 3 PL, 3 EN | 5 PL | 4 PL, 2 EN | 21 PL, 18 EN |
 | newspapers, journals, papers | 5 PL, 5 EN | 3 EN | 2 PL, 3 EN | 10 PL, 16 EN |
-| gazettes, official journals | 2 PL, 2 EN | 2 PL, 1 EN (other) | 1 PL, 2 EN | 9 PL, 6 EN |
+| gazettes, official journals | 5 PL, 2 EN | 2 PL, 1 EN (other) | 1 PL, 2 EN | 6 PL, 6 EN |
 | other | | | | 2 PL tickets |
 
 Most pages of books, newspapers and gazettes have two or more columns: dictionaries and
@@ -45,7 +50,9 @@ or four columns, and journal articles with a full-width title and abstract.
 
 ### Transcription rules
 
-- Exact characters as printed: case, diacritics, punctuation, and the document's own typos.
+- Exact characters as printed: case, diacritics, punctuation, and the document's own typos. A
+  letter that is damaged in print or scan but still identifiable is written as that letter; a
+  wrong letter is kept.
 - **Reading order:**
   - running head first;
   - text on one visual row of a form or receipt is joined left to right;

@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Markdown tables from `ocr score` outputs, for docs/benchmark.md.
 
-usage: report.py <label>=<score.tsv>[:<times.tsv>] ...
+usage: report.py [--manifest <manifest.tsv>] <label>=<score.tsv>[:<times.tsv>] ...
 
 The score file is what `ocr score` prints (per document, then per group). A times file holds
 `name<TAB>N ms` lines for engines scored with `--hyp`. The first engine sets the document list.
-Prints a summary table, then one row per document with CER / word F1 for each engine.
+Prints a summary table, then one row per document with CER / word F1 for each engine. With
+--manifest it also prints the pooled CER of each document group (see kinds.py) and their mean, so
+that a set made mostly of one kind of document does not hide the others.
 """
 import statistics
 import sys
+
+from kinds import GROUPS, manifest_kinds
 
 
 def read_score(path):
@@ -41,8 +45,13 @@ def read_times(path):
 
 
 def main():
+    args = sys.argv[1:]
+    kinds = None
+    if args[:1] == ["--manifest"]:
+        kinds = manifest_kinds(args[1])
+        args = args[2:]
     engines = []
-    for arg in sys.argv[1:]:
+    for arg in args:
         label, rest = arg.split("=", 1)
         score, _, times = rest.partition(":")
         docs, groups = read_score(score)
@@ -73,6 +82,22 @@ def main():
         print(f"| {label} | {fmt(pooled(docs, 'pl-'))} / {fmt(pooled(docs, 'en-'))} / {fmt(pooled(docs, ''))} "
               f"| {fmt(statistics.median(cers))} | {fmt(f1(groups, 'pl'))} / {fmt(f1(groups, 'en'))} / "
               f"{fmt(f1(groups, 'all'))} | {time} |")
+    if kinds is not None:
+        groups = [(label, [n for n in names if kinds.get(n) in members]) for label, members in GROUPS]
+        groups = [(label, picked) for label, picked in groups if picked]
+        print()
+        print("| Engine | " + " | ".join(f"{label} ({len(picked)})" for label, picked in groups)
+              + " | Mean of groups |")
+        print("| --- |" + " --- |" * (len(groups) + 1))
+        for label, docs, _ in engines:
+            cers = []
+            for _, picked in groups:
+                chars = sum(docs[n]["chars"] for n in picked if n in docs)
+                cers.append(sum(docs[n]["cer"] * docs[n]["chars"] for n in picked if n in docs) / chars
+                            if chars else None)
+            known = [c for c in cers if c is not None]
+            mean = sum(known) / len(known) if len(known) == len(cers) else None
+            print(f"| {label} | " + " | ".join(fmt(c) for c in cers) + f" | {fmt(mean)} |")
     print()
     print("| Document | " + " | ".join(label for label, _, _ in engines) + " |")
     print("| --- |" + " --- |" * len(engines))

@@ -105,7 +105,8 @@ Delete `claims.tsv` when the round is merged.
 UTF-8, trailing newline.
 
 - Exact characters as printed: case, diacritics, digits, punctuation, old orthography, and the
-  document's own typos.
+  document's own typos. A letter that is damaged in print or scan but still identifiable is
+  written as that letter (a broken `c` stays `c`, not `:`); a wrong letter is kept.
 - One printed line per text line. Keep end-of-line hyphenation as printed (`word-` / next line).
   Wikisource drafts join lines and remove hyphens; rebuild both.
 - **Reading order:**

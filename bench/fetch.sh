@@ -59,7 +59,7 @@ tail -n +2 "$BENCH/manifest.tsv" | while IFS="$(printf '\t')" read -r name set f
     if [ -f "$dest" ]; then
       continue
     fi
-    case $url in
+    case ${url%%\?*} in
       *.djvu|*.DJVU) ext=djvu ;;
       *) ext=pdf ;;
     esac
