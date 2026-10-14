@@ -1,0 +1,67 @@
+Read the Room Before Your Model Generates
+Muyao Kong∗†
+New York University
+muyao.kong@nyu.edu
+Zhihao Lin∗
+Independent Researcher
+zhihaolinsde@gmail.com
+Abstract
+Large language models (LLMs) generally rely
+on sampling temperature to regulate the amount
+of randomness in their outputs. Mainstream
+methods for selecting temperature typically in-
+volve fixed, heuristic global settings and con-
+text or token-level calibration, rather than a
+geometrically interpretable representation of
+the communicative scenario. In this work, we
+introduce a simple and interpretable tempera-
+ture selection framework, the Scenario-Actor,
+which adapts decoding to the inferred situa-
+tional characteristics. Scenario-Actor extracts
+scenario-relevant structures from Transformer
+hidden states and determines the temperature
+from scenario embedding, a structured geomet-
+ric representation of the communicative set-
+ting. Empirical results show that on Llama-3.1-
+8B-Instruct, Scenario-Actor achieves strong
+goal-completion performance in interactive so-
+cial scenarios, significant gains on open-ended
+instruction following, and competitive perfor-
+mance on multi-turn conversation compared to
+multiple baselines.
+1 Introduction
+Large language models (LLMs) generate text by
+repeatedly sampling from a conditional next-token
+distribution. One of the simplest yet most conse-
+quential hyperparameters in language generation is
+the sampling temperature, which controls the sharp-
+ness of the next-token probability distribution and,
+in turn, the rigor and creativity of model output.
+Existing systems typically set it globally or adapt
+it according to predictive uncertainty, context, or
+learned decoding objectives, which implicitly treat
+decoding primarily as a property of the model’s pre-
+dictive state (Dhuliawala et al., 2024; Wang et al.,
+2020). But socially situated language generation
+exposes a different source of variation: the inter-
+action itself. A prompt conveys not only seman-
+tics but also implies a communicative setting. For
+example, the conversation could be either an aca-
+demic discussion or a friendly chitchat, whose de-
+sired responses are either rigorous or open-ended,
+formal or casual. The optimal temperature is then
+circumstantial, varying across scenarios.
+Figure 1: AgentSense goal-outcome flip rate (top) and
+goal completion score (bottom) by changing tempera-
+ture.
+In our controlled experiment, we decode 245
+AgentSense (Mou et al., 2025) social interactions
+with four fixed temperatures. We found that first,
+changing temperature substantially alters interac-
+tion quality, moving between mid-range tempera-
+tures flips 16 to 17% of individual goal outcomes;
+second, globally strongest temperature setting does
+not dominate across interactions.
+*Equal contribution.
+†Corresponding author.
+1

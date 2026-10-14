@@ -9,9 +9,10 @@ These are public documents with references transcribed by hand. Read
     problems of this one. No longer independent.
   - `test2` (20 documents): scored at the end of this round and again after a change built on
     `dev` only. Do not tune on it.
-- `ref/dev/`, `ref/test/`, `ref/test2/`: reference transcriptions (`pl-*`, `en-*`)
-- `data/`: the page images (about 144 MB) and the PDF and DjVu originals of rendered pages (about
-  345 MB). Licenses and authors are in `manifest.tsv`.
+  - `test3` (100 documents: 50 PL, 50 EN): held out. Not scored. Do not tune on it.
+- `ref/dev/`, `ref/test/`, `ref/test2/`, `ref/test3/`: reference transcriptions (`pl-*`, `en-*`)
+- `data/`: the page images (about 350 MB) and the PDF and DjVu originals of rendered pages (about
+  860 MB). Licenses and authors are in `manifest.tsv`.
 - `fetch.sh`: rebuilds a missing image from its source and checks SHA-256. Pages of PDF and DjVu
   sources are rendered to PNG with `pdftoppm` (poppler-utils) and `ddjvu` (djvulibre). A source
   that is missing is downloaded again.

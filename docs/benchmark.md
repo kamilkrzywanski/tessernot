@@ -2,13 +2,14 @@
 
 The engine's rules and thresholds were first tuned on three scans
 (`src/test/resources/quality/`). Measuring on those scans only shows how well the rules fit
-them. This benchmark uses public documents with references transcribed by hand, in three sets:
+them. This benchmark uses public documents with references transcribed by hand, in four sets:
 
 | Set | Documents | Role |
 | --- | --- | --- |
 | `dev` | 36 (18 PL, 18 EN), 101,047 characters | Used to find and fix problems: the first 20 documents, plus 16 multi-column pages added for the reading-order work. Its numbers are **not independent**. |
 | `test` | 27 (18 PL, 9 EN), 59,772 characters | Scored once, before the reading-order work. Its failures then pointed at what to fix, so it is **no longer independent** either. |
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below). **The honest number.** Do not tune on it. |
+| `test3` | 100 (50 PL, 50 EN), 255,474 characters | Held out for a later round. Collected without looking at any engine output and not scored. `test2` stays the scored set. Do not tune on it. |
 
 ## Rules for using the sets
 
@@ -28,13 +29,14 @@ set. The page images and the PDF and DjVu originals of rendered pages are stored
 `bench/data/`. `bench/fetch.sh` checks the digests and renders a page again when its image is
 missing. The references are in `bench/ref/<set>/` and carry the same attribution.
 
-| Kind | dev | test | test2 |
-| --- | --- | --- | --- |
-| invoices, bills, receipts | 3 PL, 3 EN | 6 PL, 2 EN | 2 PL, 2 EN |
-| letters, forms, notices | 5 PL, 5 EN | 4 PL, 4 EN | 1 PL, 1 EN |
-| books, dictionaries, encyclopedias | 3 PL, 3 EN | 5 PL | 4 PL, 2 EN |
-| newspapers, journals, papers | 5 PL, 5 EN | 3 EN | 2 PL, 3 EN |
-| gazettes, official journals | 2 PL, 2 EN | 2 PL, 1 EN (other) | 1 PL, 2 EN |
+| Kind | dev | test | test2 | test3 |
+| --- | --- | --- | --- | --- |
+| invoices, bills, receipts | 3 PL, 3 EN | 6 PL, 2 EN | 2 PL, 2 EN | 6 PL, 9 EN |
+| letters, forms, notices | 5 PL, 5 EN | 4 PL, 4 EN | 1 PL, 1 EN | 2 PL, 1 EN |
+| books, dictionaries, encyclopedias | 3 PL, 3 EN | 5 PL | 4 PL, 2 EN | 21 PL, 18 EN |
+| newspapers, journals, papers | 5 PL, 5 EN | 3 EN | 2 PL, 3 EN | 10 PL, 16 EN |
+| gazettes, official journals | 2 PL, 2 EN | 2 PL, 1 EN (other) | 1 PL, 2 EN | 9 PL, 6 EN |
+| other | | | | 2 PL tickets |
 
 Most pages of books, newspapers and gazettes have two or more columns: dictionaries and
 encyclopedias, the Official Journal of the EU, Dziennik Ustaw, 19th-century newspapers with three

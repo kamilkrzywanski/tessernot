@@ -1,0 +1,85 @@
+Characterizing adopters of named active learning methods in physics: An interview study
+Ibukunoluwa Bukola ∗1, Eric Brewe †1, Adrienne L. Traxler2, and Meagan Sundstrom1
+1Department of Physics, Drexel University, Philadelphia, Pennsylvania 19104, USA
+2Department of Science Education, University of Copenhagen, Copenhagen, Denmark
+Active learning has been shown to be more beneficial for student learning than didactic lecturing. Conse-
+quently, researchers have developed a slate of active learning strategies for use in physics instruction, including
+course-level reforms that are widely known by specific names. To increase adoption and support prolonged
+implementation of these named active learning methods, it is important to understand the backgrounds and ex-
+periences of instructors who are already using them. In this study, we interviewed 20 introductory physics and
+astronomy instructors who use one of Student-Centered Active Learning Environment with Upside-Down Peda-
+gogies (SCALE-UP), Investigative Science Learning Environment (ISLE), Tutorials in Introductory Physics and
+Astronomy, or Peer Instruction to gain insight into their teaching experiences, professional development, path-
+ways to learning about their method, and supports for and difficulties in their implementation. We find for our
+sample that all implementers are involved with the Discipline-Based Education Research (DBER) community
+(e.g., conducting DBER work, engaging with DBER researchers or content, receiving training for evidence-
+based instructional practices), but there is variation in the extent of engagement with DBER across instructors.
+While instructors identify a variety of supports for their implementation, such as from the broader education
+community and departmental or institutional administration, the difficulties they experience are representa-
+tive of both long-standing issues associated with active learning adoption (e.g., physical classroom and timing
+constraints, student resistance) and new issues related to emergent technologies (e.g., Artificial Intelligence).
+Finally, we uncover differences in implementers across the four named methods, particularly related to their
+training for the method and the supports they received for implementation. Together, these findings underscore
+the importance of supporting multiple dissemination avenues for named active learning methods, point to a pos-
+sible need for more training opportunities for SCALE-UP and ISLE in particular, and identify nascent issues in
+the contemporary active learning classroom that future work may further characterize and address.
+I. INTRODUCTION
+The use of active learning in undergraduate science instruc-
+tion has well-documented benefits to students across a range
+of outcomes, including conceptual learning, self-efficacy, and
+retention [1–6]. Over the past decade, instructors have in-
+creasingly implemented active learning, including adoption
+of these strategies across different educational levels and ge-
+ographic locations [7–11]. Despite the growing use of active
+learning, traditional lecturing is still common [10, 11]. As
+a result, there have been widespread calls for instructors to
+pivot from more traditional, didactic ways of teaching to ac-
+tive learning strategies [1, 12, 13].
+To promote adoption of active learning, research has started
+to unpack instructor pathways to using active learning strate-
+gies and the supports for and barriers to implementation (e.g.,
+Refs. [7, 9, 14–17]). This body of work, however, is some-
+times limited to single institutions, single courses, and/or sin-
+gle active learning strategies, making it difficult to draw broad
+conclusions about how and why active learning adoption oc-
+curs [9, 14, 18–21]. In other cases, studies span many instruc-
+tors and implementations, but lack sufficient detail about the
+institutional contexts and active learning strategies being used
+to devise targeted implications for dissemination and adop-
+tion [15, 18, 22, 23]. Studies that both capture a range of
+institutional contexts and implementations and contain suffi-
+cient information about the instructors and their contexts are
+∗ib396@drexel.edu
+†Contact author: eb573@drexel.edu
+needed to develop a more systematic understanding of the dif-
+fusion of active learning.
+In physics, named active learning methods offer useful case
+studies for this type of work. Physics education researchers
+have developed a range of active learning techniques over
+the past three decades, from single clicker questions to unit-
+length interventions to these course-level reforms that are
+known by specific names (e.g., Peer Instruction [24]). Such
+named methods are rigorously validated by the developers, of-
+ten through quasi-experimental procedures, and have demon-
+strated gains in student learning [25–27]. Named methods
+also carry a well-defined developmental lineage (e.g., because
+they are often motivated by specific theories of learning),
+structure, and set of supporting resources (e.g., the Peer In-
+struction textbook [24]). While individual implementations of
+the same named method may vary [28, 29], the shared name,
+structure, and goals allow them to be compared across imple-
+mentations and institutions.
+In this study, therefore, we closely examine the dissem-
+ination and use of four named active learning methods in
+physics and astronomy instruction by conducting interviews
+with 20 instructors using one of these methods. Several other
+named active learning methods for introductory physics ex-
+ist (e.g., Modeling Instruction [30] and Context-Rich Prob-
+lems [31, 32]), but we limit the current study to the following
+methods because they are both well-known and widely imple-
+mented [10], and we aimed to collect data from multiple im-
+plementations of each method (the methods are ordered from
+most to least structural reform required):
+• Student-Centered Active Learning Environment with
+Upside-Down Pedagogies (SCALE-UP) [33–36]: De-
+signed as an expanded version of Studio Physics [37],

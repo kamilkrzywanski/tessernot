@@ -1,0 +1,54 @@
+Preprint
+BACK-TRANSLATION STILL MATTERS:
+LEVERAGING MONOLINGUAL DATA FOR LOW-
+RESOURCE MACHINE TRANSLATION WITH LLMs
+Divyanshu Bathla
+IIT Roorkee
+divyanshu_b@ee.iitr.ac.in
+Parag Singla
+IIT Delhi
+parags@cse.iitd.ac.in
+Jitin Singla⋆
+IIT Roorkee
+jsingla@bt.iitr.ac.in
+ABSTRACT
+Pre-trained Large Language Model (LLMs) are effective on many tasks in zero-
+shot and few-shot settings. For machine translation of low-resource languages,
+the obvious options are few-shot prompting and fine-tuning on a small parallel
+set. We ask: what if moderate amounts of low-resource monolingual data are also
+available? We argue that, rather than continued pretraining, a more effective use of
+this data is the pre-LLM era technique of back-translation (BT). The current fine-
+tuned LLM translates monolingual sentences in each language, and the resulting
+pairs train it in the reverse direction. Updates on the parallel set are interleaved for
+stable learning. With 1K parallel pairs on Odia and Swahili, BT beats continued
+pretraining into the low-resource language by 7.7 to 16.4 XCOMET-XXL points in
+domain. With beam-decoded intermediate translations, it also beats a model with
+10× more parallel data. In-context examples retrieved from the parallel data further
+improve BT. We also analyze the source, quality and amount of monolingual text.
+Across five low-resource languages, with Hindi as a high-resource control, and two
+3B backbones, BT improves translation into the low-resource language by 16 to
+173% XCOMET-XXL over parallel-only fine-tuning. Blind human evaluation on
+Odia and Sanskrit agrees with the automatic metrics.
+1 INTRODUCTION
+LLMs are effective on many tasks in zero-shot and few-shot settings (Brown et al., 2020), and they
+translate well between high-resource languages (Hendy et al., 2023). They are, however, pre-trained
+overwhelmingly on a handful of high-resource languages, while most of the world’s languages
+appear only sparsely. Open-source instruction-tuned models are therefore fluent in English but have
+weak or near-zero competence in many low-resource languages. Gold-standard parallel corpora
+for low-resource pairs are also typically two to three orders of magnitude smaller than those for
+high-resource pairs, and they are often confined to narrow domains (Ramesh et al., 2022; Gala et al.,
+2023; NLLB Team et al., 2022).
+The obvious ways to use such model for a low-resource language are few-shot prompting and
+supervised fine-tuning (SFT) on a parallel set. Few-shot prompting places a few translated examples
+in the prompt, and retrieving examples that are similar to the input helps further (Vilar et al., 2023;
+Zebaze et al., 2025a;b). SFT on a small, high-quality parallel set adapts an LLM to translation (Xu
+et al., 2024). Both depend on what the model already knows about the language. But what if we have
+a moderate amount of monolingual text available at our disposal. So, this paper asks: Can an LLM
+with a weak prior leverage monolingual text for better translation, and how should that text enter
+training?
+⋆Corresponding author. Authors acknowledge PARAM Pragya HPC facility IIT Delhi for computational
+resources used in this work. DB acknowledges the fellowship provided by the IndiaAI Fellowship under the
+IndiaAI Mission, Ministry of Electronics and Information Technology (MeitY), Government of India. JS
+acknowledges the support of Dell Seed Program for providing Dell Pro Max with GB10. PS acknowledges
+support from IBM AI Horizon Network.
+1

@@ -1,0 +1,93 @@
+THE OPEN JOURNAL OF ASTROPHYSICS
+Preprint typeset using LATEX style openjournal v. 09/06/15
+NFDiag: HIGH-DIMENSIONAL MCMC CONVERGENCE DIAGNOSIS WITH NORMALIZING FLOWS
+KUTAY NAZLI1,2, ELENA SELLENTIN2,1
+1 Leiden Observatory, Leiden University, Einsteinweg 55 2333 CC Leiden, Netherlands and
+2 Mathematical Institute, Leiden University, Einsteinweg 55 2333 CC Leiden, Netherlands
+Version October 14, 2026
+ABSTRACT
+Accurately assessing the convergence of Monte Carlo Markov Chains is crucial for ensuring their va-
+lidity in Bayesian inference problems. However, convergence assessment in high dimensions is known
+to be difficult, due to most convergence diagnostics becoming insensitive beyond a few dozen param-
+eters. Conventional convergence statistics analyze marginal distributions which in high dimensions
+neglects increasing levels of information from the joint and conditional probability distributions. Thus
+we propose NFDiag, which taps into the information of the full multivariate joint posterior with a nor-
+malizing flow (NF). Our convergence diagnostic thereby also analyzes information from conditional
+distributions. In other words, by working in the full multivariate space, it is sensitive with respect to
+the geometry of the chain in high dimensions. Our diagnostic utilizes that NFs assume independent
+and identically distributed (iid) training samples, which is a testable assumption that will be violated
+by a non-converged or strongly correlated chain. Our diagnostic trains NFs on separate parts of a
+chain, and then assesses whether these correspond to the same multivariate target distribution. We
+test our diagnostic in up to 250 dimensions, and demonstrate it is universal and unbiased, and detects
+problematic chain quality also when Gelman-Rubin R̂ and the multivarite effective sample size do not.
+1. INTRODUCTION
+Bayesian statistics (Bayes 1763; Fienberg 2006) pro-
+vides a practical framework for solving scientific infer-
+ence problems. While some Bayesian inference prob-
+lems can be solved completely analytically, most rely
+heavily on computational methods (Gelman et al. 2013),
+such as Markov Chain Monte Carlo (MCMC) (Metropo-
+lis et al. 1953; Hastings 1970) algorithms. Following the
+initial Metropolis-Hastings algorithm, more variations of
+MCMC were developed, such as the Gibbs sampler (Ge-
+man & Geman 1984; Gelfand & Smith 1990), the Hamil-
+tonian Monte Carlo (HMC) sampler (Duane et al. 1987),
+piecewise deterministic samplers (Bertazzi & Bierkens
+2022), the No U-Turn sampler (NUTS) (Hoffman & Gel-
+man 2014) and the affine invariant sampler (Goodman &
+Weare 2010).
+As these algorithms allowed for sampling from more
+complex and increasingly higher dimensional probability
+distributions, a typical research question became: How
+can one tell that a chain is of sufficient quality to faith-
+fully represent the target distribution? This is usually
+abbreviated to the question of whether the chain has con-
+verged.
+In dimensions beyond a few dozen, this question be-
+comes increasingly hard to answer, and this paper hence
+proposes a diagnostic for chain quality assessment in high
+dimensions.
+One prerequisite for convergence is that the chain has
+sufficiently mixed and explored all the subvolumes of
+the probability distribution. This is implicitly a ques-
+tion about the geometric shape of the chain in high di-
+mensions. This geometry contains valuable information
+about whether the chain correctly resolves the condition-
+als of the target distribution.
+nazli@strw.leidenuniv.nl
+The most popular convergence diagnostics analyze
+marginals of the chain only. These include visual in-
+spection of marginal scatter plots, the correlation length
+of the chain and the effective sample size (ESS) (Geyer
+1992), Gelman-Rubin’s R̂ (Gelman & Rubin 1992) and
+Hanson’s diagnostic (Hanson 2001)).
+Restricting the analysis to marginals only loses in-
+formation. For example, unexplored sub-volumes typ-
+ically become invisible when projecting down onto a
+2-dimensional marginal, and a convoluted trace of the
+chain in the full volume can look like a well-mixed chain
+in a 2-dimensional projection. In the following, we there-
+fore train normalizing flows (NFs) to use the informa-
+tion in the conditional distributions on top of that in the
+marginals.
+We utilize NFs to construct the posterior of samples
+from an MCMC chain. NFs assume the samples used to
+train its neural networks to be independent and identi-
+cally distributed (iid), and a chain that is yet to converge
+contradicts this assumption. Thus a NF model built with
+samples falsely assuming iid will fail to accurately rep-
+resent another chain from the same target distribution.
+Our code NFDiag harnesses this fact to render the lack
+of convergence in MCMC chains visible. It computes
+a new convergence statistic in high dimensions we have
+called NFD, given by Eq. 8, which is the main result of
+this paper.
+We structure this work as follows. Further details
+about NF and the theoretical formulation that makes
+NFDiag possible are given in Sec. 2 and 3. We provide a
+brief user guide to NFDiag in Sec. 4. Sec. 5 demonstrates
+our method is universal and unbiased in up to 125 di-
+mensions, and highlights its advantages in comparison
+with other common statistics. In Sec. 5.3, we test it on a
+presently relevant cosmological inference problem in 250
+dimensions. In Sec. 6, we conclude.

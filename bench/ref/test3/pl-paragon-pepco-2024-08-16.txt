@@ -1,0 +1,61 @@
+Pepco Poland Sp. z o.o.
+ul. Strzeszyńska 73A, 60-479 Poznań
+Nr rej.: 000007930
+PEPCO
+58-400 Kamienna Góra
+Jana Pawła II 10
+NIP 782-21-31-157
+nr wydr. 080629/0285
+PARAGON FISKALNY
+1aleczka Magic Witch_ONE_Multico 1 * 20,00 20,00 A
+35220501
+1aleczka Magic Witch_ONE_Multico 1 * 20,00 20,00 A
+35220501
+Torebka prezentowa M_ONE_Multico 1 * 3,00 3,00 A
+60800406
+Markery metaliczne 4_ONE_Multico 1 * 6,00 6,00 A
+33031901
+zabawki do kapieli 3_ONE_Multico 1 * 10,00 10,00 A
+33004601
+Sprzed. opod. PTU A 59,00
+Kwota PTU A 23,00% 11,03
+SUMA PTU 11,03
+SUMA PLN 59,00
+ROZLICZENIE PŁATNOŚCI
+Płatność 59,00
+Wpłacono razem 59,00
+000201/0285 #001 0029730
+2024-08-16 16:29
+33BF45B27B0EA6EE37B67610F3D257AB2ACCF40F
+EAW1901783707
+T31114JD11314RDE4AYD3G
+nr wydr. 080630/0285
+NIEFISKALNY
+DOKUMENT NIEFISKALNY
+Sklep: 1724 Kasa: 1
+Data: 16.8.24 Godzina: 16:29
+Nr transakcji: 49565
+Kasjer: 0029730
+Karta 59,00
+************3133
+Numer autoryzacji: A 168874
+Metoda wpisu: Zbliżeniowe
+Waluta: PLN
+Rodzaj karty: VISA
+MID: 000002101930822
+TID: 00000001
+Typ transakcji: Sprzedaż
+Godzina autoryzacji: 16:29
+Aktualnej oferty szukaj na
+www.pepco.pl. Zwrotu towaru można
+dokonać na podstawie dowodu zakupu, w
+ciągu 30 dni od daty zakupu, w
+dowolnym sklepie PEPCO w kraju.
+Zwrotowi nie podlegają wybrane
+produkty z kategorii bielizna
+Dziękujemy za zakupy!
+NIEFISKALNY
+#001 0029730
+2024-08-16 16:29
+4E020B90E90A68268E26C5BBEFD18059A0E0505F
+EAW1901783707

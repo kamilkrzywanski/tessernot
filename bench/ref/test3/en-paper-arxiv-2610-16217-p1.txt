@@ -1,0 +1,92 @@
+REFTAG: REFLECTION-AWARE TEMPORAL AUDIO GROUNDING IN LARGE AUDIO
+LANGUAGE MODELS
+Yuhang Dai1, Xin Shu2, Zhennan Lin1, Mingchen Shao1,
+Chengyou Wang1, Xiangang Li2, Jianwei Yu2, Lei Xie1,∗
+1 Audio, Speech and Language Processing Group (ASLP@NPU), School of Computer Science
+Northwestern Polytechnical University
+2 Independent Researcher
+ABSTRACT
+Temporal audio grounding requires locating every occurrence of a
+queried target, making both occurrence counts and interval bound-
+aries essential. We propose RefTAG, a post-training framework for
+verifiable temporal self-correction. Its Reflection Chain-of-Thought
+(Re-CoT) protocol combines draft intervals, discrete count and
+boundary actions, and revised intervals in one response. Supervised
+fine-tuning on these trajectories (Re-CoT-SFT) teaches the protocol;
+reinforcement learning (RL) jointly rewards final localization and
+revision outcomes. Across 8,228 queries, Re-CoT-SFT improves
+query-weighted mIoU over final-answer SFT by 1.74 percentage
+points. RL further improves TAG-Bench multi-target mIoU by
+0.40 points and R@0.5 by 0.86 points. The final model achieves
+38.50% TAG-Bench mIoU and 51.01% mean mIoU across three
+datasets, outperforming the evaluated open-source MOSS-Audio
+and FireRedAudio models and the commercial Gemini-3.1-Pro on
+both measures. These results demonstrate that explicitly coupling
+count- and boundary-aware revision with joint reward optimiza-
+tion provides an effective and verifiable path to temporal audio
+grounding.
+Index Terms— temporal audio grounding, chain-of-thought,
+self-reflection, reinforcement learning
+1. INTRODUCTION
+Temporal audio grounding (TAG) connects natural-language de-
+scriptions to the intervals in which the described content occurs [1].
+Unlike clip-level recognition, it requires semantic identification and
+temporal evidence: when a target starts, when it ends, and whether it
+recurs. Under TAG-Bench’s all-occurrence setting [2], one plausible
+interval is insufficient for a target appearing in several disjoint
+regions. Grounding therefore requires a variable-size interval set
+with accurate coverage and boundaries, providing evidence that can
+be inspected against the recording.
+Large audio-language models (LALMs), including Audio
+Flamingo 3 [3] and Qwen3-Omni [4], support natural-language
+audio interaction. Temporal extensions address specific bottlenecks:
+TimeAudio introduces temporal representations [5], TimePro-RL
+combines time prompts with temporal-reward optimization [6], and
+LAT-Audio retrieves local evidence through iterative tool use [7].
+These methods improve temporal information access or localiza-
+tion supervision. Our focus is the prediction process that follows:
+identifying and correcting errors in an already generated interval set.
+∗ Corresponding author.
+Temporal correction has two coupled difficulties. First, occur-
+rence and boundary errors require different interventions: shifting
+a boundary does not recover an omitted occurrence, while adding
+intervals does not repair inaccurate endpoints. TAG-Bench reports
+under-counting on recurring targets [2]; event-presence analyses also
+find reduced reliability in scenes with more events [8]. Second, a
+fluent critique does not measure localization improvement. Final-
+answer supervision alone cannot distinguish useful revision from
+preservation of an accurate draft. Two incorrect predictions can also
+differ in overlap, count, and boundary accuracy. Reflection must
+therefore specify the correction and quantify its effect.
+These observations motivate reflection over interval predictions
+rather than unrestricted explanations. Building on reflection-aware
+training [9], we expose a draft, diagnose count and boundary errors,
+and evaluate the revision against the same temporal criterion. This
+connects the intermediate response to the grounding objective with-
+out a free-text reflection judge.
+We propose RefTAG with the Reflection Chain-of-Thought (Re-
+CoT) protocol. Each response contains draft intervals, discrete count
+and boundary actions, and revised intervals. Supervised fine-tuning
+(SFT) teaches this structure; reflection-aware Group Relative Policy
+Optimization (GRPO) rewards final quality and revision outcomes,
+including preservation of accurate drafts. A shared quality function
+combines coverage, interval matching, midpoint accuracy, and count
+agreement. The backbone is unchanged, and inference requires no
+annotations.
+Our contributions are the structured correction protocol and the
+interval-based reflection objective. Experiments separate final accu-
+racy, draft informativeness, and revision gain, then test reward mix-
+ing and individual quality components. Together, these comparisons
+establish the protocol’s grounding gains and identify the additional
+benefits of reflection-aware reinforcement learning.
+2. RELATED WORK
+Audio-text alignment and supervision. Early TAG predicts event
+boundaries from similarities between frame-level acoustic embed-
+dings and a phrase embedding [1]. Weakly supervised TAG learns
+these correspondences from clip-caption pairs using phrase-level
+matching, negative sampling, and pseudo-label supervision [10].
+AudioTime constructs synthetic audio-caption pairs with controlled
+timestamps, durations, ordering, and occurrence frequencies [11];
+TACOS annotates temporal regions in recordings and uses frame-
+wise contrastive learning [12]. These approaches improve the
+alignment signal through annotation or representation learning. Ref-

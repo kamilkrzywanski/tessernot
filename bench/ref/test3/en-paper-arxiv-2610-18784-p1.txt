@@ -1,0 +1,49 @@
+PACK LIGHT, CARRYON: BUILDING OBJECT-
+ORIENTED CONTEXT FOR LONG-HORIZON AGENTS
+Yuchen Lu1, Julian McAuley1, Lei Zhang1∗
+1 University of California San Diego
+yuchlu17@gmail.com jmaculey@ucsd.edu lez023@ucsd.edu
+ABSTRACT
+Long-horizon agents accumulate progress in persistent task state, yet repeatedly
+process interaction histories describing how that progress was achieved. This
+raises a natural question: can long-horizon context instead be organized around
+reusable progress rather than the history that produced it? In this paper, we in-
+troduce CarryOn, an object-oriented context runtime that organizes continua-
+tion around reusable task objects. Rather than treating compressed histories or
+reconstructed accounts of progress as the primary basis for continuation, Car-
+ryOn builds a context view from continuation carriers, complementary execu-
+tion context, and a live tail of recent interactions. A core challenge is keep-
+ing this reusable basis valid after its surrounding history is retired: how can
+CarryOn update the basis without reconstructing the full representation at every
+fold? CarryOn maintains carrier records across folds, revising affected records
+against bound evidence and applicable environment checks while carrying for-
+ward unaffected records and jointly updating execution context. Experiments
+on OSWorld2.0 and BrowseComp-Plus show improved gains of 5.8% and 7.0%
+while reducing total token usage by 51.9% and 22.9%, respectively. Project page:
+https://ethannju.github.io/carryon.
+1 INTRODUCTION
+Long-horizon agents accumulate progress in two places: persistent task state, which embodies what
+has been achieved, and interaction history, which records how it was achieved (Yi et al., 2026).
+As shown in Figure 1, once images have been inserted into a presentation or measurements have
+been entered into a report, the resulting task state already captures that progress for later steps to
+inspect and modify (Yang et al., 2024; Xie et al., 2024; Zhang et al., 2026). As execution continues,
+this redundancy grows: agents repeatedly process accounts of how results already available in the
+task state were produced. Existing methods manage growing histories by summarizing, retrieving,
+or pruning past interactions (Wu et al., 2026b; Packer et al., 2024; Xiao et al., 2026; Chen et al.,
+2026b; Kang et al., 2025; Xu et al., 2025), or by translating them into explicit progress records and
+structured task states (Wu et al., 2026a; Chen et al., 2026a; Wang et al., 2024). These approaches
+reduce context growth, but when they substitute for reusable task results, they make continuation
+depend on a redundant, selective account that can drift from the state the agent directly inspects and
+modifies.
+We challenge this reliance on reconstructed accounts of progress with an object-oriented view of
+long-horizon context, in which reusable task objects form the basis for continuation. These objects
+include work products, source-grounded findings, and application states that remain usable under
+explicit conditions. The agent can recover relevant information through direct inspection and use of
+these objects, while context supplies the complementary information needed to continue. To realize
+this view, we introduce CarryOn, a context runtime that organizes the agent’s context into three
+complementary components: continuation carriers, which bind reusable content or object references
+to their conditions of use; execution context, which preserves active goals, applicable constraints,
+and unresolved issues not captured by the carriers; and live tail, which retains interactions since the
+most recent successful fold.
+∗Corresponding Author.
+1
