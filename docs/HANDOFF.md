@@ -34,7 +34,8 @@ Without a fresh set, any number you publish is optimistic.
 
 ### Collecting documents
 
-Done by sub-agents, each with its own share, in parallel. What worked:
+The full procedure and a prompt template are in [bench/COLLECTING.md](../bench/COLLECTING.md).
+In short, done by sub-agents, each with its own share, in parallel. What worked:
 
 - Sources: pl/en Wikisource proofread pages (validated or proofread status; the scan is a DjVu
   or PDF on Commons), Wikimedia Commons, EUR-Lex / Publications Office (CC BY 4.0), arXiv papers

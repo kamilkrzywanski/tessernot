@@ -14,5 +14,7 @@ These are public documents with references transcribed by hand. Read
 - `fetch.sh`: rebuilds a missing image from its source and checks SHA-256. Pages of PDF and DjVu
   sources are rendered to PNG with `pdftoppm` (poppler-utils) and `ddjvu` (djvulibre). A source
   that is missing is downloaded again.
+- `COLLECTING.md`: how to find, license-check, render and transcribe new documents, with a prompt
+  for collecting agents
 - `run-rapidocr.py`, `run-tesseract.sh`: baselines that write outputs for `ocr score --hyp`
 - `report.py`, `chart.py`: the tables and the chart of docs/benchmark.md from `ocr score` outputs
