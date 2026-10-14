@@ -16,8 +16,8 @@ import java.util.Map;
  * without ink, wider than a word space, and it sits at the same x in many lines. A word space
  * does not line up like that.
  * <p>
- * A strip counts as a gutter when at least {@link #MIN_SUPPORT} lines have such a gap there and
- * ordinary column lines end just left of it and start just right of it. The last test keeps a
+ * A strip counts as a gutter when lines have such a gap there and ordinary column lines end just
+ * left of it and start just right of it: the more margin lines, the fewer gaps it needs. The last test keeps a
  * form whose label and value were read as one box in one piece.
  */
 public final class InkGutters {
@@ -39,7 +39,8 @@ public final class InkGutters {
     private static final int MIN_EDGES = 5;
     /**
      * Or: at least this many gaps, a margin of {@link #STRONG_EDGES} lines on one side and
-     * {@link #WEAK_EDGES} on the other. On the three-column 1912 weekly the gutters had 25 gaps
+     * {@link #WEAK_EDGES} on the other. A margin of {@link #STRONG_EDGES} lines on both sides
+     * needs a single gap. On the three-column 1912 weekly the gutters had 25 gaps
      * and 14/3 and 4/15 edges; a justified page and a receipt had at most 9 gaps.
      */
     private static final int STRONG_SUPPORT = 10;
@@ -75,7 +76,7 @@ public final class InkGutters {
                 gaps.addAll(gaps(page, line));
             }
         }
-        if (gaps.size() < MIN_SUPPORT) {
+        if (gaps.isEmpty()) {
             return out;
         }
         Map<TextLine, List<Float>> found = new IdentityHashMap<>();
@@ -136,9 +137,6 @@ public final class InkGutters {
 
     private static boolean isGutter(List<Gap> cluster, List<TextLine> lines, float medianH) {
         long distinct = cluster.stream().map(g -> g.line).distinct().count();
-        if (distinct < MIN_SUPPORT) {
-            return false;
-        }
         float[] xs = new float[cluster.size()];
         for (int i = 0; i < xs.length; i++) {
             xs[i] = cluster.get(i).x;
@@ -157,6 +155,13 @@ public final class InkGutters {
             if (Math.abs(l - x) <= EDGE_NEAR * medianH && r > x + 2 * medianH) {
                 rightStarts++;
             }
+        }
+        if (leftEnds >= STRONG_EDGES && rightStarts >= STRONG_EDGES) {
+            // Columns this plain need no more than one merged line to show the gutter.
+            return true;
+        }
+        if (distinct < MIN_SUPPORT) {
+            return false;
         }
         if (leftEnds >= MIN_EDGES && rightStarts >= MIN_EDGES) {
             return true;

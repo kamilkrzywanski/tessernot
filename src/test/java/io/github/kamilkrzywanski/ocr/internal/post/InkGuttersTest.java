@@ -46,6 +46,28 @@ class InkGuttersTest {
     }
 
     @Test
+    void oneMergedLineIsCutWhereColumnMarginsAreStrong() {
+        // Twelve rows of two plain columns and a single merged line at the bottom.
+        Bgr page = blank();
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            int y = 20 + i * 30;
+            words(page, 50, 450, y);
+            words(page, 500, 900, y);
+            lines.add(box("left " + i, 40, 470, y));
+            lines.add(box("right " + i, 480, 910, y));
+        }
+        int y = 20 + 12 * 30;
+        words(page, 50, 450, y);
+        words(page, 500, 900, y);
+        TextLine merged = box("merged", 40, 910, y);
+        lines.add(merged);
+        Map<TextLine, float[]> cuts = InkGutters.cuts(page, lines);
+        assertEquals(1, cuts.size());
+        assertEquals(435f / 870f, cuts.get(merged)[0], 0.02f);
+    }
+
+    @Test
     void alignedWordSpacesWithoutColumnMarginsStayWhole() {
         // One justified column whose lines all have a wide space at the same x: no line ends or
         // starts there, so it is not a gutter.
