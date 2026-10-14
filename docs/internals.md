@@ -138,14 +138,14 @@ head stay whole.
 **Gutters in the ink.** Before that geometric check, `InkGutters` looks at the page itself. Inside
 each box it finds blank strips at least 0.4 box heights wide (a thin vertical rule with blank on
 both sides counts as part of the strip; a narrow letter between two word spaces does not). Strips
-from different lines are grouped around the densest x (within 0.3 median lines). A group is a
-gutter when column margins stand next to it: ten lines ending within half a median line of it and
-ten starting there (then one merged line is enough); or four gaps with five and five; or, where one
-column is mostly merged, ten gaps with ten margin lines on one side and two on the other. Each box with a gap in a gutter is
-cut there, in as many places as it crosses gutters, and its pieces are read again. On a
-three-column 1912 weekly whose lines the detector merged over all columns, CER fell from 0.528 to
-0.024, and on an 1898 weekly with two merged lines from 0.754 to 0.009. A justified page whose wide word spaces line up has no margins at those strips and stays
-whole.
+from different lines are grouped around the densest x (within 0.3 median lines). A group is a gutter
+when column margins stand next to it: ten lines ending within half a median line of it and ten
+starting there (then one merged line is enough); or four gaps with five and five; or, where one
+column is mostly merged, ten gaps with ten margin lines on one side and two on the other. Each box
+with a gap in a gutter is cut there, in as many places as it crosses gutters, and its pieces are
+read again. On a three-column 1912 weekly whose lines the detector merged over all columns, CER fell
+from 0.528 to 0.024, and on an 1898 weekly with two merged lines from 0.754 to 0.009. A justified
+page whose wide word spaces line up has no margins at those strips and stays whole.
 
 ## Tables
 

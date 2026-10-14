@@ -1,6 +1,6 @@
 # Handoff: how to keep improving ocr-pro
 
-State on 2026-10-13, after the reading-order round. Read [README.md](../README.md),
+State on 2026-10-14, after the reading-order round and the column-gutter change. Read [README.md](../README.md),
 [internals.md](internals.md) and [benchmark.md](benchmark.md) first; this file is the to-do list
 and the working method.
 
@@ -90,12 +90,18 @@ failures come down to one share just under its threshold.
    is right. There is no heuristic to borrow from it. Make the text-column path in
    `ReadingOrder.textColumns` more conservative on narrow pages and on sides whose lines end in
    prices or quantities; reproduce on `dev` receipts first (and collect more receipts for `dev`).
-2. **Dense historical newspapers.** Tesseract wins on four narrow columns and complex gazettes
-   (`test2`: Scientific American, The Crisis, the 1878 calendar, London Gazette; `dev`: The
-   Independent 1898, Bristol Mercury 1832). On The Independent a long date line reaches 49 px
-   into a gutter where the limit is 44 px, so the split fails; such per-page thresholds are a
-   trap. A more robust direction is a proper column model: find all gutters of a band at once
-   from left-edge alignment (tab stops) instead of one emptiest strip at a time.
+2. **Dense historical newspapers.** Mostly done. `InkGutters` finds column gutters in the page
+   ink (blank strips inside boxes that line up next to column margins) and the engine cuts
+   merged lines there, and `ReadingOrder.stacked` keeps lines of a curved photo out of one row.
+   Built on `dev` (Wisła 1912 0.528 to 0.024, The Independent 1898 0.754 to 0.009, Bristol
+   Mercury 0.290 to 0.075); `test2` then went from 0.122 to 0.079 pooled (Tesseract 0.070) with
+   no page worse. Still open, all on spent `test2` pages, so reproduce on `dev` first: The Crisis
+   1910 (0.207, Tesseract 0.011), the London Gazette 1836 (0.645, Tesseract 0.504), the NSAM 125
+   memo (0.106, Tesseract 0.006), the Annales article (0.060, Tesseract 0.001). The thresholds
+   of `InkGutters` (margin counts 10/10, 5/5 with four gaps, 10/2 with ten gaps) were the
+   narrowest that kept the EU Official Journal and the receipts whole; a looser first version
+   cut justified text and broke them, so score all of `dev` and `test` after any change there.
+   Ink cuts run inside the engine: after changing them, re-dump the `ro.sh` cache.
 3. **Detection size.** 2048 px is better on `dev` and `test`; on `test2` 960 px is better on
    Polish pages and worse on English ones. Try a two-pass rule: detect at 960, measure the
    median line height in detector pixels, re-detect larger only for small print. The numbers

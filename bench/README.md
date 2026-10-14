@@ -7,7 +7,8 @@ These are public documents with references transcribed by hand. Read
   - `dev` (36 documents): used to find and fix problems. Numbers on it are not independent.
   - `test` (27 documents): scored once in the previous round, then used to find the layout
     problems of this one. No longer independent.
-  - `test2` (20 documents): scored once at the end of this round. Do not tune on it.
+  - `test2` (20 documents): scored at the end of this round and again after a change built on
+    `dev` only. Do not tune on it.
 - `ref/dev/`, `ref/test/`, `ref/test2/`: reference transcriptions (`pl-*`, `en-*`)
 - `data/`: the page images (about 144 MB) and the PDF and DjVu originals of rendered pages (about
   345 MB). Licenses and authors are in `manifest.tsv`.

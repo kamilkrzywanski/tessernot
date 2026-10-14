@@ -5,8 +5,8 @@ model files. It needs no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
 
 **Status: experimental.** It reads printed pages, invoices, receipts, typed letters and
 multi-column pages. Its recognition matches the same models on ONNX Runtime and is ahead of
-Tesseract, by a wide margin on invoices, receipts and photos. Tesseract still orders dense
-historical newspapers better. See the [benchmark](#accuracy-and-speed).
+Tesseract, by a wide margin on invoices, receipts and photos. On the hardest historical pages
+Tesseract still orders the text slightly better. See the [benchmark](#accuracy-and-speed).
 
 ## Why
 
@@ -102,16 +102,17 @@ post-processing) is public only for technical reasons. It may change in any rele
 
 Public documents with references transcribed by hand, in Polish and English: invoices,
 receipts, letters, forms, and multi-column books, dictionaries, newspapers and official
-gazettes. `test2` was collected for the latest round and scored once, at the end; nobody tuned
-on it. `test` was scored once in the round before and then pointed at what to fix.
+gazettes. `test2` was collected for the latest round and scored at its end, then once more
+after a column-gutter change built on `dev` only; nobody tuned on it. `test` was scored once in
+the round before and then pointed at what to fix.
 
 ![Character accuracy on test2 by document kind](docs/benchmark-test2.png)
 
 | Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | 0.122 / 0.044 | 0.950 | **0.047 / 0.025** | **0.930** | 7.3 s / 3.8 s |
-| ocr-pro, `--limit 960` | 0.216 / 0.048 | 0.935 | 0.070 / 0.038 | 0.915 | 5.8 s / 2.9 s |
-| ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.505 / 0.157 | 0.930 | about the same |
+| **ocr-pro** | 0.079 / **0.033** | 0.951 | **0.046 / 0.025** | **0.930** | 7.3 s / 3.8 s |
+| ocr-pro, `--limit 960` | 0.205 / 0.037 | 0.935 | 0.056 / 0.029 | 0.915 | 5.8 s / 2.9 s |
+| ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.504 / 0.157 | 0.930 | about the same |
 | RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.9 s / 4.1 s |
 | Tesseract 5 (`pol` / `eng`) | **0.070 / 0.033** | 0.934 | 0.210 / 0.149 | 0.854 | 4.6 s / 2.0 s |
 
@@ -126,10 +127,12 @@ invoices and receipts and loses on everything with columns.
 - **Recognition:** word F1 is above Tesseract on every set and matches ONNX Runtime running the
   same models, so the pure-Java runtime gives up nothing.
 - **Layout:** multi-column dictionaries, legal gazettes, the EU Official Journal, journal
-  articles and three-column newspapers are read column by column. RapidOCR reads the same
-  models row by row and loses most of those pages.
-- **Where Tesseract still wins:** dense 19th-century newspapers with four narrow columns, and a
-  few other complex pages, are ordered better by its layout analysis. It is also faster.
+  articles and newspapers with three or four narrow columns are read column by column, also
+  where the detector merged lines across the gutters. RapidOCR reads the same models row by row
+  and loses most of those pages.
+- **Where Tesseract still wins:** a few complex pages, such as a 1910 magazine page, an 1836
+  gazette and a typed memo, put it slightly ahead on `test2` as a whole (pooled CER 0.070
+  against 0.079; the median is the same). It is also faster.
 
 Method, the `dev` set, per-document results and how to reproduce them are in
 [docs/benchmark.md](docs/benchmark.md).
