@@ -7,6 +7,7 @@ import io.github.kamilkrzywanski.ocr.internal.pdf.PdfPages;
 import io.github.kamilkrzywanski.ocr.internal.post.Charset;
 import io.github.kamilkrzywanski.ocr.internal.post.Ctc;
 import io.github.kamilkrzywanski.ocr.internal.post.DbPost;
+import io.github.kamilkrzywanski.ocr.internal.post.InkGutters;
 import io.github.kamilkrzywanski.ocr.internal.post.Lexicon;
 import io.github.kamilkrzywanski.ocr.internal.post.PostalCities;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
@@ -21,6 +22,7 @@ import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -339,27 +341,49 @@ public final class OcrEngine implements AutoCloseable {
         if (!cfg.useRec() || rec == null || lines.size() < 2) {
             return lines;
         }
-        Map<TextLine, Float> cuts = ReadingOrder.cuts(lines);
+        // Gutters seen in the ink first: they also find lines merged over three columns, where
+        // the boxes alone show no gutter. Then the geometric check on what is left.
+        List<TextLine> inked = cut(page, lines, InkGutters.cuts(page, lines), lineParallel);
+        Map<TextLine, float[]> geometric = new IdentityHashMap<>();
+        for (Map.Entry<TextLine, Float> cut : ReadingOrder.cuts(inked).entrySet()) {
+            geometric.put(cut.getKey(), new float[]{cut.getValue()});
+        }
+        return cut(page, inked, geometric, lineParallel);
+    }
+
+    /** Each line in {@code cuts} is cut at the given fractions of its length and its pieces read again. */
+    private List<TextLine> cut(Bgr page, List<TextLine> lines, Map<TextLine, float[]> cuts, boolean lineParallel) {
         if (cuts.isEmpty()) {
             return lines;
         }
-        List<DbPost.Box> halves = new ArrayList<>(cuts.size() * 2);
-        List<TextLine> out = new ArrayList<>(lines.size() + cuts.size());
+        List<DbPost.Box> pieces = new ArrayList<>(cuts.size() * 3);
+        List<TextLine> out = new ArrayList<>(lines.size() + cuts.size() * 2);
         for (TextLine line : lines) {
-            Float t = cuts.get(line);
-            if (t == null) {
+            float[] ts = cuts.get(line);
+            if (ts == null) {
                 out.add(line);
                 continue;
             }
             float[] q = line.quad();
-            float topX = q[0] + (q[2] - q[0]) * t;
-            float topY = q[1] + (q[3] - q[1]) * t;
-            float bottomX = q[6] + (q[4] - q[6]) * t;
-            float bottomY = q[7] + (q[5] - q[7]) * t;
-            halves.add(new DbPost.Box(new float[]{q[0], q[1], topX, topY, bottomX, bottomY, q[6], q[7]}, line.detScore()));
-            halves.add(new DbPost.Box(new float[]{topX, topY, q[2], q[3], q[4], q[5], bottomX, bottomY}, line.detScore()));
+            float prevTopX = q[0];
+            float prevTopY = q[1];
+            float prevBottomX = q[6];
+            float prevBottomY = q[7];
+            for (int i = 0; i <= ts.length; i++) {
+                float t = i < ts.length ? ts[i] : 1f;
+                float topX = q[0] + (q[2] - q[0]) * t;
+                float topY = q[1] + (q[3] - q[1]) * t;
+                float bottomX = q[6] + (q[4] - q[6]) * t;
+                float bottomY = q[7] + (q[5] - q[7]) * t;
+                pieces.add(new DbPost.Box(new float[]{prevTopX, prevTopY, topX, topY, bottomX, bottomY, prevBottomX, prevBottomY},
+                        line.detScore()));
+                prevTopX = topX;
+                prevTopY = topY;
+                prevBottomX = bottomX;
+                prevBottomY = bottomY;
+            }
         }
-        out.addAll(recognizeBoxes(page, halves, lineParallel));
+        out.addAll(recognizeBoxes(page, pieces, lineParallel));
         return out;
     }
 
