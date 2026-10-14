@@ -130,6 +130,11 @@ final class NnOps {
         int outH = poolOut(inH, effH, sH, padT, padB, ceilMode);
         int outW = poolOut(inW, effW, sW, padL, padR, ceilMode);
         float[] out = run.arena.allocF(n * c * outH * outW);
+        if (kH == 2 && kW == 2 && sH == 1 && sW == 1 && dH == 1 && dW == 1 && padT == 0 && padL == 0
+                && outH == inH - 1 + padB && outW == inW - 1 + padR && padB <= 1 && padR <= 1 && inW > 0) {
+            maxPool2x2(x.f, out, n * c, inH, inW, outH, outW);
+            return Tensor.pooledF32(new int[]{n, c, outH, outW}, out);
+        }
         for (int ni = 0; ni < n; ni++) {
             for (int ci = 0; ci < c; ci++) {
                 int inBase = (ni * c + ci) * inH * inW;
@@ -160,6 +165,39 @@ final class NnOps {
             }
         }
         return Tensor.pooledF32(new int[]{n, c, outH, outW}, out);
+    }
+
+    /**
+     * A 2x2 window with stride 1, padded at most one row and column at the bottom and right
+     * (SAME_UPPER in the recognition model). The maximum of two rows, then of two neighbours in
+     * that row: the same elements as the general loop, so the same result, without its bounds
+     * checks per window element.
+     */
+    private static void maxPool2x2(float[] in, float[] out, int planes, int inH, int inW, int outH, int outW) {
+        float[] row = new float[inW];
+        for (int p = 0; p < planes; p++) {
+            int inBase = p * inH * inW;
+            int outBase = p * outH * outW;
+            for (int oh = 0; oh < outH; oh++) {
+                int r0 = inBase + oh * inW;
+                if (oh + 1 < inH) {
+                    int r1 = r0 + inW;
+                    for (int w = 0; w < inW; w++) {
+                        row[w] = Math.max(in[r0 + w], in[r1 + w]);
+                    }
+                } else {
+                    System.arraycopy(in, r0, row, 0, inW);
+                }
+                int o = outBase + oh * outW;
+                int last = Math.min(outW, inW - 1);
+                for (int w = 0; w < last; w++) {
+                    out[o + w] = Math.max(row[w], row[w + 1]);
+                }
+                if (outW == inW) {
+                    out[o + inW - 1] = row[inW - 1];
+                }
+            }
+        }
     }
 
     private static int poolOut(int in, int kernel, int stride, int pad0, int pad1, boolean ceilMode) {

@@ -7,10 +7,10 @@ leave `--model` out.
 
 ```text
 ocr download [dir]
-ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--json]
-ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--json]
-ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows]
-ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--out dir] [--model dir] [--limit N] [--threads N]
+ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--json]
+ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--json]
+ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin]
+ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--out dir] [--model dir] [--limit N] [--threads N]
 ocr score <ref-dir> --hyp <dir>
 ocr convert <in.onnx> <out.jir>
 ocr ops <model> [--raw]
@@ -41,6 +41,9 @@ ocr eval [--model dir]
 - `--layout auto|rows`: `auto` (the default) finds columns, side-by-side blocks and titles across
   columns. `rows` reads every page row by row with no layout analysis, for streams of
   one-column documents such as receipts, where a column can never be found by mistake.
+- `--alphabet all|latin`: `latin` cuts the recognizer's last layer to Latin and Greek letters,
+  digits, punctuation and common symbols (2,440 of 18,710 classes) when the model is loaded.
+  Same accuracy on Latin-script documents, faster on pages with many lines. The default is `all`.
 - `--json`: one JSON document instead of text (see below).
 - `--dpi N`: PDF render resolution.
 

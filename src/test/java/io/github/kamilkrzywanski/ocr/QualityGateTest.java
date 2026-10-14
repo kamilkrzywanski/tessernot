@@ -216,6 +216,19 @@ class QualityGateTest {
         }
     }
 
+    /** The plain pipeline with the recognizer's last layer cut to Latin script stays within the same ceilings. */
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void latinAlphabetDoesNotRegress() throws Exception {
+        assumeTrue(modelsPresent(), "models/ is missing");
+        OcrConfig latin = OcrConfig.defaults(Path.of("models")).toBuilder().alphabet(Alphabet.LATIN).build();
+        try (OcrEngine engine = OcrEngine.create(latin)) {
+            check(engine, "nixon-resign.jpg", NIXON, PLAIN_NIXON_MAX_EDITS);
+            check(engine, "receipt-biedronka.jpg", RECEIPT, PLAIN_RECEIPT_MAX_EDITS);
+            check(engine, "faktura-klodzka.jpg", INVOICE, PLAIN_INVOICE_MAX_EDITS);
+        }
+    }
+
     /** The Rewasz item row and the VAT grid. A price rail and the parties block are not cells. */
     private static void assertRuledInvoice(OcrResult result) {
         String dump = dump(result.tables());

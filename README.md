@@ -78,6 +78,9 @@ try (OcrPool pool = OcrPool.open(Path.of("models"), 4)) {
 To change models or thresholds, start from `OcrConfig.defaults(dir).toBuilder()`. For another
 language, swap the recognition model and its dictionary. If every page has one column, as with
 receipts, `.layout(Layout.ROWS)` (`--layout rows`) reads row by row and skips the column analysis.
+For Latin-script documents, `.alphabet(Alphabet.LATIN)` (`--alphabet latin`) keeps 2,440 of the
+recognizer's 18,710 output classes: the same accuracy on the benchmark, and 15–33 % less time on
+pages with a lot of text.
 
 ### Public API
 
@@ -86,7 +89,7 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 | Class | Role |
 | --- | --- |
 | `OcrEngine`, `OcrPool` | run OCR, one caller at a time or several in parallel |
-| `OcrConfig`, `Corrections`, `Layout` | models, thresholds, threads, the optional Polish rules, and automatic or row-by-row reading order |
+| `OcrConfig`, `Corrections`, `Layout`, `Alphabet` | models, thresholds, threads, the optional Polish rules, automatic or row-by-row reading order, and the characters the recognizer may output |
 | `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, ruled tables |
 | `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
 | `ModelFiles` | download and check the default models |

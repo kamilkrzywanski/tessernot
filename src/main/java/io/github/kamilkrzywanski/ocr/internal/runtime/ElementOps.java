@@ -255,6 +255,10 @@ final class ElementOps {
         }
         int[] outDims = keepDims(a.dims, reduced, keepdims);
         int nOut = Tensor.numel(outDims);
+        Tensor block = reduceBlock(a, reduced, outDims, run);
+        if (block != null) {
+            return !keepdims && outDims.length == 0 ? Tensor.pooledF32(new int[0], block.f) : block;
+        }
         double[] acc = new double[nOut];
         int count = 1;
         for (int d = 0; d < rank; d++) {
@@ -288,6 +292,47 @@ final class ElementOps {
         }
         if (!keepdims && outDims.length == 0) {
             return Tensor.pooledF32(new int[0], out);
+        }
+        return Tensor.pooledF32(outDims, out);
+    }
+
+    /**
+     * Mean over axes that form one contiguous range, such as H and W of NCHW. Each output sums its
+     * inputs in the order the general loop visits them, in double, and scales by the same float
+     * factor, so the result is identical; it only skips the per-element index arithmetic.
+     * Null when the reduced axes are not contiguous.
+     */
+    private static Tensor reduceBlock(Tensor a, boolean[] reduced, int[] outDims, Run run) {
+        int lo = -1;
+        int hi = -1;
+        for (int d = 0; d < reduced.length; d++) {
+            if (reduced[d]) {
+                if (lo >= 0 && d != hi + 1) {
+                    return null;
+                }
+                if (lo < 0) {
+                    lo = d;
+                }
+                hi = d;
+            }
+        }
+        if (lo < 0) {
+            return null;
+        }
+        int before = product(a.dims, 0, lo);
+        int mid = product(a.dims, lo, hi + 1);
+        int after = product(a.dims, hi + 1, a.rank());
+        float[] out = run.arena.allocF(before * after);
+        float inv = mid == 0 ? 0f : 1f / mid;
+        for (int b = 0; b < before; b++) {
+            int base = b * mid * after;
+            for (int t = 0; t < after; t++) {
+                double sum = 0;
+                for (int m = 0, p = base + t; m < mid; m++, p += after) {
+                    sum += a.f[p];
+                }
+                out[b * after + t] = (float) (sum * inv);
+            }
         }
         return Tensor.pooledF32(outDims, out);
     }

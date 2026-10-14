@@ -520,6 +520,18 @@ class PostProcessTest {
     }
 
     @Test
+    void latinCharsetKeepsLatinGreekAndSharedSymbols() {
+        Charset all = Charset.of("a", "中", "ł", "1", "€", "Ａ", "μ", "、", "カ", " ");
+        int[] keep = all.latin();
+        Charset latin = all.subset(keep);
+        assertArrayEquals(new int[]{0, 1, 3, 4, 5, 7, 10}, keep);
+        assertEquals("", latin.at(0));
+        assertEquals("ł", latin.at(2));
+        assertEquals(" ", latin.at(6));
+        assertEquals(7, latin.size());
+    }
+
+    @Test
     void readingOrderKeepsAGridInRows() {
         List<TextLine> lines = List.of(
                 line("a", 0, 0, 20, 10),

@@ -99,9 +99,12 @@ failures come down to one share just under its threshold.
    Polish pages and worse on English ones. Try a two-pass rule: detect at 960, measure the
    median line height in detector pixels, re-detect larger only for small print. The numbers
    for each page are in `bench/out/*-fast.tsv` and `*-plain.tsv` after a benchmark run.
-4. **Speed and memory.** 7 s median on dense pages against Tesseract's 4.6 s, and about 1.5 GB of
-   heap at 2048 px. Profile the detector at 2048 px (tiling the page, or float16 activations)
-   and recognition on pages with 100+ lines.
+4. **Speed and memory.** Done so far: `Alphabet.LATIN` (15–33 % on text-heavy pages, same
+   accuracy) and faster `ReduceMean` / `MaxPool` (a few %). The profile is in
+   [internals.md](internals.md#performance-notes). Next, by expected gain: a 6×2 register tile
+   in `VectorKernels.gemm` (1×1 convolutions are 41 % of CPU; AVX2 has room for 12 accumulators,
+   the kernel uses 8), and recognizing lines in batches of similar width as PaddleOCR does.
+   About 1.5 GB of heap at 2048 px; a two-pass detection would also save time on large print.
 5. **Polish corrections at 2048 px.** The rules were measured on 960 px crops; at 2048 px the
    Biedronka receipt has three edits instead of one. Re-check `Corrections.POLISH` on `dev`.
 6. **Stamps and handwriting.** References leave them out, but every engine reads them (the 1932

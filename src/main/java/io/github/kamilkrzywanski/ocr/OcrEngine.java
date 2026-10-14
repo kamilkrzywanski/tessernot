@@ -11,6 +11,7 @@ import io.github.kamilkrzywanski.ocr.internal.post.Lexicon;
 import io.github.kamilkrzywanski.ocr.internal.post.PostalCities;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
 import io.github.kamilkrzywanski.ocr.internal.post.Tables;
+import io.github.kamilkrzywanski.ocr.internal.runtime.Graph;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Session;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Sig;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Tensor;
@@ -106,9 +107,16 @@ public final class OcrEngine implements AutoCloseable {
         if (cfg.useRec()) {
             requireModel(cfg.recModel(), "recognition model");
             requireModel(cfg.dict(), "recognition dict");
-            this.rec = Session.load(cfg.recModel(), lineOptions());
+            Charset full = Charset.load(cfg.dict(), cfg.useSpaceChar());
+            Graph recGraph = Session.read(cfg.recModel());
+            if (cfg.alphabet() == Alphabet.LATIN) {
+                int[] keep = full.latin();
+                narrowHead(recGraph, full.size(), keep);
+                full = full.subset(keep);
+            }
+            this.rec = Session.create(recGraph, lineOptions());
             this.recInput = rec.inputName();
-            this.charset = Charset.load(cfg.dict(), cfg.useSpaceChar());
+            this.charset = full;
             Path models = cfg.dict().getParent();
             // The word lists belong to the Polish corrections. Without them the files are not read.
             this.lexicon = models == null || !corrected ? null : Lexicon.optional(models);
@@ -1108,6 +1116,50 @@ public final class OcrEngine implements AutoCloseable {
         float[] map = new float[pixels];
         System.arraycopy(data, 0, map, 0, pixels);
         return new Planar(map, width, height);
+    }
+
+    /**
+     * Keeps only the {@code keep} columns of the recognition model's last layer: the weight
+     * {@code [hidden, classes]} and the bias {@code [classes]}, and the class count of the output.
+     * The softmax then runs over the kept classes only.
+     */
+    private static void narrowHead(Graph graph, int classes, int[] keep) {
+        int changed = 0;
+        for (Map.Entry<String, Tensor> entry : graph.initializers.entrySet()) {
+            Tensor t = entry.getValue();
+            if (t.f == null) {
+                continue;
+            }
+            if (t.dims.length == 2 && t.dims[1] == classes) {
+                int rows = t.dims[0];
+                float[] out = new float[rows * keep.length];
+                for (int r = 0; r < rows; r++) {
+                    for (int j = 0; j < keep.length; j++) {
+                        out[r * keep.length + j] = t.f[r * classes + keep[j]];
+                    }
+                }
+                entry.setValue(Tensor.f32(new int[]{rows, keep.length}, out));
+                changed++;
+            } else if (t.dims.length == 1 && t.dims[0] == classes) {
+                float[] out = new float[keep.length];
+                for (int j = 0; j < keep.length; j++) {
+                    out[j] = t.f[keep[j]];
+                }
+                entry.setValue(Tensor.f32(new int[]{keep.length}, out));
+                changed++;
+            }
+        }
+        if (changed == 0) {
+            throw new OcrException("alphabet: no [hidden, " + classes + "] weight in the recognition model");
+        }
+        for (int i = 0; i < graph.outputs.size(); i++) {
+            Sig sig = graph.outputs.get(i);
+            if (sig.dims != null && sig.dims.length > 0 && sig.dims[sig.dims.length - 1] == classes) {
+                int[] dims = sig.dims.clone();
+                dims[dims.length - 1] = keep.length;
+                graph.outputs.set(i, new Sig(sig.name, sig.dtype, dims));
+            }
+        }
     }
 
     private Session.Options lineOptions() {

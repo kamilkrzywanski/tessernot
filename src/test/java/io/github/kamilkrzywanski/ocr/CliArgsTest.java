@@ -85,6 +85,19 @@ class CliArgsTest {
     }
 
     @Test
+    void alphabetIsNamedAndCheckedBeforeAFileIsOpened() {
+        Run bad = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--alphabet", "greek"}));
+        assertEquals(1, bad.code);
+        assertTrue(bad.err.contains("alphabet must be all or latin"), bad.err);
+
+        assertEquals(Alphabet.LATIN, Alphabet.parse("Latin"));
+        assertEquals(Alphabet.ALL, Alphabet.parse(" all "));
+        assertEquals(Alphabet.ALL, OcrConfig.builder().build().alphabet());
+        assertEquals(Alphabet.LATIN, OcrConfig.builder().alphabet(Alphabet.LATIN).build().toBuilder().build().alphabet());
+        assertThrows(OcrException.class, () -> OcrConfig.builder().alphabet(null).build());
+    }
+
+    @Test
     void scoreComparesReadyOutputsWithReferences() throws IOException {
         Path dir = Files.createTempDirectory("score");
         Path refs = Files.createDirectories(dir.resolve("ref"));

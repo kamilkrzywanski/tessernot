@@ -179,6 +179,20 @@ On a dense 1240×1754 page (31 lines) with PP-OCRv6 small and 24 threads, the me
 658 ms: 159–185 ms detection and 468–508 ms recognition. The same page with latin PP-OCRv5 took
 307 ms. Recognition cost grows with the number and length of lines.
 
+Where the time goes on a dense page (Congressional Record, 245 lines, 2048 px detection,
+12 threads, `-Docr.profile=true` summed over all runs): recognition takes about 85 % of the wall
+time. Of the CPU time, 1×1 convolutions of the recognizer take 41 %, its other dense convolutions
+19 %, and the last layer over 18,710 classes (MatMul, Add, Softmax) 12 %. More threads keep
+helping on this 2P + 8E laptop (4 threads 30 s, 8 threads 22 s, 12 threads 18 s), so the work is
+CPU-bound; virtual threads would not add anything. GC pauses total about 0.1 s.
+
+- `Alphabet.LATIN` cuts that last layer to 2,440 classes when the model is loaded: 15–33 % less
+  time on pages with many lines, the same accuracy on the benchmark.
+- `ReduceMean` over a contiguous range of axes and the 2×2 stride-1 `MaxPool` have their own loops,
+  10× and 3× faster than the general ones, with identical results.
+- With more than one thread, the scores of recognized lines can differ in the last bit from run to
+  run; the text does not. One thread gives the same output every time.
+
 For timings on real documents next to Tesseract and RapidOCR, see [benchmark.md](benchmark.md).
 
 ## Tests

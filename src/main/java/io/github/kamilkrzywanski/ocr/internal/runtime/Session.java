@@ -39,29 +39,37 @@ public final class Session {
     }
 
     public static Session load(Path path, Options options) {
+        Graph graph = read(path);
+        if (options.optimize && !graph.optimized) {
+            graph.optimize();
+        }
+        return new Session(graph, options);
+    }
+
+    /**
+     * The graph of an ONNX or JIR file, before optimization, so a caller can change weights first.
+     * A JIR file holds a graph that was optimized when it was written.
+     */
+    public static Graph read(Path path) {
         try {
             byte[] data = Files.readAllBytes(path);
             if (data.length == 0) {
                 throw new OcrException("cannot load " + path + ": file is empty");
             }
-            Graph graph;
             if (data.length >= 4 && data[0] == 'J' && data[1] == 'I' && data[2] == 'R' && data[3] == '1') {
-                graph = Jir.read(data);
-            } else {
-                Path parent = path.getParent() == null ? Path.of(".") : path.getParent();
-                graph = Onnx.read(data, parent);
-                if (options.optimize) {
-                    graph.optimize();
-                }
+                Graph graph = Jir.read(data);
+                graph.optimized = true;
+                return graph;
             }
-            return new Session(graph, options);
+            Path parent = path.getParent() == null ? Path.of(".") : path.getParent();
+            return Onnx.read(data, parent);
         } catch (java.io.IOException e) {
             throw new OcrException("cannot load " + path + ": " + e.getMessage(), e);
         }
     }
 
     public static Session create(Graph graph, Options options) {
-        if (options.optimize) {
+        if (options.optimize && !graph.optimized) {
             graph.optimize();
         }
         return new Session(graph, options);

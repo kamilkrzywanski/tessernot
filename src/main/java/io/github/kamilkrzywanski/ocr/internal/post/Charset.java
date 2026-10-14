@@ -63,6 +63,54 @@ public final class Charset {
         return tokens.length;
     }
 
+    /**
+     * Indices to keep for Latin-script text, in order: the CTC blank, then every token whose
+     * characters are Latin or Greek letters, or digits, punctuation, symbols and marks shared by
+     * scripts. CJK punctuation, full-width forms and the other CJK symbol blocks are left out.
+     */
+    public int[] latin() {
+        List<Integer> keep = new ArrayList<>();
+        keep.add(0);
+        for (int i = 1; i < tokens.length; i++) {
+            if (!tokens[i].isEmpty() && tokens[i].codePoints().allMatch(Charset::latinCodePoint)) {
+                keep.add(i);
+            }
+        }
+        int[] out = new int[keep.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = keep.get(i);
+        }
+        return out;
+    }
+
+    private static boolean latinCodePoint(int cp) {
+        Character.UnicodeBlock block = Character.UnicodeBlock.of(cp);
+        if (block == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS
+                || block == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION
+                || block == Character.UnicodeBlock.ENCLOSED_CJK_LETTERS_AND_MONTHS
+                || block == Character.UnicodeBlock.CJK_COMPATIBILITY
+                || block == Character.UnicodeBlock.CJK_COMPATIBILITY_FORMS
+                || block == Character.UnicodeBlock.VERTICAL_FORMS
+                || block == Character.UnicodeBlock.KANBUN
+                || block == Character.UnicodeBlock.IDEOGRAPHIC_DESCRIPTION_CHARACTERS) {
+            return false;
+        }
+        Character.UnicodeScript script = Character.UnicodeScript.of(cp);
+        return script == Character.UnicodeScript.LATIN
+                || script == Character.UnicodeScript.GREEK
+                || script == Character.UnicodeScript.COMMON
+                || script == Character.UnicodeScript.INHERITED;
+    }
+
+    /** The tokens at {@code keep}, in that order; index 0 must be the blank. */
+    public Charset subset(int[] keep) {
+        String[] out = new String[keep.length];
+        for (int i = 0; i < keep.length; i++) {
+            out[i] = tokens[keep[i]];
+        }
+        return new Charset(out);
+    }
+
     public String at(int index) {
         if (index < 0 || index >= tokens.length) {
             return "";

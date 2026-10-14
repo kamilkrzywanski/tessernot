@@ -14,8 +14,11 @@ public final class Graph {
     public final List<Node> nodes = new ArrayList<>();
     /** Graph output name to the tensor that actually produces it after identity elimination. */
     public final Map<String, String> redirects = new LinkedHashMap<>();
+    /** Set by {@link #optimize()}, and for a JIR file, whose graph was optimized when written. */
+    public boolean optimized;
 
     public void optimize() {
         Optimizer.optimize(this);
+        optimized = true;
     }
 }

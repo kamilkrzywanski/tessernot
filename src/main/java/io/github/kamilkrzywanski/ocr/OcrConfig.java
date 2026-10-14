@@ -40,6 +40,7 @@ public final class OcrConfig {
     private final boolean opDebug;
     private final Corrections corrections;
     private final Layout layout;
+    private final Alphabet alphabet;
 
     private OcrConfig(Builder b) {
         this.detModel = b.detModel;
@@ -73,6 +74,7 @@ public final class OcrConfig {
         this.opDebug = b.opDebug;
         this.corrections = b.corrections;
         this.layout = b.layout;
+        this.alphabet = b.alphabet;
     }
 
     public Path detModel() { return detModel; }
@@ -106,6 +108,7 @@ public final class OcrConfig {
     public boolean opDebug() { return opDebug; }
     public Corrections corrections() { return corrections; }
     public Layout layout() { return layout; }
+    public Alphabet alphabet() { return alphabet; }
 
     public static Builder builder() {
         return new Builder();
@@ -166,6 +169,7 @@ public final class OcrConfig {
         private boolean opDebug = false;
         private Corrections corrections = Corrections.NONE;
         private Layout layout = Layout.AUTO;
+        private Alphabet alphabet = Alphabet.ALL;
 
         public Builder() {
         }
@@ -202,6 +206,7 @@ public final class OcrConfig {
             this.opDebug = c.opDebug;
             this.corrections = c.corrections;
             this.layout = c.layout;
+            this.alphabet = c.alphabet;
         }
 
         public Builder detModel(Path v) { detModel = v; return this; }
@@ -235,6 +240,7 @@ public final class OcrConfig {
         public Builder opDebug(boolean v) { opDebug = v; return this; }
         public Builder corrections(Corrections v) { corrections = v; return this; }
         public Builder layout(Layout v) { layout = v; return this; }
+        public Builder alphabet(Alphabet v) { alphabet = v; return this; }
 
         public OcrConfig build() {
             if (threads < 1) {
@@ -245,6 +251,9 @@ public final class OcrConfig {
             }
             if (layout == null) {
                 throw new OcrException("layout is null");
+            }
+            if (alphabet == null) {
+                throw new OcrException("alphabet is null");
             }
             if (!Float.isFinite(mean)) {
                 throw new OcrException("mean must be finite");
