@@ -532,6 +532,15 @@ class PostProcessTest {
     }
 
     @Test
+    void stackedLinesOfACurvedPageStayInTheirOrder() {
+        // On a curved photo the boxes of two lines of one column overlap by 60 % of their height.
+        // They share most of their width, so they are two rows, read top first.
+        TextLine upper = line("upper", 10, 0, 190, 20);
+        TextLine lower = line("lower", 0, 8, 190, 20);
+        assertEquals("upper\nlower", ReadingOrder.join(ReadingOrder.group(List.of(lower, upper))));
+    }
+
+    @Test
     void readingOrderKeepsAGridInRows() {
         List<TextLine> lines = List.of(
                 line("a", 0, 0, 20, 10),

@@ -84,8 +84,10 @@ by reflection.
    every box is rotated back by it before anything else, so a gutter that runs at a slant on a
    photo is vertical again. The output keeps the original boxes.
 2. **Rows.** Lines become rows: a line joins a row when it overlaps the row's first box
-   vertically by at least half the smaller height. A tall vertical word stays out of this, so it
-   cannot glue the page into one row.
+   vertically by at least half the smaller height, unless the two boxes share more than half of
+   the narrower one's width: such boxes are lines of one column stacked on a curved or dense
+   page, not neighbours in a row. A tall vertical word stays out of this, so it cannot glue the
+   page into one row.
 3. **Gutter.** Each box first loses a quarter of its height on both sides, which removes the
    unclip padding. The gutter is then the emptiest vertical strip of the block that has at least
    two boxes on each side. At most one box (or a tenth of the block) may still cross it.

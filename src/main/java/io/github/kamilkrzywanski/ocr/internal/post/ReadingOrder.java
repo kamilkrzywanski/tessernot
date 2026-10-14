@@ -30,6 +30,8 @@ import java.util.Set;
 public final class ReadingOrder {
     /** Half the shorter box. */
     private static final float ROW_OVERLAP = 0.5f;
+    /** Boxes sharing more than this share of the narrower width are stacked, not in one row. */
+    private static final float STACKED = 0.5f;
     /**
      * Taller than this multiple of its own width, and of the page's median line.
      * The margin word on the invoice is several times a text line; a narrow digit is not.
@@ -314,7 +316,7 @@ public final class ReadingOrder {
         for (TextLine line : sorted) {
             int dest = -1;
             for (int i = 0; i < seeds.size(); i++) {
-                if (overlapRatio(line, seeds.get(i)) >= ROW_OVERLAP) {
+                if (overlapRatio(line, seeds.get(i)) >= ROW_OVERLAP && !stacked(line, seeds.get(i))) {
                     dest = i;
                     break;
                 }
@@ -1251,6 +1253,17 @@ public final class ReadingOrder {
             x = Math.max(x, right(lines.get(i)));
         }
         return x;
+    }
+
+    /**
+     * Boxes of one row stand side by side. Two boxes that share more than {@link #STACKED} of the
+     * narrower one's width are lines of one column, one above the other, even when a curved page
+     * makes their boxes overlap in height.
+     */
+    private static boolean stacked(TextLine a, TextLine b) {
+        float overlap = Math.min(right(a), right(b)) - Math.max(left(a), left(b));
+        float narrower = Math.min(right(a) - left(a), right(b) - left(b));
+        return narrower > 0f && overlap > STACKED * narrower;
     }
 
     private static float overlapRatio(TextLine a, TextLine b) {
