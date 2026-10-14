@@ -20,3 +20,16 @@ These are public documents with references transcribed by hand. Read
   for collecting agents
 - `run-rapidocr.py`, `run-tesseract.sh`: baselines that write outputs for `ocr score --hyp`
 - `report.py`, `chart.py`: the tables and the chart of docs/benchmark.md from `ocr score` outputs
+
+## Licenses
+
+The documents in `data/` and their references in `ref/` are not under the project's Apache
+License. Each keeps the license of its source, given with its author and URL in `manifest.tsv`:
+public domain, [CC0](https://creativecommons.org/publicdomain/zero/1.0/),
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/),
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
+[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) or
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). A reference transcription has
+the license of its page. Images downloaded as images are unchanged (`fetch.sh` checks their
+SHA-256 against the source); pages of PDF and DjVu sources are renders of one page, as the
+`page` column says.

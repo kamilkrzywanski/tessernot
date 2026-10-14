@@ -5,17 +5,28 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
 Third-party content distributed with this repository:
 
-- Apache PDFBox (Apache-2.0) is bundled into the shaded JAR.
-- models/: PaddleOCR / RapidOCR weights and character dictionaries (Apache-2.0),
-  the sjp.pl Polish word list (Apache-2.0, among other licenses),
-  the SCOWL English word list (Copyright 2000-2011 Kevin Atkinson, permissive),
-  and GeoNames postal codes for Poland (CC BY 4.0, https://www.geonames.org/).
-  Details are in models/NOTICE.
+- The shaded JAR bundles Apache PDFBox, Apache PDFBox io, Apache FontBox and
+  Apache Commons Logging (Apache-2.0, Copyright The Apache Software
+  Foundation). PDFBox and FontBox include the Adobe Glyph List, the Zapf
+  Dingbats Glyph List, Unicode data files, parts of TwelveMonkeys ImageIO and a
+  CC0 ICC profile. The LICENSE and NOTICE file of each library is in
+  META-INF/third-party/ inside the JAR.
+- models/: PP-OCR weights and character dictionaries by the PaddlePaddle
+  Authors (PaddleOCR), in the ONNX form published by RapidOCR (Apache-2.0);
+  the sjp.pl Polish word list (Apache-2.0, among other licenses); the SCOWL
+  English word list (Copyright 2000-2011 Kevin Atkinson and others, full
+  notice in models/LICENSE-SCOWL.txt); GeoNames postal codes for Poland
+  (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/,
+  https://www.geonames.org/). Details are in models/NOTICE.
+- The detection and recognition pre- and post-processing follow PaddleOCR
+  (Apache-2.0); the code here is written anew in Java.
 - src/test/resources/quality/: three scans from Wikimedia Commons used only as
-  test fixtures (public domain and CC BY-SA 4.0). Details are in
-  src/test/resources/quality/ATTRIBUTION.md.
+  test fixtures (public domain and CC BY-SA 4.0), unchanged copies. Details
+  are in src/test/resources/quality/ATTRIBUTION.md.
 - bench/data/ and bench/ref/: benchmark page images, the PDF and DjVu
   documents they are rendered from, and their reference transcriptions,
-  from Wikimedia Commons, Wikisource and Polish digital
-  libraries (public domain, CC0, CC BY and CC BY-SA). The source URL, license
-  and author of each are in bench/manifest.tsv.
+  from Wikimedia Commons, Wikisource, EUR-Lex, arXiv and Polish digital
+  libraries (public domain, CC0, CC BY and CC BY-SA). These files are not
+  under the Apache License: each keeps the license of its source. The source
+  URL, license and author of each are in bench/manifest.tsv, and
+  bench/README.md links the license texts.

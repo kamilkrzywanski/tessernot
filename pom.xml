@@ -88,6 +88,33 @@
                 </configuration>
             </plugin>
             <plugin>
+                <!-- The shaded JAR keeps our META-INF/LICENSE and NOTICE, so the license and notice
+                     files of the bundled libraries go to META-INF/third-party/<artifact>/. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <executions>
+                    <execution>
+                        <id>third-party-notices</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <includes>META-INF/LICENSE*,META-INF/NOTICE*</includes>
+                            <outputDirectory>${project.build.outputDirectory}/META-INF/third-party</outputDirectory>
+                            <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
+                            <stripVersion>true</stripVersion>
+                            <overWriteReleases>true</overWriteReleases>
+                            <fileMappers>
+                                <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                            </fileMappers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>

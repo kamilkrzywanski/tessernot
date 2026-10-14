@@ -1,6 +1,17 @@
-Wagi i słowniki w tym katalogu.
+Model weights and word lists in this directory.
 
-- ch_PP-OCRv5_det_mobile.onnx, ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx, PP-OCRv6_rec_small.onnx, ppocrv6_dict.txt oraz latin_PP-OCRv5_rec_mobile.onnx i ppocrv5_latin_dict.txt pochodzą z RapidOCR (Apache-2.0). Cztery pierwsze pliki mają skróty SHA-256 zapisane w ModelFiles.
-- lexicon-pl.txt.gz to słownik alternatywny sjp.pl. Autorzy udostępniają go na Apache-2.0, a także GPL-2, LGPL-2.1, MPL-1.1 i CC-BY-4.0.
-- lexicon-en.txt.gz to SCOWL. Copyright 2000-2011 Kevin Atkinson. Wolno go używać w dowolnym celu, gdy ta informacja zostaje przy pliku.
-- postal-pl.txt.gz jest zrzutem kodów pocztowych GeoNames dla Polski, CC-BY-4.0, https://www.geonames.org/. Zostają kody o jednej pisowni miejscowości po zdjęciu ogonków.
+- ch_PP-OCRv5_det_mobile.onnx, ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx,
+  PP-OCRv6_rec_small.onnx, ppocrv6_dict.txt, latin_PP-OCRv5_rec_mobile.onnx and
+  ppocrv5_latin_dict.txt: PP-OCR models and dictionaries by the PaddlePaddle Authors
+  (PaddleOCR, Apache-2.0), as converted to ONNX and published by RapidOCR (Apache-2.0),
+  https://www.modelscope.cn/models/RapidAI/RapidOCR. The files are unchanged; ModelFiles
+  holds the SHA-256 of the first four.
+- lexicon-pl.txt.gz: the sjp.pl Polish spell-checking dictionary, https://sjp.pl/sl/en/,
+  which its authors license under the Apache-2.0, GPL-2, LGPL-2.1, MPL-1.1 or CC BY 4.0, at
+  the user's choice; it is used here under Apache-2.0.
+- lexicon-en.txt.gz: SCOWL, Copyright 2000-2011 Kevin Atkinson and the other holders named in
+  LICENSE-SCOWL.txt, which carries the full notice.
+- Both word lists are modified: lowercased, deduplicated, sorted and gzipped.
+- postal-pl.txt.gz: GeoNames postal codes for Poland, https://www.geonames.org/, licensed
+  under CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Modified: only codes whose
+  place name has one spelling once the Polish marks are removed are kept.

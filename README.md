@@ -1,7 +1,7 @@
 # ocr-pro
 
 OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. You get one JAR and the
-model files. It needs no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
+model files. It needs no native libraries: no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
 
 **Status: experimental.** It reads printed pages, invoices, receipts, typed letters and
 multi-column pages. Its recognition matches the same models on ONNX Runtime and is ahead of
@@ -170,6 +170,8 @@ Vertical lines are rotated and read.
 
 ## License
 
-The code is under the [Apache License 2.0](LICENSE). The models, word lists and test images
-come from third parties under their own licenses. See [NOTICE](NOTICE) and
-[models/NOTICE](models/NOTICE).
+The code is under the [Apache License 2.0](LICENSE). The models, word lists, test images and
+benchmark documents come from third parties under their own licenses. See [NOTICE](NOTICE),
+[models/NOTICE](models/NOTICE) and [bench/README.md](bench/README.md#licenses). The JAR with
+dependencies bundles Apache PDFBox; the license and notice files of the bundled libraries are in
+its `META-INF/third-party/`.
