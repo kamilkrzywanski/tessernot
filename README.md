@@ -153,9 +153,9 @@ These rules were tuned on three scans and checked on the `dev` set. On Polish do
 ## Not in scope
 
 - handwriting
-- tables without ruled lines
-- newspaper pages whose articles jump between columns, and ad collages
-- the quality of commercial engines on hard scans
+- cells of tables without ruled lines: such a table stays plain text, read row by row
+- the flow of articles that jump between columns or pages, and ad collages (the columns
+  themselves are read in order)
 
 Vertical lines are rotated and read.
 
