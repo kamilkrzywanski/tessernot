@@ -68,6 +68,23 @@ class CliArgsTest {
     }
 
     @Test
+    void layoutIsNamedAndCheckedBeforeAFileIsOpened() {
+        Run bad = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--layout", "columns"}));
+        assertEquals(1, bad.code);
+        assertTrue(bad.err.contains("layout must be auto or rows"), bad.err);
+
+        Run score = run(() -> Cli.execute(new String[]{"score", "missing", "missing", "--layout="}));
+        assertEquals(1, score.code);
+        assertTrue(score.err.contains("layout must be auto or rows"), score.err);
+
+        assertEquals(Layout.ROWS, Layout.parse("Rows"));
+        assertEquals(Layout.AUTO, Layout.parse(" auto "));
+        assertEquals(Layout.AUTO, OcrConfig.builder().build().layout());
+        assertEquals(Layout.ROWS, OcrConfig.builder().layout(Layout.ROWS).build().toBuilder().build().layout());
+        assertThrows(OcrException.class, () -> OcrConfig.builder().layout(null).build());
+    }
+
+    @Test
     void scoreComparesReadyOutputsWithReferences() throws IOException {
         Path dir = Files.createTempDirectory("score");
         Path refs = Files.createDirectories(dir.resolve("ref"));

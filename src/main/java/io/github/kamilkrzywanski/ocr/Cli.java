@@ -21,7 +21,7 @@ import java.util.Set;
 public final class Cli {
     private static final Set<String> SWITCHES = Set.of("no-cls", "no-det", "raw", "json");
     private static final Set<String> FLAGS = Set.of(
-            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json", "corrections", "hyp", "out");
+            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json", "corrections", "layout", "hyp", "out");
 
     private Cli() {
     }
@@ -102,12 +102,13 @@ public final class Cli {
     }
 
     private static int ocr(Parsed parsed) throws Exception {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json", "corrections");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det]"
-                    + " [--threads N] [--corrections none|polish] [--json]");
+                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--json]");
         }
         corrections(parsed);
+        layout(parsed);
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
         Path models = modelDir(parsed);
@@ -126,12 +127,13 @@ public final class Cli {
     }
 
     private static int bench(Parsed parsed) throws Exception {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det]"
-                    + " [--threads N] [--corrections none|polish]");
+                    + " [--threads N] [--corrections none|polish] [--layout auto|rows]");
         }
         corrections(parsed);
+        layout(parsed);
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
         Path models = modelDir(parsed);
@@ -150,12 +152,13 @@ public final class Cli {
     }
 
     private static int pdf(Parsed parsed) throws Exception {
-        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json", "corrections");
+        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det]"
-                    + " [--threads N] [--corrections none|polish] [--json]");
+                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--json]");
         }
         corrections(parsed);
+        layout(parsed);
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
         float dpi = floatFlag(parsed, "dpi", 150f);
@@ -243,8 +246,9 @@ public final class Cli {
     }
 
     private static int eval(Parsed parsed) {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout");
         corrections(parsed);
+        layout(parsed);
         try (OcrEngine engine = engine(parsed, modelDir(parsed))) {
             OcrResult result = engine.recognize(Samples.invoice());
             double cer = Metrics.cer(result.text(), Samples.invoiceText());
@@ -259,16 +263,17 @@ public final class Cli {
      * {@code score <ref-dir> --hyp <dir>} scores ready outputs of another engine instead.
      */
     private static int score(Parsed parsed) {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "hyp", "out");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "hyp", "out");
         String hyp = parsed.flag("hyp");
         int wanted = hyp == null ? 3 : 2;
         if (parsed.positionals.size() != wanted) {
-            throw new OcrException("usage: ocr score <ref-dir> <image-dir> [--corrections none|polish] [--out dir]"
+            throw new OcrException("usage: ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--out dir]"
                     + " [--model dir] [--limit N] [--threads N]  |  ocr score <ref-dir> --hyp <dir>");
         }
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
         corrections(parsed);
+        layout(parsed);
         Path refs = Path.of(parsed.positionals.get(1));
         Path out = parsed.flag("out") == null ? null : Path.of(parsed.flag("out"));
         if (hyp != null) {
@@ -288,8 +293,14 @@ public final class Cli {
         return value == null ? Corrections.NONE : Corrections.parse(value);
     }
 
+    private static Layout layout(Parsed parsed) {
+        String value = parsed.flag("layout");
+        return value == null ? Layout.AUTO : Layout.parse(value);
+    }
+
     private static OcrEngine engine(Parsed parsed, Path models) {
-        OcrConfig.Builder builder = OcrConfig.defaults(models).toBuilder().corrections(corrections(parsed));
+        OcrConfig.Builder builder = OcrConfig.defaults(models).toBuilder().corrections(corrections(parsed))
+                .layout(layout(parsed));
         if (parsed.flag("limit") != null) {
             builder.detLimitSideLen(positiveInt(parsed, "limit"));
         }
@@ -420,10 +431,11 @@ public final class Cli {
                 ocr selfcheck
                 ocr synth <out.png>
                 ocr eval [--model dir]
-                ocr score <ref-dir> <image-dir> [--corrections none|polish] [--out dir]
+                ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--out dir]
                 ocr score <ref-dir> --hyp <dir>
 
                 --corrections polish turns on the rules for Polish print (off by default), see docs/corrections.md.
+                --layout rows reads every page row by row, with no column analysis: for receipts and other one-column pages.
                 Add --add-modules jdk.incubator.vector (see ocr.sh) for the fast backend.
                 Scalar mode is used automatically when that module is absent.
                 JPEG input is turned upright from EXIF Orientation.

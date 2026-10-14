@@ -20,7 +20,7 @@ for arg in "$@"; do
   case $arg in
     --model=*) has_model=1 ;;
     --model) has_model=1; skip=1 ;;
-    --limit|--threads|--dpi|--corrections|--hyp|--out) skip=1 ;;
+    --limit|--threads|--dpi|--corrections|--layout|--hyp|--out) skip=1 ;;
     --*) ;;
     *)
       if [ -z "$cmd" ]; then

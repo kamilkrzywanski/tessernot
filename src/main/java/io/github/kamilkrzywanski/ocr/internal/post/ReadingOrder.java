@@ -77,6 +77,8 @@ public final class ReadingOrder {
      * numbers or bullets, not a column: "2." to "6." next to the items of the 1921 manual.
      */
     private static final float MARKER_SHARE = 0.25f;
+    /** A side where at least this share of boxes are mostly digits is a column of values, not text. */
+    private static final float VALUE_SHARE = 0.6f;
     /** Text columns of one page are set to similar widths; item names and prices are not. */
     private static final float WIDTH_SHARE = 0.5f;
     /** Boxes that may still cross the gutter, as a share of the block (a title, two merged lines). */
@@ -116,12 +118,30 @@ public final class ReadingOrder {
     }
 
     public static List<List<TextLine>> group(List<TextLine> lines) {
+        return group(lines, true);
+    }
+
+    /**
+     * With {@code columns} false, the page is read row by row, top to bottom: no columns, blocks or
+     * sections. The skew is still taken out first, so a photo keeps its rows.
+     */
+    public static List<List<TextLine>> group(List<TextLine> lines, boolean columns) {
         if (lines.isEmpty()) {
             return new ArrayList<>();
         }
         Map<TextLine, TextLine> original = new IdentityHashMap<>();
         List<TextLine> level = level(lines, original);
-        return restore(order(level, null), original);
+        return restore(columns ? order(level, null) : rowsOnly(level), original);
+    }
+
+    private static List<List<TextLine>> rowsOnly(List<TextLine> level) {
+        float medianH = medianHeight(level);
+        List<TextLine> normal = new ArrayList<>();
+        List<TextLine> vertical = new ArrayList<>();
+        for (TextLine line : level) {
+            (verticalWord(line, medianH) ? vertical : normal).add(line);
+        }
+        return mergeByTop(normal.isEmpty() ? new ArrayList<>() : seedRows(normal), vertical);
     }
 
     /**
@@ -802,7 +822,7 @@ public final class ReadingOrder {
             return false;
         }
         float gap = minLeft(rightBoxes) - maxRight(leftBoxes);
-        if (valueRail(rightBoxes, leftBoxes, gap, medianH)) {
+        if (valueRail(rightBoxes, leftBoxes, gap, medianH) || values(leftBoxes) || values(rightBoxes)) {
             return false;
         }
         if (gap >= MIN_GUTTER * medianH) {
@@ -827,7 +847,7 @@ public final class ReadingOrder {
             return false;
         }
         float gap = minLeft(rightBoxes) - maxRight(leftBoxes);
-        if (valueRail(rightBoxes, leftBoxes, gap, medianH)) {
+        if (valueRail(rightBoxes, leftBoxes, gap, medianH) || values(leftBoxes) || values(rightBoxes)) {
             return false;
         }
         float minFill = clean ? OPEN_FILL : NARROW_FILL;
@@ -1035,6 +1055,32 @@ public final class ReadingOrder {
             shares[i] = (right(side.get(i)) - left(side.get(i))) / span;
         }
         return median(shares);
+    }
+
+    /**
+     * Most boxes of the side are numbers (at least three digits, more digits than letters): amounts,
+     * quantities, rates, dates. Such a side belongs to
+     * the rows of the labels beside it, wherever its edges fall; a total printed larger than the
+     * other amounts must not turn the totals of a receipt into two columns.
+     */
+    private static boolean values(List<TextLine> side) {
+        int numeric = 0;
+        for (TextLine line : side) {
+            int digits = 0;
+            int letters = 0;
+            for (int i = 0; i < line.text().length(); i++) {
+                char c = line.text().charAt(i);
+                if (Character.isDigit(c)) {
+                    digits++;
+                } else if (Character.isLetter(c)) {
+                    letters++;
+                }
+            }
+            if (digits >= 3 && digits > letters) {
+                numeric++;
+            }
+        }
+        return numeric >= VALUE_SHARE * side.size();
     }
 
     /**

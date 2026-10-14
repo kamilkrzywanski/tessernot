@@ -114,7 +114,13 @@ by reflection.
    - **A narrower gutter** needs two full text columns, as in step 5.
    - **Never a column:** a side whose lines are less than a quarter as wide as the lines beside
      it (list numbers, bullets), a rail of short right-aligned values next to longer names
-     (receipt prices), and a block whose median row holds three or more boxes (a grid).
+     (receipt prices), a side where 60 % of the boxes are numbers (at least three digits, more
+     digits than letters: the totals of a receipt, even when the total is printed larger and the
+     amounts do not share an edge), and a block whose median row holds three or more boxes (a
+     grid). The number rule applies to text columns (step 5) too.
+
+**`Layout.ROWS`** skips steps 3 to 7 and the merged-line cuts: after leveling, rows are read top
+to bottom. It is meant for streams of one-column documents.
 
 **Merged lines.** Where the gutter is narrow, the detector sometimes draws one box over a line of
 each column. `ReadingOrder.cuts` finds such boxes among the crossing rows of a text-column

@@ -306,9 +306,12 @@ public final class OcrEngine implements AutoCloseable {
         if (corrected) {
             recognized = splitAmounts(bgr, recognized);
         }
-        recognized = splitColumns(bgr, recognized, lineParallel);
+        boolean columns = cfg.layout() == Layout.AUTO;
+        if (columns) {
+            recognized = splitColumns(bgr, recognized, lineParallel);
+        }
         long recognitionNanos = System.nanoTime() - recStart;
-        List<List<TextLine>> rows = ReadingOrder.group(recognized);
+        List<List<TextLine>> rows = ReadingOrder.group(recognized, columns);
         List<TextLine> flat = ReadingOrder.flatten(rows);
         return new OcrResult(
                 ReadingOrder.join(rows),

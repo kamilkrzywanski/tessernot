@@ -78,7 +78,10 @@ failures come down to one share just under its threshold.
 
 ## What to improve next, in order
 
-1. **False column splits on receipts and memos.** At 2048 px the Smyk receipt (`test2`) had its
+1. **False column splits on receipts and memos.** Partly done: a side made mostly of numbers is
+   never a column now (the Castorama totals on `test`, 0.061 to 0.020), and `Layout.ROWS`
+   (`--layout rows`) turns the analysis off for one-column streams. Still open: the Smyk case
+   itself is a `test2` page, so its fix cannot be confirmed there. At 2048 px the Smyk receipt (`test2`) had its
    item names pulled out as a "text column" and read before the header (CER 0.166; RapidOCR,
    which only sorts rows, 0.007). This is why RapidOCR scores higher on business documents in
    the `test2` chart: it has no layout analysis, and on single-column documents plain row order

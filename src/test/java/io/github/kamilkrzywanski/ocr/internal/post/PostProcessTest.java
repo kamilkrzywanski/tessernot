@@ -492,6 +492,34 @@ class PostProcessTest {
     }
 
     @Test
+    void totalsOfAReceiptStayOnTheirRows() {
+        // The amounts do not share a right edge (the total is printed larger), but they are
+        // numbers, so they stay on the rows of their labels.
+        List<TextLine> lines = List.of(
+                line("Sprzed. opod. PTU A", 0, 0, 180, 10),
+                line("61,96", 300, 0, 50, 10),
+                line("Kwota PTU A 23,00%", 0, 12, 170, 10),
+                line("11,59", 302, 12, 48, 10),
+                line("SUMA PTU", 0, 24, 80, 10),
+                line("11,59", 303, 24, 48, 10),
+                line("SUMA PLN", 0, 36, 80, 14),
+                line("61,96", 270, 36, 95, 14));
+        assertEquals("Sprzed. opod. PTU A 61,96\nKwota PTU A 23,00% 11,59\nSUMA PTU 11,59\nSUMA PLN 61,96",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void rowsLayoutReadsColumnsRowByRow() {
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            lines.add(line("L" + i, 0, i * 12, 100, 10));
+            lines.add(line("R" + i, 130, i * 12, 100, 10));
+        }
+        assertEquals("L0 R0\nL1 R1\nL2 R2\nL3 R3\nL4 R4\nL5 R5",
+                ReadingOrder.join(ReadingOrder.group(lines, false)));
+    }
+
+    @Test
     void readingOrderKeepsAGridInRows() {
         List<TextLine> lines = List.of(
                 line("a", 0, 0, 20, 10),

@@ -76,7 +76,8 @@ try (OcrPool pool = OcrPool.open(Path.of("models"), 4)) {
 ```
 
 To change models or thresholds, start from `OcrConfig.defaults(dir).toBuilder()`. For another
-language, swap the recognition model and its dictionary.
+language, swap the recognition model and its dictionary. If every page has one column, as with
+receipts, `.layout(Layout.ROWS)` (`--layout rows`) reads row by row and skips the column analysis.
 
 ### Public API
 
@@ -85,7 +86,7 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 | Class | Role |
 | --- | --- |
 | `OcrEngine`, `OcrPool` | run OCR, one caller at a time or several in parallel |
-| `OcrConfig`, `Corrections` | models, thresholds, threads and the optional Polish rules |
+| `OcrConfig`, `Corrections`, `Layout` | models, thresholds, threads, the optional Polish rules, and automatic or row-by-row reading order |
 | `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, ruled tables |
 | `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
 | `ModelFiles` | download and check the default models |

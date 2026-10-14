@@ -39,6 +39,7 @@ public final class OcrConfig {
     private final float std;
     private final boolean opDebug;
     private final Corrections corrections;
+    private final Layout layout;
 
     private OcrConfig(Builder b) {
         this.detModel = b.detModel;
@@ -71,6 +72,7 @@ public final class OcrConfig {
         this.std = b.std;
         this.opDebug = b.opDebug;
         this.corrections = b.corrections;
+        this.layout = b.layout;
     }
 
     public Path detModel() { return detModel; }
@@ -103,6 +105,7 @@ public final class OcrConfig {
     public float std() { return std; }
     public boolean opDebug() { return opDebug; }
     public Corrections corrections() { return corrections; }
+    public Layout layout() { return layout; }
 
     public static Builder builder() {
         return new Builder();
@@ -110,7 +113,8 @@ public final class OcrConfig {
 
     /**
      * PP-OCRv5 detection and angle classifier, plus PP-OCRv6 small recognition, from a directory.
-     * No text corrections; see {@link Builder#corrections(Corrections)}.
+     * No text corrections and automatic layout; see {@link Builder#corrections(Corrections)} and
+     * {@link Builder#layout(Layout)}.
      * An existing file is rejected. A missing directory is left for the loader.
      */
     public static OcrConfig defaults(Path modelDirectory) {
@@ -161,6 +165,7 @@ public final class OcrConfig {
         private float std = 0.5f;
         private boolean opDebug = false;
         private Corrections corrections = Corrections.NONE;
+        private Layout layout = Layout.AUTO;
 
         public Builder() {
         }
@@ -196,6 +201,7 @@ public final class OcrConfig {
             this.std = c.std;
             this.opDebug = c.opDebug;
             this.corrections = c.corrections;
+            this.layout = c.layout;
         }
 
         public Builder detModel(Path v) { detModel = v; return this; }
@@ -228,6 +234,7 @@ public final class OcrConfig {
         public Builder std(float v) { std = v; return this; }
         public Builder opDebug(boolean v) { opDebug = v; return this; }
         public Builder corrections(Corrections v) { corrections = v; return this; }
+        public Builder layout(Layout v) { layout = v; return this; }
 
         public OcrConfig build() {
             if (threads < 1) {
@@ -235,6 +242,9 @@ public final class OcrConfig {
             }
             if (corrections == null) {
                 throw new OcrException("corrections is null");
+            }
+            if (layout == null) {
+                throw new OcrException("layout is null");
             }
             if (!Float.isFinite(mean)) {
                 throw new OcrException("mean must be finite");
