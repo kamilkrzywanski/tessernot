@@ -12,8 +12,9 @@ and the working method.
 - Talk to the owner in Polish. Push to `origin master` only when asked.
 - All benchmark data (page images, PDF/DjVu originals, references) is tracked in the repository on
   purpose. Keep every file under 50 MB.
-- `javac` on PATH is Java 8. Use `/usr/lib/jvm/java-21-openjdk-amd64/bin/javac` for ad-hoc
-  compiles; Maven picks the right JDK.
+- The system `java`, `javac` and Maven's JDK may be an older release (8 or 11 on this machine).
+  `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` before `mvn` and `ocr.sh`; `ocr.sh` uses
+  `$JAVA_HOME/bin/java` when it is set.
 - After every change: `mvn -q test` (about 3 minutes, all tests must pass). `QualityGateTest`
   guards the three tuning scans; its Polish-rules gate is pinned to 960 px detection on purpose.
 

@@ -37,4 +37,9 @@ if [ "$has_model" -eq 0 ]; then
       ;;
   esac
 fi
-exec java --add-modules jdk.incubator.vector -jar "$JAR" "$@"
+# JAVA_HOME wins over the java on PATH, which may be an older release.
+JAVA=java
+if [ -n "${JAVA_HOME:-}" ]; then
+  JAVA="$JAVA_HOME/bin/java"
+fi
+exec "$JAVA" --add-modules jdk.incubator.vector -jar "$JAR" "$@"

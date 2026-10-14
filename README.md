@@ -106,16 +106,19 @@ on it. `test` was scored once in the round before and then pointed at what to fi
 
 | Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | 0.123 / 0.068 | 0.950 | **0.048 / 0.033** | **0.930** | 7.3 s / 3.8 s |
+| **ocr-pro** | 0.122 / 0.044 | 0.950 | **0.047 / 0.025** | **0.930** | 7.3 s / 3.8 s |
 | ocr-pro, `--limit 960` | 0.216 / 0.048 | 0.935 | 0.070 / 0.038 | 0.915 | 5.8 s / 2.9 s |
+| ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.505 / 0.157 | 0.930 | about the same |
 | RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.9 s / 4.1 s |
 | Tesseract 5 (`pol` / `eng`) | **0.070 / 0.033** | 0.934 | 0.210 / 0.149 | 0.854 | 4.6 s / 2.0 s |
 
 CER counts reading order; word F1 does not. The test machine was an Intel i7-1365U laptop with
-12 threads.
+12 threads. `--layout rows` reads row by row like RapidOCR: it matches the automatic layout on
+invoices and receipts and loses on everything with columns.
 
-- **Invoices, bills and receipts:** 90 % character accuracy against 67 % for Tesseract on
-  `test2`, and 87 % against 67 % on `test`. Tesseract returns nothing for some thermal and
+- **Invoices, bills and receipts:** 95 % character accuracy against 67 % for Tesseract on
+  `test2` (90 % before a fix that one of its receipts prompted), and 88 % against 67 % on
+  `test`. Tesseract returns nothing for some thermal and
   dot-matrix receipts.
 - **Recognition:** word F1 is above Tesseract on every set and matches ONNX Runtime running the
   same models, so the pure-Java runtime gives up nothing.

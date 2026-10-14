@@ -1,6 +1,7 @@
 # Command line
 
-`ocr.sh` runs the shaded JAR with `--add-modules jdk.incubator.vector`. It keeps the caller's working
+`ocr.sh` runs the shaded JAR with `--add-modules jdk.incubator.vector`, using `$JAVA_HOME/bin/java`
+when `JAVA_HOME` is set and `java` from `PATH` otherwise. It keeps the caller's working
 directory, so relative paths work. It passes `--model <dir next to the script>/models` when you
 leave `--model` out.
 
