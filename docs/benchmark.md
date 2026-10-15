@@ -6,7 +6,7 @@ them. This benchmark uses public documents with references transcribed by hand, 
 
 | Set | Documents | Role |
 | --- | --- | --- |
-| `dev` | 39 (21 PL, 18 EN), 110,882 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, and 3 Official Journal pages moved from `test3` on 2026-10-15. Its numbers are **not independent**. The `dev` results below were computed on the first 36. |
+| `dev` | 39 (21 PL, 18 EN), 110,882 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, and 3 Official Journal pages moved from `test3` on 2026-10-15. Its numbers are **not independent**. |
 | `test` | 27 (18 PL, 9 EN), 59,772 characters | Scored once, before the reading-order work. Its failures then pointed at what to fix, so it is **no longer independent** either. |
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below). **The honest number.** Do not tune on it. |
 | `test3` | 97 (47 PL, 50 EN), 245,601 characters | Held out for a later round. Collected without looking at any engine output, checked a second time against the images, and not scored. `test2` stays the scored set. Do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups (see below). |
@@ -25,7 +25,7 @@ them. This benchmark uses public documents with references transcribed by hand, 
 - **Report a set by document group when one kind dominates it.** `bench/report.py --manifest`
   adds the pooled CER of each group (invoices and receipts; letters, forms and notices; books,
   newspapers and gazettes) and their mean. For `test3` that mean is the headline number, so its
-  31 book pages do not drown its 15 invoices and receipts.
+  77 pages of books, newspapers and gazettes do not drown its 15 invoices and receipts.
 
 ## The documents
 
@@ -91,16 +91,17 @@ the median over documents.
 | **ocr-pro + polish** | the same with `--corrections polish` and the word lists from `models/` |
 | **ocr-pro, fast** | the defaults with detection at 960 px (`--limit 960`) |
 | **ocr-pro, rows** | the defaults with `--layout rows`: row by row, no layout analysis |
+| **ocr-pro, Latin alphabet** | the defaults with `--alphabet latin`: the recognizer outputs only Latin-script characters |
 | **RapidOCR** | rapidocr 3.10.0 on onnxruntime 1.31.0, running **the same ONNX files** with the same DB settings (limit 2048, threshold 0.35), see `bench/run-rapidocr.py` |
 | **Tesseract** | 5.5.3 with `pol` or `eng` matching the document, default page segmentation, see `bench/run-tesseract.sh` |
 
 All engines ran on one laptop: Intel Core i7-1365U (2 performance + 8 efficiency cores,
-12 threads), Linux, OpenJDK 21.0.12. RapidOCR and Tesseract were measured on 2026-10-13. The
-accuracy of ocr-pro comes from a run on 2026-10-14 after the last change below. That run shared
-the processor with another heavy job, so its times are not used: the ocr-pro times are from the
-run just before the column-gutter change (item 4 below), which adds only a second read of the
-lines it cuts. The machine was busier on the second day, so compare times within one engine
-only.
+12 threads), Linux, OpenJDK 21.0.12, in one session on 2026-10-15 with no other heavy job
+running, so the times can be compared across engines. The page time is the median over the
+documents of the set; what each engine's time includes is under [Reproduce](#reproduce).
+
+Each set has two tables: one for the whole set, and one with the pooled CER of each document
+group and the mean of the groups (`report.py --manifest`).
 
 ## Results on `test2`
 
@@ -108,12 +109,23 @@ only.
 
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
 | --- | --- | --- | --- | --- |
-| ocr-pro | 0.031 / 0.107 / 0.079 | 0.033 | 0.912 / 0.970 / 0.951 | 8.7 s |
-| ocr-pro + polish | 0.031 / 0.107 / 0.079 | 0.031 | 0.915 / 0.970 / 0.951 | 9.0 s |
-| ocr-pro, fast (960 px) | 0.031 / 0.310 / 0.205 | 0.037 | 0.903 / 0.951 / 0.935 | 7.3 s |
-| ocr-pro, rows (`--layout rows`) | 0.631 / 0.667 / 0.654 | 0.659 | 0.912 / 0.970 / 0.951 | 10.5 s |
-| RapidOCR (same models) | 0.635 / 0.669 / 0.656 | 0.662 | 0.914 / 0.970 / 0.951 | 5.9 s |
-| Tesseract 5 | 0.070 / 0.070 / 0.070 | 0.033 | 0.913 / 0.945 / 0.934 | 4.6 s |
+| ocr-pro | 0.031 / 0.107 / 0.079 | 0.033 | 0.912 / 0.970 / 0.951 | 6.7 s |
+| ocr-pro + polish | 0.031 / 0.107 / 0.079 | 0.031 | 0.915 / 0.970 / 0.951 | 7.0 s |
+| ocr-pro, fast (960 px) | 0.031 / 0.310 / 0.205 | 0.037 | 0.903 / 0.951 / 0.935 | 5.7 s |
+| ocr-pro, rows (`--layout rows`) | 0.631 / 0.667 / 0.654 | 0.659 | 0.912 / 0.970 / 0.951 | 7.1 s |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.031 / 0.107 / 0.079 | 0.033 | 0.912 / 0.970 / 0.951 | 6.3 s |
+| RapidOCR (same models) | 0.635 / 0.669 / 0.656 | 0.662 | 0.914 / 0.970 / 0.951 | 5.2 s |
+| Tesseract 5 | 0.070 / 0.070 / 0.070 | 0.033 | 0.913 / 0.945 / 0.934 | 3.5 s |
+
+| Engine | Invoices, bills, receipts (4) | Letters, forms, notices (2) | Books, newspapers, gazettes (14) | Mean of groups |
+| --- | --- | --- | --- | --- |
+| ocr-pro | 0.053 | 0.111 | 0.079 | 0.081 |
+| ocr-pro + polish | 0.055 | 0.111 | 0.078 | 0.081 |
+| ocr-pro, fast (960 px) | 0.063 | 0.110 | 0.213 | 0.128 |
+| ocr-pro, rows (`--layout rows`) | 0.053 | 0.073 | 0.691 | 0.272 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.053 | 0.111 | 0.078 | 0.081 |
+| RapidOCR (same models) | 0.080 | 0.073 | 0.693 | 0.282 |
+| Tesseract 5 | 0.335 | 0.067 | 0.061 | 0.154 |
 
 Per document, CER / word F1:
 
@@ -144,12 +156,23 @@ Per document, CER / word F1:
 
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
 | --- | --- | --- | --- | --- |
-| ocr-pro | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.960 / 0.930 | 5.6 s |
-| ocr-pro + polish | 0.054 / 0.027 / 0.046 | 0.025 | 0.922 / 0.959 / 0.934 | 5.5 s |
-| ocr-pro, fast (960 px) | 0.068 / 0.028 / 0.056 | 0.029 | 0.893 / 0.960 / 0.915 | 3.9 s |
-| ocr-pro, rows (`--layout rows`) | 0.506 / 0.498 / 0.504 | 0.157 | 0.914 / 0.960 / 0.930 | 6.0 s |
-| RapidOCR (same models) | 0.514 / 0.508 / 0.512 | 0.237 | 0.914 / 0.958 / 0.929 | 4.1 s |
-| Tesseract 5 | 0.237 / 0.148 / 0.210 | 0.149 | 0.840 / 0.883 / 0.854 | 2.0 s |
+| ocr-pro | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.960 / 0.930 | 3.7 s |
+| ocr-pro + polish | 0.054 / 0.027 / 0.046 | 0.025 | 0.922 / 0.959 / 0.934 | 3.5 s |
+| ocr-pro, fast (960 px) | 0.068 / 0.028 / 0.056 | 0.029 | 0.893 / 0.960 / 0.915 | 2.6 s |
+| ocr-pro, rows (`--layout rows`) | 0.506 / 0.498 / 0.504 | 0.157 | 0.914 / 0.960 / 0.930 | 3.4 s |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.961 / 0.930 | 3.0 s |
+| RapidOCR (same models) | 0.514 / 0.508 / 0.512 | 0.237 | 0.914 / 0.958 / 0.929 | 3.7 s |
+| Tesseract 5 | 0.237 / 0.148 / 0.210 | 0.149 | 0.840 / 0.883 / 0.854 | 1.5 s |
+
+| Engine | Invoices, bills, receipts (8) | Letters, forms, notices (9) | Books, newspapers, gazettes (10) | Mean of groups |
+| --- | --- | --- | --- | --- |
+| ocr-pro | 0.123 | 0.066 | 0.014 | 0.068 |
+| ocr-pro + polish | 0.122 | 0.065 | 0.014 | 0.067 |
+| ocr-pro, fast (960 px) | 0.138 | 0.097 | 0.010 | 0.082 |
+| ocr-pro, rows (`--layout rows`) | 0.127 | 0.393 | 0.671 | 0.397 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.123 | 0.066 | 0.014 | 0.068 |
+| RapidOCR (same models) | 0.153 | 0.404 | 0.673 | 0.410 |
+| Tesseract 5 | 0.328 | 0.226 | 0.170 | 0.241 |
 
 Per document, CER / word F1:
 
@@ -187,12 +210,23 @@ Per document, CER / word F1:
 
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
 | --- | --- | --- | --- | --- |
-| ocr-pro | 0.021 / 0.025 / 0.023 | 0.016 | 0.935 / 0.968 / 0.956 | 4.6 s |
-| ocr-pro + polish | 0.021 / 0.025 / 0.024 | 0.019 | 0.934 / 0.967 / 0.955 | 4.1 s |
-| ocr-pro, fast (960 px) | 0.113 / 0.048 / 0.074 | 0.024 | 0.910 / 0.948 / 0.934 | 2.8 s |
-| ocr-pro, rows (`--layout rows`) | 0.648 / 0.605 / 0.622 | 0.177 | 0.936 / 0.968 / 0.956 | 3.6 s |
-| RapidOCR (same models) | 0.656 / 0.605 / 0.625 | 0.226 | 0.936 / 0.967 / 0.955 | 5.0 s |
-| Tesseract 5 | 0.076 / 0.159 / 0.126 | 0.067 | 0.929 / 0.903 / 0.913 | 2.5 s |
+| ocr-pro | 0.021 / 0.025 / 0.023 | 0.018 | 0.940 / 0.968 / 0.956 | 3.5 s |
+| ocr-pro + polish | 0.021 / 0.025 / 0.023 | 0.019 | 0.939 / 0.967 / 0.955 | 3.5 s |
+| ocr-pro, fast (960 px) | 0.093 / 0.048 / 0.069 | 0.021 | 0.921 / 0.948 / 0.937 | 2.4 s |
+| ocr-pro, rows (`--layout rows`) | 0.526 / 0.605 / 0.569 | 0.120 | 0.940 / 0.968 / 0.957 | 3.5 s |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.021 / 0.025 / 0.023 | 0.018 | 0.940 / 0.968 / 0.957 | 3.3 s |
+| RapidOCR (same models) | 0.530 / 0.605 / 0.571 | 0.174 | 0.943 / 0.967 / 0.957 | 3.7 s |
+| Tesseract 5 | 0.062 / 0.159 / 0.115 | 0.060 | 0.938 / 0.903 / 0.918 | 1.8 s |
+
+| Engine | Invoices, bills, receipts (6) | Letters, forms, notices (10) | Books, newspapers, gazettes (23) | Mean of groups |
+| --- | --- | --- | --- | --- |
+| ocr-pro | 0.030 | 0.063 | 0.020 | 0.038 |
+| ocr-pro + polish | 0.031 | 0.061 | 0.020 | 0.038 |
+| ocr-pro, fast (960 px) | 0.028 | 0.069 | 0.070 | 0.056 |
+| ocr-pro, rows (`--layout rows`) | 0.030 | 0.064 | 0.623 | 0.239 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.029 | 0.063 | 0.020 | 0.038 |
+| RapidOCR (same models) | 0.038 | 0.086 | 0.623 | 0.249 |
+| Tesseract 5 | 0.156 | 0.142 | 0.112 | 0.137 |
 
 ## What changed in this round
 
@@ -251,9 +285,12 @@ to 0.026, Arct's dictionary 0.735 to 0.048, the 1981 poster photo 0.669 to 0.095
   0.001). These pages are spent: a fix based on them needs new test documents.
 - **Detection at 2048 px wins on every set**, by a wide margin on English pages of `test2` (0.107
   against 0.310 at 960 px); on its Polish pages the two tie (0.031). 960 px is the fast setting.
-- **Speed.** ocr-pro takes a few seconds per page on this laptop; dense newspaper pages with a
-  hundred lines take longer. Tesseract is faster on the same pages. Repeated runs vary by about
-  ±20 %, so treat the times as an order of magnitude, not a ranking.
+- **Speed.** Median page time on `test2` / `test` / `dev`: ocr-pro 6.7 / 3.7 / 3.5 s, RapidOCR
+  on ONNX Runtime with the same models 5.2 / 3.7 / 3.7 s, Tesseract 3.5 / 1.5 / 1.8 s. Dense
+  newspaper pages with a hundred lines and more take longest (Scientific American 1850: 19.6 s).
+  `--limit 960` takes 15–31 % less time (5.7 / 2.6 / 2.4 s). `--alphabet latin` takes 8–18 %
+  less time over a whole set, up to a quarter on pages with a lot of text, at the same accuracy.
+  Repeated runs vary by about ±20 %, so treat the times as an order of magnitude.
 
 ## Reproduce
 

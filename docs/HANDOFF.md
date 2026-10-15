@@ -108,12 +108,12 @@ failures come down to one share just under its threshold.
    narrowest that kept the EU Official Journal and the receipts whole; a looser first version
    cut justified text and broke them, so score all of `dev` and `test` after any change there.
    Ink cuts run inside the engine: after changing them, re-dump the `ro.sh` cache.
-3. **Detection size.** 2048 px is better on `dev` and `test`; on `test2` 960 px is better on
-   Polish pages and worse on English ones. Try a two-pass rule: detect at 960, measure the
+3. **Detection size.** 2048 px is better on `dev` and `test`; on `test2` the two tie on Polish
+   pages (0.031) and 960 px is much worse on English ones (0.310 against 0.107). Try a two-pass rule: detect at 960, measure the
    median line height in detector pixels, re-detect larger only for small print. The numbers
    for each page are in `bench/out/*-fast.tsv` and `*-plain.tsv` after a benchmark run.
-4. **Speed and memory.** Done so far: `Alphabet.LATIN` (15–33 % on text-heavy pages, same
-   accuracy) and faster `ReduceMean` / `MaxPool` (a few %). The profile is in
+4. **Speed and memory.** Done so far: `Alphabet.LATIN` (8–18 % per set, up to 25 % on text-heavy
+   pages, same accuracy) and faster `ReduceMean` / `MaxPool` (a few %). The profile is in
    [internals.md](internals.md#performance-notes). Tried and dropped: 6×2 and 4×3 register
    tiles in `VectorKernels.gemm`. With 12 vector accumulators C2 on JDK 21 is 20–25 % slower
    than the 4×2 tile (6×2 only ties on JDK 25); the kernel reaches 70–80 GFLOPS on one P-core,

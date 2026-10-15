@@ -200,8 +200,8 @@ time. Of the CPU time, 1×1 convolutions of the recognizer take 41 %, its other 
 helping on this 2P + 8E laptop (4 threads 30 s, 8 threads 22 s, 12 threads 18 s), so the work is
 CPU-bound; virtual threads would not add anything. GC pauses total about 0.1 s.
 
-- `Alphabet.LATIN` cuts that last layer to 2,440 classes when the model is loaded: 15–33 % less
-  time on pages with many lines, the same accuracy on the benchmark.
+- `Alphabet.LATIN` cuts that last layer to 2,440 classes when the model is loaded: 8–18 % less
+  time over a benchmark set, up to a quarter on pages with many lines, the same accuracy.
 - `ReduceMean` over a contiguous range of axes and the 2×2 stride-1 `MaxPool` have their own loops,
   10× and 3× faster than the general ones, with identical results.
 - With more than one thread, the scores of recognized lines can differ in the last bit from run to
