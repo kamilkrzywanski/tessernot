@@ -142,6 +142,16 @@ failures come down to one share just under its threshold.
   Polish marks comes from its network. `tessdata_best` costs about 11 s of CPU per page for the
   lines alone. Porting the LSTM (own file format, LSTM layers, int8 weights, Tesseract's line
   normalization) is not worth it; Polish marks are the job of `Corrections.POLISH`.
+- **int8 GEMM** (2026-10-15). A one-core microbenchmark on the i7-1365U (AVX2 and AVX-VNNI),
+  same shapes as the recognizer's 1×1 convolutions, against `VectorKernels.gemmPacked` at 15–18
+  GMAC/s: the Vector API with int8 or int16 operands reaches 4–6, because it has no widening
+  multiply-add (`vpmaddwd`, `vpdpbusd`), so each pair of products needs a multiply, three shifts
+  and two adds where floats need one FMA. C2 does emit `vpmaddwd` for the scalar pattern
+  `out[j] = a[2j]*b[2j] + a[2j+1]*b[2j+1]` (11 GMAC/s on a streaming loop), but only when both
+  operands vary with `j`; a GEMM needs one of them broadcast, or a dot-product reduction, and
+  neither is vectorized (0.5–2.7 GMAC/s). JDK 25 and 26 give the same numbers. Without native
+  code, int8 is slower than float here; revisit only if the Vector API gains a dot-product
+  operation.
 
 ## Things that cost time in this round
 
