@@ -1,7 +1,7 @@
 # Benchmark
 
 The engine's rules and thresholds were first tuned on three scans
-(`src/test/resources/quality/`). Measuring on those scans only shows how well the rules fit
+(`ocr-pro/src/test/resources/quality/`). Measuring on those scans only shows how well the rules fit
 them. This benchmark uses public documents with references transcribed by hand, in four sets:
 
 | Set | Documents | Role |

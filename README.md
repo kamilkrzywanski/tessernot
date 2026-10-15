@@ -1,7 +1,8 @@
 # ocr-pro
 
-OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. You get one JAR and the
-model files. It needs no native libraries: no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
+OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. The engine is one JAR
+with no runtime dependencies, and the models come in a second one. It needs no native libraries:
+no JNI, no ONNX Runtime, no OpenCV and no Tesseract.
 
 **Status: experimental.** It reads printed pages, invoices, receipts, typed letters and
 multi-column pages. Its recognition matches the same models on ONNX Runtime and is ahead of
@@ -17,8 +18,8 @@ Tesseract still orders the text slightly better. See the [benchmark](#accuracy-a
   `jdk.incubator.vector` is available and falls back to scalar code that gives the same results
   when it is not.
 - **It does more than return text.** You get line boxes and scores, reading order for
-  multi-column pages, and ruled tables as cells. PDF input goes through Apache PDFBox. Output is
-  plain text or JSON.
+  multi-column pages, and ruled tables as cells. PDF input, in its own module, goes through Apache
+  PDFBox. Output is plain text or JSON.
 
 Expect 2–8 s per page on a laptop CPU, depending on how much text the page has; a dense
 newspaper page with a hundred lines takes longest. Detection at 960 px instead of the default
@@ -44,16 +45,26 @@ ModelScope and checks their SHA-256 digests.
 | `ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx` | 0° / 180° line orientation |
 | `PP-OCRv6_rec_small.onnx` + `ppocrv6_dict.txt` | recognition: Latin scripts including Polish, Chinese, Japanese kana, Greek |
 
-`ocr.sh` passes `--add-modules jdk.incubator.vector`. If you run the JAR yourself without that
+`ocr.sh` runs `ocr-pro-cli/target/ocr-pro-cli-1.0-SNAPSHOT.jar` with `--add-modules
+jdk.incubator.vector`. That JAR bundles the models, so it also runs on its own, from any directory:
+`java --add-modules jdk.incubator.vector -jar ocr-pro-cli-1.0-SNAPSHOT.jar ocr scan.jpg`. Without the
 flag, the engine uses the scalar path.
 
 ## Java API
 
-The library is not on Maven Central yet. Run `mvn install` and depend on
-`io.github.kamilkrzywanski:ocr-pro:1.0-SNAPSHOT`.
+The library is not on Maven Central yet. Run `mvn install` and depend on the artifacts you need,
+all under `io.github.kamilkrzywanski` with version `1.0-SNAPSHOT`:
+
+| Artifact | What it holds |
+| --- | --- |
+| `ocr-pro` | the engine, with no runtime dependencies |
+| `ocr-pro-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
+| `ocr-pro-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
+| `ocr-pro-pdf` | PDF input through Apache PDFBox |
+| `ocr-pro-cli` | the command line: one runnable JAR with all of the above |
 
 ```java
-try (OcrEngine engine = OcrEngine.load(Path.of("models"))) {
+try (OcrEngine engine = OcrEngine.load()) {             // models from ocr-pro-models
     OcrResult result = engine.recognize(OcrImages.read(Path.of("scan.jpg")));
     String text = result.text();                  // page text in reading order
     for (TextLine line : result.lines()) {
@@ -62,21 +73,27 @@ try (OcrEngine engine = OcrEngine.load(Path.of("models"))) {
     for (TextTable table : result.tables()) {     // ruled grids only
         List<List<String>> rows = table.cells();  // empty cell = ""
     }
-    List<OcrResult> pages = engine.recognizePdf(Path.of("scan.pdf"), 150f);
+    List<OcrResult> pages = OcrPdf.recognize(engine, Path.of("scan.pdf"), 150f);  // ocr-pro-pdf
 }
 ```
+
+The bundled models are read into memory; nothing is written to disk. To keep them out of your
+artifact, leave out `ocr-pro-models`, fetch the files once with `ModelFiles.ensure(dir)` and use
+`OcrEngine.load(dir)` or `OcrConfig.defaults(dir)`. The Polish rules look for their word lists next
+to the models: in the same directory, or in `ocr-pro-models-pl`; without them the rules still run,
+without the dictionary steps.
 
 An engine is not meant for concurrent calls. For parallel requests, use a pool, which gives
 each caller its own engine:
 
 ```java
-try (OcrPool pool = OcrPool.open(Path.of("models"), 4)) {
+try (OcrPool pool = OcrPool.open(4)) {
     OcrResult result = pool.recognize(image);
 }
 ```
 
-To change models or thresholds, start from `OcrConfig.defaults(dir).toBuilder()`. For another
-language, swap the recognition model and its dictionary. If every page has one column, as with
+To change models or thresholds, start from `OcrConfig.defaults().toBuilder()`. For another
+language, swap the recognition model and its dictionary (`recModel(Path)`, `dict(Path)`). If every page has one column, as with
 receipts, `.layout(Layout.ROWS)` (`--layout rows`) reads row by row and skips the column analysis.
 For Latin-script documents, `.alphabet(Alphabet.LATIN)` (`--alphabet latin`) keeps 2,440 of the
 recognizer's 18,710 output classes: the same accuracy on the benchmark, and 8–18 % less time over
@@ -88,12 +105,15 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 
 | Class | Role |
 | --- | --- |
-| `OcrEngine`, `OcrPool` | run OCR, one caller at a time or several in parallel |
+| `OcrEngine`, `OcrPool` | run OCR on images or on the pages of a document, one caller at a time or several in parallel |
 | `OcrConfig`, `Corrections`, `Layout`, `Alphabet` | models, thresholds, threads, the optional Polish rules, automatic or row-by-row reading order, and the characters the recognizer may output |
 | `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, ruled tables |
 | `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
-| `ModelFiles` | download and check the default models |
-| `OcrException`, `Cli` | the single exception type, and the command-line entry point |
+| `ModelFiles`, `ModelSource`, `ModelBundle` | download and check the default models; where a model file comes from; the interface of a model JAR |
+| `OcrException` | the single exception type |
+
+PDF input is `io.github.kamilkrzywanski.ocr.pdf.OcrPdf` in `ocr-pro-pdf`, and the command line is
+`io.github.kamilkrzywanski.ocr.cli.Cli` in `ocr-pro-cli`.
 
 Everything under `io.github.kamilkrzywanski.ocr.internal` (runtime, kernels, pre- and
 post-processing) is public only for technical reasons. It may change in any release.
@@ -172,6 +192,7 @@ Vertical lines are rotated and read.
 
 The code is under the [Apache License 2.0](LICENSE). The models, word lists, test images and
 benchmark documents come from third parties under their own licenses. See [NOTICE](NOTICE),
-[models/NOTICE](models/NOTICE) and [bench/README.md](bench/README.md#licenses). The JAR with
-dependencies bundles Apache PDFBox; the license and notice files of the bundled libraries are in
-its `META-INF/third-party/`.
+[models/NOTICE](models/NOTICE) and [bench/README.md](bench/README.md#licenses); the model JARs
+carry these notices in `META-INF/models/`. `ocr-pro-pdf` depends on Apache PDFBox, and the runnable
+JAR of `ocr-pro-cli` bundles it; the license and notice files of the bundled libraries are in its
+`META-INF/third-party/`.

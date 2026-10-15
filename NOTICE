@@ -5,7 +5,7 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
 Third-party content distributed with this repository:
 
-- The shaded JAR bundles Apache PDFBox, Apache PDFBox io, Apache FontBox and
+- The runnable JAR of ocr-pro-cli bundles Apache PDFBox, Apache PDFBox io, Apache FontBox and
   Apache Commons Logging (Apache-2.0, Copyright The Apache Software
   Foundation). PDFBox and FontBox include the Adobe Glyph List, the Zapf
   Dingbats Glyph List, Unicode data files, parts of TwelveMonkeys ImageIO and a
@@ -17,12 +17,14 @@ Third-party content distributed with this repository:
   English word list (Copyright 2000-2011 Kevin Atkinson and others, full
   notice in models/LICENSE-SCOWL.txt); GeoNames postal codes for Poland
   (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/,
-  https://www.geonames.org/). Details are in models/NOTICE.
+  https://www.geonames.org/). Details are in models/NOTICE. The JARs
+  ocr-pro-models and ocr-pro-models-pl ship these files unchanged, with
+  models/NOTICE (and LICENSE-SCOWL.txt) in META-INF/models/.
 - The detection and recognition pre- and post-processing follow PaddleOCR
   (Apache-2.0); the code here is written anew in Java.
-- src/test/resources/quality/: three scans from Wikimedia Commons used only as
-  test fixtures (public domain and CC BY-SA 4.0), unchanged copies. Details
-  are in src/test/resources/quality/ATTRIBUTION.md.
+- ocr-pro/src/test/resources/quality/: three scans from Wikimedia Commons used
+  only as test fixtures (public domain and CC BY-SA 4.0), unchanged copies.
+  Details are in ocr-pro/src/test/resources/quality/ATTRIBUTION.md.
 - bench/data/ and bench/ref/: benchmark page images, the PDF and DjVu
   documents they are rendered from, and their reference transcriptions,
   from Wikimedia Commons, Wikisource, EUR-Lex, arXiv and Polish digital

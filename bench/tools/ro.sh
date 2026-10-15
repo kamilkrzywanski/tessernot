@@ -12,11 +12,11 @@ T=bench/tools
 W=bench/out/ro
 JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}
 J=$JAVA_HOME/bin
-SRC=src/main/java/io/github/kamilkrzywanski/ocr/internal/post/ReadingOrder.java
+SRC=ocr-pro/src/main/java/io/github/kamilkrzywanski/ocr/internal/post/ReadingOrder.java
 mkdir -p "$W/json" "$W/tsv" "$W/classes" "$W/viz"
 compile() {
   rm -rf "$W/classes" && mkdir -p "$W/classes"
-  "$J/javac" -nowarn -d "$W/classes" -cp target/classes "$SRC" "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java"
+  "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro/target/classes "$SRC" "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java"
 }
 cmd=$1
 shift
@@ -31,11 +31,11 @@ case $cmd in
       done
     done
     python3 -I "$T/totsv.py" "$W/json" "$W/tsv" ;;
-  score) compile; "$J/java" -cp "$W/classes:target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
-  cuts) compile; "$J/java" -cp "$W/classes:target/classes" RoCuts "$W/tsv" ;;
+  score) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
+  cuts) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoCuts "$W/tsv" ;;
   show)
     compile
-    "$J/java" -cp "$W/classes:target/classes" RoOrder "$W/tsv/$1.tsv" "$W/viz/$1.order.tsv"
+    "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoOrder "$W/tsv/$1.tsv" "$W/viz/$1.order.tsv"
     for ext in jpg jpeg png tif; do img=bench/data/$1.$ext; [ -f "$img" ] && break; done
     python3 -I "$T/viz.py" "$img" "$W/viz/$1.order.tsv" "$W/viz/$1.png" 1600
     echo "$W/viz/$1.png" ;;

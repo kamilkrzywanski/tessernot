@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.kamilkrzywanski</groupId>
+        <artifactId>ocr-pro-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>ocr-pro-models-pl</artifactId>
+    <name>ocr-pro-models-pl</name>
+    <description>Word lists and Polish postal codes for Corrections.POLISH in ocr-pro, found on the
+        class path next to ocr-pro-models.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.kamilkrzywanski</groupId>
+            <artifactId>ocr-pro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.kamilkrzywanski</groupId>
+            <artifactId>ocr-pro-models</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${repository.root}</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE</include>
+                    <include>NOTICE</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${repository.root}/models</directory>
+                <targetPath>META-INF/models</targetPath>
+                <includes>
+                    <include>NOTICE</include>
+                    <include>LICENSE-SCOWL.txt</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${repository.root}/models</directory>
+                <targetPath>io/github/kamilkrzywanski/ocr/models/pl</targetPath>
+                <includes>
+                    <include>lexicon-pl.txt.gz</include>
+                    <include>lexicon-en.txt.gz</include>
+                    <include>postal-pl.txt.gz</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+</project>

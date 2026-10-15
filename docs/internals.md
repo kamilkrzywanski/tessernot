@@ -173,9 +173,25 @@ is the same as with a single engine.
 - `close` waits for running calls.
 - Closing a borrowed engine removes that slot from the pool.
 
-A multi-page PDF stays on one engine. Its pages run in parallel in a window as wide as the pool,
+A multi-page document (`recognizePages`, which the PDF input of `ocr-pro-pdf` uses) stays on one
+engine. Its pages run in parallel in a window as wide as the pool,
 so at most that many bitmaps are in memory. Page workers run detection on their own thread, so
 the pool never waits on itself.
+
+## Modules and model files
+
+- `ocr-pro` is the engine and has no runtime dependencies. A model file is a `ModelSource`: a path,
+  or a name that a `ModelBundle` holds. Bundles are found with `ServiceLoader`, through the
+  thread's context class loader and then the library's own. A bundled file is read with
+  `getResourceAsStream` into memory, so it works from fat and nested JARs and nothing is extracted
+  to disk.
+- The four default files of `ocr-pro-models` must match the SHA-256 in `ModelFiles`. The check
+  runs once per JVM and catches a bundle from another release before thresholds tuned for other
+  weights read with it.
+- The word lists of `Corrections.POLISH` are looked up next to the dict: in its directory, or in
+  the bundles (`ocr-pro-models-pl`).
+- `ocr-pro-pdf` renders pages with PDFBox and hands them to `OcrEngine.recognizePages`. The
+  document is released right after its last page is rendered.
 
 ## Performance notes
 
@@ -216,7 +232,8 @@ For timings on real documents next to Tesseract and RapidOCR, see [benchmark.md]
 - Raw and fused detection graphs agree within 1e-3.
 - A synthetic invoice rendered with DejaVu: CER below 0.25, and `Zażółć gęślą jaźń` is present.
 - Empty and 1×1 images, `null`, a vertical `FAKTURA`, EXIF orientations 1–8.
-- PDFs: one page, several pages in order, empty, encrypted.
+- PDFs: one page, several pages in order, empty, encrypted (`ocr-pro-pdf`).
+- The bundled models, with and without the Polish word lists, read the same as `models/`.
 - Three real scans (`QualityGateTest`): an edit ceiling for the plain pipeline and one for
   `Corrections.POLISH`. These are the tuning scans, so they guard against regressions. They do
   not measure accuracy; [benchmark.md](benchmark.md) does.

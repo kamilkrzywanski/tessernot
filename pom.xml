@@ -5,12 +5,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.kamilkrzywanski</groupId>
-    <artifactId>ocr-pro</artifactId>
+    <artifactId>ocr-pro-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>ocr-pro</name>
+    <packaging>pom</packaging>
+    <name>ocr-pro-parent</name>
     <description>Pure Java PP-OCR engine. No native libraries.</description>
     <url>https://github.com/kamilkrzywanski/ocr-pro</url>
     <inceptionYear>2026</inceptionYear>
+
+    <modules>
+        <module>ocr-pro</module>
+        <module>ocr-pro-pdf</module>
+        <module>ocr-pro-models</module>
+        <module>ocr-pro-models-pl</module>
+        <module>ocr-pro-cli</module>
+    </modules>
 
     <licenses>
         <license>
@@ -39,14 +48,41 @@
         <maven.compiler.release>21</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <pdfbox.version>3.0.5</pdfbox.version>
+        <!-- Every module is one level below this POM: the repository root holds models/ and the tests read it. -->
+        <repository.root>${project.basedir}/..</repository.root>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.github.kamilkrzywanski</groupId>
+                <artifactId>ocr-pro</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.kamilkrzywanski</groupId>
+                <artifactId>ocr-pro-pdf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.kamilkrzywanski</groupId>
+                <artifactId>ocr-pro-models</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.kamilkrzywanski</groupId>
+                <artifactId>ocr-pro-models-pl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${pdfbox.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -58,7 +94,7 @@
     <build>
         <resources>
             <resource>
-                <directory>${project.basedir}</directory>
+                <directory>${repository.root}</directory>
                 <targetPath>META-INF</targetPath>
                 <includes>
                     <include>LICENSE</include>
@@ -66,86 +102,41 @@
                 </includes>
             </resource>
         </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <release>21</release>
-                    <compilerArgs>
-                        <arg>--add-modules</arg>
-                        <arg>jdk.incubator.vector</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
-                <configuration>
-                    <argLine>--add-modules jdk.incubator.vector</argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <!-- The shaded JAR keeps our META-INF/LICENSE and NOTICE, so the license and notice
-                     files of the bundled libraries go to META-INF/third-party/<artifact>/. -->
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.8.1</version>
-                <executions>
-                    <execution>
-                        <id>third-party-notices</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>unpack-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <includeScope>runtime</includeScope>
-                            <includes>META-INF/LICENSE*,META-INF/NOTICE*</includes>
-                            <outputDirectory>${project.build.outputDirectory}/META-INF/third-party</outputDirectory>
-                            <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
-                            <stripVersion>true</stripVersion>
-                            <overWriteReleases>true</overWriteReleases>
-                            <fileMappers>
-                                <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                            </fileMappers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.github.kamilkrzywanski.ocr.Cli</mainClass>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <release>21</release>
+                        <compilerArgs>
+                            <arg>--add-modules</arg>
+                            <arg>jdk.incubator.vector</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.2</version>
+                    <configuration>
+                        <argLine>--add-modules jdk.incubator.vector</argLine>
+                        <!-- Tests read models/ from the repository root and skip when it is missing. -->
+                        <workingDirectory>${repository.root}</workingDirectory>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.8.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.6.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

@@ -4,15 +4,19 @@
 They are **off by default**.
 
 ```java
-OcrConfig config = OcrConfig.defaults(Path.of("models")).toBuilder()
+OcrConfig config = OcrConfig.defaults().toBuilder()
         .corrections(Corrections.POLISH)
         .build();
 ```
 
+The word lists and postal codes these rules use are in `ocr-pro-models-pl`, or next to the models
+when they come from a directory (`OcrConfig.defaults(dir)`). Without them the rules still run,
+without the dictionary steps.
+
 ## Where these rules come from
 
 Every rule and threshold here was measured on three scans: a typed letter, a thermal supermarket
-receipt and a Polish VAT invoice (`src/test/resources/quality/`). On those scans the rules cut
+receipt and a Polish VAT invoice (`ocr-pro/src/test/resources/quality/`). On those scans the rules cut
 the error count from 0 / 9 / 18 edits (plain pipeline) to 0 / 1 / 0. These scans are the data
 the rules were tuned on, so those numbers say nothing about other documents.
 

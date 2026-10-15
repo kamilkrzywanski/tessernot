@@ -19,6 +19,11 @@ and the working method.
   `$JAVA_HOME/bin/java` when it is set.
 - After every change: `mvn -q test` (about 3 minutes, all tests must pass). `QualityGateTest`
   guards the three tuning scans; its Polish-rules gate is pinned to 960 px detection on purpose.
+- Modules: `ocr-pro` (the engine, no runtime dependencies), `ocr-pro-pdf` (PDFBox),
+  `ocr-pro-models` and `ocr-pro-models-pl` (the files of `models/` as JARs, found through
+  `ModelBundle`), `ocr-pro-cli` (the runnable JAR that `ocr.sh` uses). Tests run from the
+  repository root, read `models/` there and skip when it is missing: check that the count of
+  skipped tests stays 0.
 
 ## The benchmark discipline (most important)
 
@@ -127,7 +132,12 @@ failures come down to one share just under its threshold.
    telephone bill loses most of its CER to a purple stamp). A color filter for stamp ink could
    drop such lines.
 7. **Release.** Version is still `1.0-SNAPSHOT`: set 0.1.0, add CI (GitHub Actions running
-   `mvn test` with the models), and decide on Maven Central and on hosting the models.
+   `mvn test` with the models), and publish to Maven Central (sources and javadoc JARs, signing,
+   the `io.github.kamilkrzywanski` namespace). The models are split out already: `ocr-pro-models`
+   (27 MB) and `ocr-pro-models-pl` (12 MB) ship them, so no separate hosting is needed;
+   `ModelFiles.ensure` still downloads from ModelScope for those who leave the JARs out. Release
+   all five modules together with one version: a bundled default model must match the SHA-256
+   in `ModelFiles`, so a bundle from another release fails at load time.
 
 ## Tried and dropped
 
