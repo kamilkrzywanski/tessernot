@@ -31,6 +31,8 @@
     </dependencies>
 
     <build>
+        <!-- target/ocr-pro-cli.jar whatever the version, so ocr.sh and the docs need no version. -->
+        <finalName>ocr-pro-cli</finalName>
         <plugins>
             <plugin>
                 <!-- The shaded JAR keeps our META-INF/LICENSE and NOTICE, so the license and notice

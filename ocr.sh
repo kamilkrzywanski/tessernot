@@ -3,7 +3,7 @@
 # The caller's working directory is kept, so a relative image or PDF path is resolved from there.
 # When --model is omitted on a command that loads weights, models are the directory next to this script.
 ROOT=$(CDPATH= cd -- "$(dirname "$0")" && pwd) || exit 1
-JAR="$ROOT/ocr-pro-cli/target/ocr-pro-cli-1.0-SNAPSHOT.jar"
+JAR="$ROOT/ocr-pro-cli/target/ocr-pro-cli.jar"
 if [ ! -f "$JAR" ]; then
   echo "missing $JAR — run: mvn -DskipTests package" >&2
   exit 1

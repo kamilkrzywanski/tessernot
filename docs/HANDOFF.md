@@ -14,7 +14,9 @@ and the working method.
 - All benchmark data is tracked on purpose. Page images and PDF/DjVu originals live in the
   submodule `bench/data` (its own repository, `ocr-pro-bench`); references and the manifest live
   here. A new image is committed in the submodule first (on its `master`, not a detached HEAD),
-  then the submodule pointer here. Keep every file under 50 MB.
+  then the submodule pointer here. `bench/data/manifest.tsv` is a copy of `bench/manifest.tsv`
+  for readers of the bench repository: copy it over after every manifest change. Keep every file
+  under 50 MB.
 - The system `java`, `javac` and Maven's JDK may be an older release (8 or 11 on this machine).
   `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` before `mvn` and `ocr.sh`; `ocr.sh` uses
   `$JAVA_HOME/bin/java` when it is set.
@@ -132,10 +134,15 @@ failures come down to one share just under its threshold.
 6. **Stamps and handwriting.** References leave them out, but every engine reads them (the 1932
    telephone bill loses most of its CER to a purple stamp). A color filter for stamp ink could
    drop such lines.
-7. **Release.** Version is still `1.0-SNAPSHOT`: set 0.1.0, add CI (GitHub Actions running
-   `mvn test` with the models), and publish to Maven Central (sources and javadoc JARs, signing,
-   the `io.github.kamilkrzywanski` namespace). The models are split out already: `ocr-pro-models`
-   (27 MB) and `ocr-pro-models-pl` (12 MB) ship them, so no separate hosting is needed;
+7. **Release.** The build is ready: `mvn -Prelease deploy` makes the sources and javadoc JARs,
+   signs with GPG and uploads to the Maven Central Portal (server id `central` in settings.xml,
+   a portal user token); the deployment then waits in the portal to be published by hand.
+   `ocr-pro-cli` is not uploaded: attach `ocr-pro-cli/target/ocr-pro-cli.jar` to a GitHub
+   release. CI (`.github/workflows/build.yml`) runs `mvn verify` and fails on a skipped test.
+   Left to the owner: the version (`mvn versions:set -DnewVersion=0.1.0`), making the
+   repository public, the `io.github.kamilkrzywanski` namespace on central.sonatype.com, the
+   portal token, and a GPG key on a public key server. The models ship as `ocr-pro-models`
+   (27 MB) and `ocr-pro-models-pl` (12 MB), so no separate hosting is needed;
    `ModelFiles.ensure` still downloads from ModelScope for those who leave the JARs out. Release
    all five modules together with one version: a bundled default model must match the SHA-256
    in `ModelFiles`, so a bundle from another release fails at load time.

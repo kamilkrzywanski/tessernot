@@ -45,9 +45,9 @@ ModelScope and checks their SHA-256 digests.
 | `ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx` | 0° / 180° line orientation |
 | `PP-OCRv6_rec_small.onnx` + `ppocrv6_dict.txt` | recognition: Latin scripts including Polish, Chinese, Japanese kana, Greek |
 
-`ocr.sh` runs `ocr-pro-cli/target/ocr-pro-cli-1.0-SNAPSHOT.jar` with `--add-modules
+`ocr.sh` runs `ocr-pro-cli/target/ocr-pro-cli.jar` with `--add-modules
 jdk.incubator.vector`. That JAR bundles the models, so it also runs on its own, from any directory:
-`java --add-modules jdk.incubator.vector -jar ocr-pro-cli-1.0-SNAPSHOT.jar ocr scan.jpg`. Without the
+`java --add-modules jdk.incubator.vector -jar ocr-pro-cli.jar ocr scan.jpg`. Without the
 flag, the engine uses the scalar path.
 
 ## Java API

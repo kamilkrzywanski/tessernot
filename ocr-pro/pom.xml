@@ -13,4 +13,20 @@
     <artifactId>ocr-pro</artifactId>
     <name>ocr-pro</name>
     <description>Pure Java PP-OCR engine. No native libraries and no runtime dependencies.</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>io.github.kamilkrzywanski.ocr</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
