@@ -6,9 +6,10 @@ and the working method.
 
 ## Ground rules from the owner
 
-- Commits: author `Kamil Krzywanski <kamilkrzywanski01@gmail.com>` (pass `-c user.name=... -c
+- Commits: author `Kamil Krzywański <kamilkrzywanski01@gmail.com>` (pass `-c user.name=... -c
   user.email=...`; the global git config holds a work address). **No `Co-Authored-By` or any AI
-  attribution.** Commit messages in Polish, imperative, like the existing history.
+  attribution.** Commit messages in English, imperative, like the existing history. The code,
+  the docs and the commit history are all in English.
 - Talk to the owner in Polish. Push to `origin master` only when asked.
 - All benchmark data is tracked on purpose. Page images and PDF/DjVu originals live in the
   submodule `bench/data` (its own repository, `ocr-pro-bench`); references and the manifest live
