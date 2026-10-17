@@ -88,7 +88,7 @@ public final class ModelFiles {
 
     /**
      * Checks that the model files {@code config} uses are there and not empty, without loading them:
-     * detection, recognition and the classifier as far as the configuration turns them on. Lets a
+     * detection, recognition with its word lists and the classifier as far as the configuration turns them on. Lets a
      * caller fail before it decodes a document; {@link OcrEngine#create(OcrConfig)} checks the same.
      */
     public static void require(OcrConfig config) {
@@ -101,6 +101,9 @@ public final class ModelFiles {
         if (config.useRec()) {
             require(config.recModel(), "recognition model");
             require(config.dict(), "recognition dict");
+            for (ModelSource list : config.wordLists()) {
+                require(list, "word list");
+            }
         }
         if (config.useCls()) {
             require(config.clsModel(), "classifier model");

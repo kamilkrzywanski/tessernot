@@ -99,6 +99,34 @@ For Latin-script documents, `.alphabet(Alphabet.LATIN)` (`--alphabet latin`) kee
 recognizer's 18,710 output classes: the same accuracy on the benchmark, and 8–18 % less time over
 a benchmark set, up to a quarter on pages with a lot of text.
 
+### Word lists in any language
+
+A word list makes the recognizer prefer real words where the image allows it. Each list is a
+UTF-8 file with one word per line, plain or gzip, in any order and case:
+
+```java
+OcrConfig config = OcrConfig.defaults().toBuilder()
+        .wordList(Path.of("german.txt.gz"))
+        .wordList(Path.of("my-product-names.txt"))
+        .build();
+```
+
+On the command line: `--words german.txt.gz,names.txt`. A recognized word that no list holds is
+searched again on the recognizer's own output for that word, and a listed word with the same
+number of letters replaces it when the image supports that spelling almost as well (at most
+e⁴ ≈ 55 times less likely). The recognizer often misses a mark on a letter, so one added mark per
+word (`a`→`ą`, `u`→`ü`) is allowed even when the image shows little of it. Words already on a list,
+numbers and letters glued to digits stay as read. There are no rules for any one language: a list
+is only its words.
+
+With the Polish and English lists of `ocr-pro-models-pl` as `--words`, and no other rule, word F1
+rose from 0.930 to 0.945 on `test` (Polish pages 0.915 to 0.933) and from 0.956 to 0.963 on `dev`;
+pooled CER on `test` went from 0.046 to 0.044. Searching costs under 1 % of a page's time; a large
+list that is already sorted, lowercase and NFC loads in about half a second, any other is sorted
+on load.
+`test2` and `test3` have not been scored with lists yet. `Corrections.POLISH` adds these two lists
+on its own.
+
 ### Public API
 
 The public API is in `io.github.kamilkrzywanski.ocr`:
@@ -163,11 +191,13 @@ Method, the `dev` set, per-document results and how to reproduce them are in
 adds:
 
 - character swaps in CTC decoding (`ł`, `ó`, `Ś`, ...)
-- Polish and English word lists, and a list of Polish postal codes
+- the Polish and English word lists for the word-list search above, and a list of Polish
+  postal codes
 - second reads of a line crop for invoice details
 
-These rules were tuned on three scans and checked on the `dev` set. On Polish documents they add
-0.3 points of word F1 on `test2` and 0.7 on `test`. They are **off by default**. See
+The second reads and CTC swaps were tuned on three scans and checked on the `dev` set. With the
+word-list search the profile gives word F1 0.964 on `dev` and 0.946 on `test`, against 0.956 and
+0.930 for the plain pipeline; `test2` has not been scored with it yet. It is **off by default**. See
 [docs/corrections.md](docs/corrections.md) for the rules and what they get wrong.
 
 ## Not in scope

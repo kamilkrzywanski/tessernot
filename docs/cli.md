@@ -8,10 +8,10 @@ run on its own without `--model`, it uses those, and `download` writes to `./mod
 
 ```text
 ocr download [dir]
-ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--json]
-ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--json]
-ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin]
-ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--out dir] [--model dir] [--limit N] [--threads N]
+ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json]
+ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json]
+ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...]
+ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--out dir] [--model dir] [--limit N] [--threads N]
 ocr score <ref-dir> --hyp <dir>
 ocr convert <in.onnx> <out.jir>
 ocr ops <model> [--raw]
@@ -45,6 +45,10 @@ ocr eval [--model dir]
 - `--alphabet all|latin`: `latin` cuts the recognizer's last layer to Latin and Greek letters,
   digits, punctuation and common symbols (2,440 of 18,710 classes) when the model is loaded.
   Same accuracy on Latin-script documents, faster on pages with many lines. The default is `all`.
+- `--words a.txt,b.txt.gz`: word lists in any language, UTF-8, one word per line, plain or gzip,
+  in any order and case. An unlisted word is read as a listed one with the same number of letters
+  when the image supports that spelling almost as well. See the README, "Word lists in any
+  language". Works with `--corrections none` too.
 - `--json`: one JSON document instead of text (see below).
 - `--dpi N`: PDF render resolution.
 

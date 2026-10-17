@@ -121,7 +121,9 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.2</version>
                     <configuration>
-                        <argLine>--add-modules jdk.incubator.vector</argLine>
+                        <!-- At most 12 CPUs for the tests: every engine sizes its pool from availableProcessors(),
+                             and a 24-thread machine became unresponsive during a full test run. -->
+                        <argLine>--add-modules jdk.incubator.vector -XX:ActiveProcessorCount=12</argLine>
                         <!-- Tests read models/ from the repository root and skip when it is missing. -->
                         <workingDirectory>${repository.root}</workingDirectory>
                     </configuration>

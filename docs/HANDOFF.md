@@ -20,7 +20,11 @@ and the working method.
 - The system `java`, `javac` and Maven's JDK may be an older release (8 or 11 on this machine).
   `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` before `mvn` and `ocr.sh`; `ocr.sh` uses
   `$JAVA_HOME/bin/java` when it is set.
-- After every change: `mvn -q test` (about 3 minutes, all tests must pass). `QualityGateTest`
+- After every change: `mvn -q test` (about 3 minutes, all tests must pass). Surefire caps the test
+  JVM at 12 CPUs (`-XX:ActiveProcessorCount=12`): the owner's machine has 24 threads and froze
+  under a full run. Run benchmark JVMs with the same flag or `--threads 12`.
+- The owner wants a universal tool: no thresholds fitted to the benchmark sets. Prefer one
+  mechanism with a parameter that means something (nats, a probability) set before measuring. `QualityGateTest`
   guards the three tuning scans; its Polish-rules gate is pinned to 960 px detection on purpose.
 - Modules: `ocr-pro` (the engine, no runtime dependencies), `ocr-pro-pdf` (PDFBox),
   `ocr-pro-models` and `ocr-pro-models-pl` (the files of `models/` as JARs, found through
@@ -129,8 +133,12 @@ failures come down to one share just under its threshold.
    1×1 convolutions already have 400–1,300 columns, and the kernel runs as fast at 160. What is
    left is to skip work: two-pass detection, and fewer second reads in the Polish profile.
    About 1.5 GB of heap at 2048 px; a two-pass detection would also save time on large print.
-5. **Polish corrections at 2048 px.** The rules were measured on 960 px crops; at 2048 px the
-   Biedronka receipt has three edits instead of one. Re-check `Corrections.POLISH` on `dev`.
+5. **Word lists (2026-10-17).** `CtcWords` (see internals.md) replaced the fixed lexicon swaps
+   and takes lists in any language. What it cannot do: tell two listed words apart (Spółka /
+   Spotka; it has no context), split glued words (`imagazyn`), or keep a historical spelling the
+   lists lack (Volumina Legum prints `Krola`, the search writes `Króla`: give such documents a
+   list of their own). Next steps: a word-frequency or bigram prior for ties, letting the search
+   insert a space, and scoring `test2` with lists and the polish profile once.
 6. **Stamps and handwriting.** References leave them out, but every engine reads them (the 1932
    telephone bill loses most of its CER to a purple stamp). A color filter for stamp ink could
    drop such lines.

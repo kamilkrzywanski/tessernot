@@ -34,7 +34,7 @@ import java.util.Set;
 public final class Cli {
     private static final Set<String> SWITCHES = Set.of("no-cls", "no-det", "raw", "json");
     private static final Set<String> FLAGS = Set.of(
-            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json", "corrections", "layout", "alphabet", "hyp", "out");
+            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json", "corrections", "layout", "alphabet", "words", "hyp", "out");
 
     private Cli() {
     }
@@ -115,10 +115,10 @@ public final class Cli {
     }
 
     private static int ocr(Parsed parsed) throws Exception {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet", "words");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det]"
-                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--json]");
+                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json]");
         }
         corrections(parsed);
         layout(parsed);
@@ -141,10 +141,10 @@ public final class Cli {
     }
 
     private static int bench(Parsed parsed) throws Exception {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "alphabet");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "alphabet", "words");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det]"
-                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin]");
+                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...]");
         }
         corrections(parsed);
         layout(parsed);
@@ -167,10 +167,10 @@ public final class Cli {
     }
 
     private static int pdf(Parsed parsed) throws Exception {
-        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet");
+        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet", "words");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det]"
-                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--json]");
+                    + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json]");
         }
         corrections(parsed);
         layout(parsed);
@@ -262,7 +262,7 @@ public final class Cli {
     }
 
     private static int eval(Parsed parsed) {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "alphabet");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "alphabet", "words");
         corrections(parsed);
         layout(parsed);
         alphabet(parsed);
@@ -280,11 +280,11 @@ public final class Cli {
      * {@code score <ref-dir> --hyp <dir>} scores ready outputs of another engine instead.
      */
     private static int score(Parsed parsed) {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "alphabet", "hyp", "out");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "corrections", "layout", "alphabet", "words", "hyp", "out");
         String hyp = parsed.flag("hyp");
         int wanted = hyp == null ? 3 : 2;
         if (parsed.positionals.size() != wanted) {
-            throw new OcrException("usage: ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--out dir]"
+            throw new OcrException("usage: ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--out dir]"
                     + " [--model dir] [--limit N] [--threads N]  |  ocr score <ref-dir> --hyp <dir>");
         }
         integerIfPresent(parsed, "limit");
@@ -333,6 +333,15 @@ public final class Cli {
         OcrConfig base = model == null ? OcrConfig.defaults() : OcrConfig.defaults(Path.of(model));
         OcrConfig.Builder builder = base.toBuilder().corrections(corrections(parsed))
                 .layout(layout(parsed)).alphabet(alphabet(parsed));
+        String words = parsed.flag("words");
+        if (words != null) {
+            for (String file : words.split(",", -1)) {
+                if (file.isBlank()) {
+                    throw new OcrException("--words needs word list files separated by commas");
+                }
+                builder.wordList(Path.of(file));
+            }
+        }
         if (parsed.flag("limit") != null) {
             builder.detLimitSideLen(positiveInt(parsed, "limit"));
         }
@@ -460,11 +469,12 @@ public final class Cli {
                 ocr eval [--model dir]
 
                 Without --model, ocr, bench, pdf, eval and score use the models bundled in this JAR; download writes to ./models.
-                ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--out dir]
+                ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--out dir]
                 ocr score <ref-dir> --hyp <dir>
 
                 --corrections polish turns on the rules for Polish print (off by default), see docs/corrections.md.
                 --layout rows reads every page row by row, with no column analysis: for receipts and other one-column pages.
+                --words a.txt,b.txt.gz adds word lists in any language (UTF-8, one word per line, plain or gzip): an unlisted word whose listed spelling the image supports almost as well is read as that spelling.
                 --alphabet latin keeps only Latin and Greek letters, digits, punctuation and symbols in the recognizer's last layer: faster, for Latin-script documents.
                 Add --add-modules jdk.incubator.vector (see ocr.sh) for the fast backend.
                 Scalar mode is used automatically when that module is absent.

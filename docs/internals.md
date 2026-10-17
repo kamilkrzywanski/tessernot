@@ -74,6 +74,16 @@ by reflection.
 - **Classifier**: input size comes from the model signature (80×160 for the default model).
 - **CTC**: greedy, blank at 0, repeats collapsed. The score is the mean probability of the kept
   steps. A second softmax is not applied when the output already sums to 1.
+- **Word-list search** (`CtcWords`, only with word lists): each greedy letter run that no list
+  holds gets a prefix beam search (width 16) over its own timesteps, from the end of the previous
+  emitted character to the start of the next. Per timestep it tries the six most probable
+  letters above 1e-4, their marked variants, the blank and the prefix's last letter; a prefix
+  must start a listed word, and the result must have as many letters as the greedy word. The
+  best listed word wins when its CTC probability (forward algorithm, every alignment) is at most
+  4 nats below the greedy word's on the same timesteps. A letter with marks is scored at least
+  e⁻³ times its plain letter (`Charset.plain()`: NFD base, plus ł, ø, đ, ħ), so one unseen mark
+  fits in the margin. A run glued to a digit is skipped; before a hyphen a listed prefix counts
+  as a word. `-Docr.ctcwords.trace=true` prints every searched word.
 - **Charset**: one token per line. Empty lines are skipped, and one trailing CR and a BOM are
   removed. `useSpaceChar` appends the space class. With the default model there are 18710
   classes: blank, 18708 characters and the space.

@@ -57,20 +57,19 @@ differs from the first read in the one expected way. Any other difference keeps 
 2. **Main ink band.** After rotation and before the resize to height 48, a second ink band is
    dropped when at least 20 white rows separate it and it has clearly less ink. A neighbor line
    caught in the box then stops sharing the model height.
-3. **Word lists.** These are optional files next to the models: `lexicon-pl.txt.gz` (sjp.pl) and
-   `lexicon-en.txt.gz` (SCOWL). A token of 4–24 letters that is in neither list gets the only
-   dictionary word reachable by one ordered family of OCR confusions. The order is: one Polish
-   diacritic, then two, then `t`→`ł`, then `i`→`j`, then `ó`/`e`/`o`→`ć` (optionally with
-   `s`→`ś`), then up to two `l`→`i`/`j`, then one `o`→`c`. When several words match, the token
-   stays.
-   - **Capital letters.** A token that is a word without its diacritics gets them back only when
-     the same line already prints a Polish diacritic. A fiscal printer that drops them keeps
-     `SPRZEDAZ`, and `PLATNOŚCI` becomes `PŁATNOŚCI`. Otherwise it may get one inserted letter
-     plus one diacritic, when exactly one word fits (`ORYGNAL` → `ORYGINAŁ`).
-   - **Abbreviations.** A token followed by a period that starts a longer dictionary word stays
-     as it is (`Przewod.`).
-   - A digit glued to a known word gets a space. A one-letter preposition glued to the next
-     word is split off.
+3. **Word-list search.** These are optional files next to the models: `lexicon-pl.txt.gz`
+   (sjp.pl) and `lexicon-en.txt.gz` (SCOWL). With both present, every unlisted word is searched
+   again on the CTC output with the two lists, as described in the README under "Word lists in
+   any language". This is the same search `--words` runs; it has no Polish rules of its own.
+
+   Until 2026-10-17 this step was a fixed, ordered family of letter swaps measured on the three
+   scans (one or two diacritics, `t`→`ł`, `i`→`j`, `ó`/`e`/`o`→`ć`, `l`→`i`/`j`, `o`→`c`, capitals
+   with an inserted letter, glued one-letter prepositions split off). Measured with the polish
+   profile (`dev` / `test` word F1): 0.955 / 0.934 with the swaps alone, 0.960 / 0.943 with the
+   search and the swaps, 0.964 / 0.946 with the search and no swaps. The swaps were removed. On
+   the three scans this costs Żniwna and Polędw on the receipt (the printer prints no mark on
+   those lines, so the search adds none), and the spaces in "i magazyn" and "i Wspólnicy" and
+   the ł in Spółka (read as the listed Spotka) on the invoice.
 4. **Row number.** A narrow digit, a gap and a thin rule at the left edge, as in an invoice
    `Lp` column, are cut off. The line is then read again. The cut is kept when the second read
    is the first read without that leading number.
@@ -98,8 +97,8 @@ differs from the first read in the one expected way. Any other difference keeps 
 13. **Amount and VAT rate.** A box that reads like `8.13 23` is cut at the vertical rule
     between the two parts. The cut is kept when each half reads back as its token.
 
-In ruled tables, a cell crop gets the word lists (rule 3). The other rules apply to page lines
-only.
+In ruled tables, a cell crop gets the word-list search (rule 3). The other rules apply to page
+lines only.
 
 ## Turning rules into something general
 

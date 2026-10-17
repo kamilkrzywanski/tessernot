@@ -11,6 +11,7 @@ import io.github.kamilkrzywanski.ocr.internal.post.Lexicon;
 import io.github.kamilkrzywanski.ocr.internal.post.PostalCities;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
 import io.github.kamilkrzywanski.ocr.internal.post.Tables;
+import io.github.kamilkrzywanski.ocr.internal.post.Vocabulary;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Graph;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Session;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Sig;
@@ -65,6 +66,8 @@ public final class OcrEngine implements AutoCloseable {
     private Session cls;
     private Charset charset;
     private Lexicon lexicon;
+    /** Lists for the CTC word-list search: the user's, plus the Polish profile's own. Null when there is none. */
+    private Vocabulary words;
     private PostalCities postal;
     private ArrayBlockingQueue<Session> recPool;
     private ArrayBlockingQueue<Session> clsPool;
@@ -123,6 +126,7 @@ public final class OcrEngine implements AutoCloseable {
             // They sit next to the dict: in its directory, or in a bundle (ocr-pro-models-pl).
             this.lexicon = corrected ? lexicon(cfg.dict()) : null;
             this.postal = corrected ? postal(cfg.dict()) : null;
+            this.words = vocabulary(cfg.wordLists(), lexicon);
             int classes = staticDim(rec.outputSig(), rec.outputSig().dims == null ? -1 : rec.outputSig().dims.length - 1);
             if (classes > 0 && classes != charset.size()) {
                 throw new OcrException("REC classes " + classes + " != charset " + charset.size());
@@ -301,6 +305,22 @@ public final class OcrEngine implements AutoCloseable {
             return null;
         }
         return Lexicon.read(wordList(polish), polish.toString(), wordList(english), english.toString());
+    }
+
+    private static Vocabulary vocabulary(List<ModelSource> sources, Lexicon lexicon) {
+        List<Vocabulary> lists = new ArrayList<>();
+        for (ModelSource source : sources) {
+            ModelFiles.require(source, "word list");
+            try {
+                lists.add(Vocabulary.read(source.read(), source.toString()));
+            } catch (IOException e) {
+                throw new OcrException("cannot read word list " + source + ": " + e.getMessage(), e);
+            }
+        }
+        if (lexicon != null) {
+            lists.add(lexicon);
+        }
+        return Vocabulary.of(lists);
     }
 
     /** The gzip list of postal codes next to the dict, or null when it is absent. */
@@ -611,13 +631,13 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight());
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(session.run(Map.of(recInput, input)));
-        Ctc.Result result = Ctc.greedy(output, charset, corrected);
+        Ctc.Result result = Ctc.greedy(output, charset, corrected, words);
         if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return "";
         }
-        // The piece is not the line. The same dictionary pass the line already had
-        // puts the ł back on Wysyłka; the joined page text is unchanged.
-        return applyLexicon(result.text());
+        // The piece is not the line. The word-list search the line already had runs in the
+        // decoder here too; the joined page text is unchanged.
+        return result.text();
     }
 
     private List<DbPost.Box> detect(Bgr bgr, boolean lineParallel) {
@@ -725,20 +745,20 @@ public final class OcrEngine implements AutoCloseable {
         if (!corrected) {
             return textLine(box, result.text(), result.score());
         }
-        String text = applyLexicon(result.text());
+        String text = result.text();
         float score = result.score();
         Bgr indexed = Images.cutLeftIndex(crop);
         if (indexed != crop) {
             // The row number is real ink in the same box as the name. A second read is kept
             // only when it is this text without that leading number, so a letter stem stays.
-            // On the measured invoice the cut drops ł and ó. The lexicon puts them back.
-            // Without the lists the first read already has both, so a shorter read that
-            // only lost those two marks still confirms the cut.
+            // On the measured invoice the cut drops ł and ó. With the lists the decoder's
+            // word search puts them back; without them a shorter read that only lost those
+            // two marks still confirms the cut.
             String stripped = text.replaceFirst("^[0-9]+\\s+", "");
             if (!stripped.equals(text)) {
                 Ctc.Result again = recognizeCrop(indexed, recSession);
                 if (!again.text().isEmpty() && again.score() >= cfg.recThresh()) {
-                    String second = applyLexicon(again.text());
+                    String second = again.text();
                     if (IndexKeep.agrees(stripped, second)) {
                         text = stripped;
                         score = again.score();
@@ -750,7 +770,7 @@ public final class OcrEngine implements AutoCloseable {
         if (coded.matches() && hasDigit(coded.group(2))) {
             Ctc.Result again = recognizeCrop(inkThreshold(crop, POSTAL_INK), recSession);
             if (!again.text().isEmpty() && again.score() >= cfg.recThresh()) {
-                String second = applyLexicon(again.text()).trim();
+                String second = again.text().trim();
                 Matcher city = POSTAL_CITY.matcher(second);
                 if (city.matches() && city.group(1).equals(coded.group(1))
                         && !hasDigit(city.group(2)) && city.group(2).length() >= 3) {
@@ -767,7 +787,7 @@ public final class OcrEngine implements AutoCloseable {
             if (painted != null) {
                 Ctc.Result again = recognizeCrop(painted, recSession);
                 if (!again.text().isEmpty() && again.score() >= cfg.recThresh()) {
-                    String merged = NotchedZ.keep(text, applyLexicon(again.text()));
+                    String merged = NotchedZ.keep(text, again.text());
                     if (merged != null) {
                         text = merged;
                         score = again.score();
@@ -830,7 +850,7 @@ public final class OcrEngine implements AutoCloseable {
         if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return null;
         }
-        String second = ParenSpace.apply(FieldLabels.apply(applyLexicon(result.text())));
+        String second = ParenSpace.apply(FieldLabels.apply(result.text()));
         if (EdgeRule.keep(text, second) == null) {
             return null;
         }
@@ -915,7 +935,7 @@ public final class OcrEngine implements AutoCloseable {
         if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return null;
         }
-        String second = ParenSpace.apply(FieldLabels.apply(applyLexicon(result.text())));
+        String second = ParenSpace.apply(FieldLabels.apply(result.text()));
         if (DotKeep.keep(text, second) == null) {
             return null;
         }
@@ -976,10 +996,6 @@ public final class OcrEngine implements AutoCloseable {
         return new Bgr(out, width, height);
     }
 
-    private String applyLexicon(String text) {
-        return lexicon == null ? text : lexicon.apply(text);
-    }
-
     private static boolean hasDigit(String text) {
         for (int i = 0; i < text.length(); i++) {
             if (Character.isDigit(text.charAt(i))) {
@@ -1010,7 +1026,7 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight());
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(recSession.run(Map.of(recInput, input)));
-        return Ctc.greedy(output, charset, corrected);
+        return Ctc.greedy(output, charset, corrected, words);
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {

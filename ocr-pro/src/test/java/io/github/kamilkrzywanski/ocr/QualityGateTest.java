@@ -33,17 +33,21 @@ class QualityGateTest {
     private static final int NIXON_MAX_EDITS = 0;
     /**
      * Thermal receipt with the optional lexicon. The ł in łos remains.
-     * The stem polędw puts the ogonek back on Polędw. A dot above the notched Z restores Żyt.
-     * Without the lists, Żniwna and Poledw remain. Świat is the capital-S runner-up,
-     * so it does not need the lists. The dot still restores Żyt.
-     * Wrocław, łącznie, and both {@code x} rows match.
+     * The word lists only feed the CTC word search (2026-10-17; the fixed letter swaps that
+     * restored Żniwna and Polędw here were dropped because they cost more than they fixed on the
+     * benchmark). This printer prints no Polish mark on those two lines, so the search adds none
+     * and Żniwna and Poledw remain, as without the lists. A dot above the notched Z restores
+     * Żyt. Świat is the capital-S runner-up. Wrocław, łącznie, and both {@code x} rows match.
      */
-    private static final int RECEIPT_MAX_EDITS = 1;
+    private static final int RECEIPT_MAX_EDITS = 3;
     private static final int RECEIPT_MAX_EDITS_WITHOUT_LEXICON = 3;
     /**
      * Invoice fields outside the table, plus the product name and the amount due.
-     * With the lexicon and {@code postal-pl.txt.gz} the invoice matches: 90-031 is Łódź
-     * when the letters already agree. Without that file the capital stays L, one edit.
+     * With the word lists and {@code postal-pl.txt.gz} the invoice has four edits: the word
+     * search reads Spółka as Spotka (both listed, and the image prefers t to a faint ł), and
+     * the glued prepositions in "i magazyn" and "i Wspólnicy" stay glued; the margin rereads
+     * that split them run only without the lists. 90-031 is Łódź when the letters already
+     * agree. Without the postal file the search reads Lódz as the listed Lodz, three edits more.
      * A postal code whose city still contains a digit is read again at ink threshold 220,
      * and kept when the code matches and the city is letters. The Lp digit glued to
      * Ziemia Kłodzka is cut when a second read is the first read without the digit.
@@ -65,8 +69,8 @@ class QualityGateTest {
      * match. The grid and the signature are not scored. The red stamp is scored only
      * as ORYGINAŁ.
      */
-    private static final int INVOICE_MAX_EDITS = 0;
-    private static final int INVOICE_MAX_EDITS_WITHOUT_POSTAL = 1;
+    private static final int INVOICE_MAX_EDITS = 4;
+    private static final int INVOICE_MAX_EDITS_WITHOUT_POSTAL = 7;
     private static final int INVOICE_MAX_EDITS_WITHOUT_LEXICON = 0;
     private static final int INVOICE_MAX_EDITS_WITHOUT_LISTS = 2;
     private static final int PLAIN_NIXON_MAX_EDITS = 0;

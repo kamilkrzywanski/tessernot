@@ -20,6 +20,11 @@ import java.util.List;
  */
 public final class Charset {
     private final String[] tokens;
+    /** {@link #plain()} and {@link #marked()}, built together on first use. */
+    private volatile Marks marks;
+
+    private record Marks(int[] plain, int[][] marked) {
+    }
 
     private Charset(String[] tokens) {
         this.tokens = tokens;
@@ -132,6 +137,76 @@ public final class Charset {
             return "";
         }
         return tokens[index];
+    }
+
+    /**
+     * The letter without its marks, by label: {@code a} for {@code ą}, {@code L} for {@code Ł}, 0 for a
+     * plain letter or any other token. The base is the letter after NFD with the combining marks
+     * removed, in the same case; letters with a stroke that NFD keeps whole (ł, ø, đ, ħ) count as
+     * their plain letter. Only a base the charset also holds is given.
+     */
+    int[] plain() {
+        return marks().plain();
+    }
+
+    /** The letters with marks on each plain letter, by label, or null; the reverse of {@link #plain()}. */
+    int[][] marked() {
+        return marks().marked();
+    }
+
+    private Marks marks() {
+        Marks built = marks;
+        if (built != null) {
+            return built;
+        }
+        java.util.Map<String, Integer> index = new java.util.HashMap<>();
+        for (int i = 1; i < tokens.length; i++) {
+            index.putIfAbsent(tokens[i], i);
+        }
+        int[] plain = new int[tokens.length];
+        List<List<Integer>> marked = new ArrayList<>();
+        for (int i = 0; i < tokens.length; i++) {
+            marked.add(null);
+        }
+        for (int i = 1; i < tokens.length; i++) {
+            String base = baseLetter(tokens[i]);
+            Integer at = base == null || base.equals(tokens[i]) ? null : index.get(base);
+            if (at != null) {
+                plain[i] = at;
+                if (marked.get(at) == null) {
+                    marked.set(at, new ArrayList<>());
+                }
+                marked.get(at).add(i);
+            }
+        }
+        int[][] lists = new int[tokens.length][];
+        for (int i = 0; i < tokens.length; i++) {
+            List<Integer> list = marked.get(i);
+            lists[i] = list == null ? null : list.stream().mapToInt(Integer::intValue).toArray();
+        }
+        built = new Marks(plain, lists);
+        marks = built;
+        return built;
+    }
+
+    private static String baseLetter(String token) {
+        if (token.length() != 1 || !Character.isLetter(token.charAt(0))) {
+            return null;
+        }
+        String plain = java.text.Normalizer.normalize(token, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        plain = switch (plain) {
+            case "ł" -> "l";
+            case "Ł" -> "L";
+            case "ø" -> "o";
+            case "Ø" -> "O";
+            case "đ" -> "d";
+            case "Đ" -> "D";
+            case "ħ" -> "h";
+            case "Ħ" -> "H";
+            default -> plain;
+        };
+        return plain.length() == 1 && Character.isLetter(plain.charAt(0)) ? plain : null;
     }
 
     public int indexOf(String token) {

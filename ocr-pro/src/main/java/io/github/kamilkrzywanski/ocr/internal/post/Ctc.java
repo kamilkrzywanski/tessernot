@@ -17,6 +17,12 @@ public final class Ctc {
     public record Result(String text, float score) {
     }
 
+    /**
+     * Nats a listed word may lose to the greedy word on the same timesteps: the image may make it up
+     * to e^4, about 55 times, less likely. Set before any measurement and kept.
+     */
+    static final double MARGIN = 4.0;
+
     private Ctc() {
     }
 
@@ -25,6 +31,11 @@ public final class Ctc {
     }
 
     public static Result greedy(Tensor tensor, Charset charset, boolean corrected) {
+        return greedy(tensor, charset, corrected, null);
+    }
+
+    /** With a vocabulary, unlisted words are searched again on their timesteps, see {@link CtcWords}. */
+    public static Result greedy(Tensor tensor, Charset charset, boolean corrected, Vocabulary words) {
         if (tensor == null || tensor.f == null) {
             throw new OcrException("CTC expects a float tensor");
         }
@@ -60,7 +71,7 @@ public final class Ctc {
                 }
             }
         }
-        return greedy(packed, time, classes, charset, corrected);
+        return greedy(packed, time, classes, charset, corrected, words);
     }
 
     public static Result greedy(float[] data, int time, int classes, Charset charset) {
@@ -68,6 +79,11 @@ public final class Ctc {
     }
 
     public static Result greedy(float[] data, int time, int classes, Charset charset, boolean corrected) {
+        return greedy(data, time, classes, charset, corrected, null);
+    }
+
+    public static Result greedy(float[] data, int time, int classes, Charset charset, boolean corrected,
+                                Vocabulary words) {
         if (time <= 0 || classes <= 0) {
             return new Result("", 0f);
         }
@@ -92,6 +108,7 @@ public final class Ctc {
         double score = 0;
         int kept = 0;
         int previous = -1;
+        int[] path = new int[time];
         for (int t = 0; t < time; t++) {
             int arg = 0;
             float best = probs[t * classes];
@@ -142,8 +159,11 @@ public final class Ctc {
                 kept++;
             }
             previous = arg;
+            path[t] = arg;
         }
-        return new Result(text.toString(), kept == 0 ? 0f : (float) (score / kept));
+        String decoded = words == null ? text.toString()
+                : CtcWords.decode(probs, time, classes, charset, path, words, MARGIN);
+        return new Result(decoded, kept == 0 ? 0f : (float) (score / kept));
     }
 
     /** A decimal comma only follows a digit; a period after a word ends a sentence. */

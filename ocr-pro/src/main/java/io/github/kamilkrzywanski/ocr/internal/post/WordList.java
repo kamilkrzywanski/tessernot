@@ -9,16 +9,18 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 /**
  * Sorted UTF-8 words, one per line, searched without building a string per entry.
  * The bytes stay in Unicode code-point order, which matches {@link String#compareTo} for these letters.
  */
-final class WordList {
+final class WordList implements Vocabulary {
     private final byte[] data;
     private final int[] start;
 
@@ -39,17 +41,121 @@ final class WordList {
 
     /** A list already in memory, gzip or plain. {@code label} names it in errors. */
     static WordList read(byte[] data, boolean gzip, String label) {
-        try {
-            byte[] raw = data;
-            if (gzip) {
-                try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(data))) {
-                    raw = in.readAllBytes();
-                }
-            }
-            return new WordList(raw, offsets(raw));
+        byte[] raw = bytes(data, gzip, label);
+        return new WordList(raw, offsets(raw));
+    }
+
+    private static byte[] bytes(byte[] data, boolean gzip, String label) {
+        if (!gzip) {
+            return data;
+        }
+        try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(data))) {
+            return in.readAllBytes();
         } catch (IOException e) {
             throw new OcrException("cannot read word list " + label + ": " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * A list in any order and case, as {@link Vocabulary#read} describes it. The words are sorted
+     * by their UTF-8 bytes, the order the binary search compares in.
+     */
+    static WordList normalized(byte[] data, String label) {
+        boolean gzip = data.length >= 2 && (data[0] & 255) == 0x1f && (data[1] & 255) == 0x8b;
+        byte[] raw = bytes(data, gzip, label);
+        if (ready(raw)) {
+            return new WordList(raw, offsets(raw));
+        }
+        String text;
+        try {
+            text = StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(raw)).toString();
+        } catch (java.nio.charset.CharacterCodingException e) {
+            throw new OcrException("cannot read word list " + label + ": not UTF-8", e);
+        }
+        if (text.startsWith("\uFEFF")) {
+            text = text.substring(1);
+        }
+        List<byte[]> words = new ArrayList<>();
+        for (String line : text.split("\\R")) {
+            String word = Normalizer.normalize(line.strip(), Normalizer.Form.NFC).toLowerCase(Locale.ROOT);
+            if (!word.isEmpty() && word.codePoints().noneMatch(Character::isWhitespace)) {
+                words.add(word.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+        words.sort(Arrays::compareUnsigned);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(raw.length);
+        byte[] previous = null;
+        for (byte[] word : words) {
+            if (previous != null && Arrays.equals(previous, word)) {
+                continue;
+            }
+            previous = word;
+            out.writeBytes(word);
+            out.write('\n');
+        }
+        byte[] sorted = out.toByteArray();
+        return new WordList(sorted, offsets(sorted));
+    }
+
+    /**
+     * Whether the bytes are already what {@link #normalized} would build: valid UTF-8, one word per
+     * {@code \n}, lowercase, NFC, strictly increasing. One pass, and only a line with non-ASCII bytes
+     * is decoded, so a large sorted list loads without a copy per word.
+     */
+    private static boolean ready(byte[] raw) {
+        int start = 0;
+        int previous = -1;
+        int previousEnd = -1;
+        var decoder = StandardCharsets.UTF_8.newDecoder();
+        for (int i = 0; i <= raw.length; i++) {
+            if (i < raw.length && raw[i] != '\n') {
+                continue;
+            }
+            if (i == start) {
+                if (i < raw.length) {
+                    return false;
+                }
+                break;
+            }
+            boolean ascii = true;
+            for (int k = start; k < i; k++) {
+                int b = raw[k] & 255;
+                if (b >= 0x80) {
+                    ascii = false;
+                } else if (b <= ' ' || b >= 'A' && b <= 'Z') {
+                    return false;
+                }
+            }
+            if (!ascii) {
+                String word;
+                try {
+                    word = decoder.decode(java.nio.ByteBuffer.wrap(raw, start, i - start)).toString();
+                } catch (java.nio.charset.CharacterCodingException e) {
+                    return false;
+                }
+                if (!Normalizer.isNormalized(word, Normalizer.Form.NFC) || !word.equals(word.toLowerCase(Locale.ROOT))
+                        || word.codePoints().anyMatch(Character::isWhitespace) || word.charAt(0) == '\uFEFF') {
+                    return false;
+                }
+            }
+            if (previous >= 0 && Arrays.compareUnsigned(raw, previous, previousEnd, raw, start, i) >= 0) {
+                return false;
+            }
+            previous = start;
+            previousEnd = i;
+            start = i + 1;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean word(String lower) {
+        return contains(lower);
+    }
+
+    @Override
+    public boolean prefix(String lower) {
+        return contains(lower) || extendsPrefix(lower);
     }
 
     /** Test lists. Words are lowercased and sorted here, so the caller can pass them in any order. */
@@ -161,18 +267,22 @@ final class WordList {
         if (raw.length == 0) {
             return new int[0];
         }
-        List<Integer> at = new ArrayList<>();
-        if (raw[0] != '\n') {
-            at.add(0);
-        }
-        for (int i = 0; i < raw.length; i++) {
-            if (raw[i] == '\n' && i + 1 < raw.length && raw[i + 1] != '\n') {
-                at.add(i + 1);
+        // Two passes over the bytes: a boxed list of four million line starts costs more than the words.
+        int count = raw[0] != '\n' ? 1 : 0;
+        for (int i = 0; i + 1 < raw.length; i++) {
+            if (raw[i] == '\n' && raw[i + 1] != '\n') {
+                count++;
             }
         }
-        int[] start = new int[at.size()];
-        for (int i = 0; i < at.size(); i++) {
-            start[i] = at.get(i);
+        int[] start = new int[count];
+        int n = 0;
+        if (raw[0] != '\n') {
+            start[n++] = 0;
+        }
+        for (int i = 0; i + 1 < raw.length; i++) {
+            if (raw[i] == '\n' && raw[i + 1] != '\n') {
+                start[n++] = i + 1;
+            }
         }
         return start;
     }

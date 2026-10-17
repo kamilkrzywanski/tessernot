@@ -1,6 +1,8 @@
 package io.github.kamilkrzywanski.ocr;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Inference settings. Thresholds follow RapidOCR mobile:
@@ -41,6 +43,7 @@ public final class OcrConfig {
     private final Corrections corrections;
     private final Layout layout;
     private final Alphabet alphabet;
+    private final List<ModelSource> wordLists;
 
     private OcrConfig(Builder b) {
         this.detModel = b.detModel;
@@ -75,6 +78,7 @@ public final class OcrConfig {
         this.corrections = b.corrections;
         this.layout = b.layout;
         this.alphabet = b.alphabet;
+        this.wordLists = List.copyOf(b.wordLists);
     }
 
     public ModelSource detModel() { return detModel; }
@@ -109,6 +113,8 @@ public final class OcrConfig {
     public Corrections corrections() { return corrections; }
     public Layout layout() { return layout; }
     public Alphabet alphabet() { return alphabet; }
+    /** Word lists for the CTC lexicon search, see {@link Builder#wordList(ModelSource)}. Unmodifiable. */
+    public List<ModelSource> wordLists() { return wordLists; }
 
     public static Builder builder() {
         return new Builder();
@@ -184,6 +190,7 @@ public final class OcrConfig {
         private Corrections corrections = Corrections.NONE;
         private Layout layout = Layout.AUTO;
         private Alphabet alphabet = Alphabet.ALL;
+        private final List<ModelSource> wordLists = new ArrayList<>();
 
         public Builder() {
         }
@@ -221,6 +228,7 @@ public final class OcrConfig {
             this.corrections = c.corrections;
             this.layout = c.layout;
             this.alphabet = c.alphabet;
+            this.wordLists.addAll(c.wordLists);
         }
 
         public Builder detModel(Path v) { detModel = v == null ? null : ModelSource.of(v); return this; }
@@ -259,6 +267,46 @@ public final class OcrConfig {
         public Builder corrections(Corrections v) { corrections = v; return this; }
         public Builder layout(Layout v) { layout = v; return this; }
         public Builder alphabet(Alphabet v) { alphabet = v; return this; }
+
+        /**
+         * Adds a word list in any language: UTF-8, one word per line, plain or gzip, in any order and
+         * case. A recognized word that no list holds is searched again on the recognizer's output,
+         * and a listed word with the same number of letters replaces it when the image supports
+         * that spelling almost as well. Words the lists hold, numbers and punctuation stay as read.
+         * This runs with any {@link Corrections}; {@link Corrections#POLISH} adds its own Polish and
+         * English lists to these.
+         */
+        public Builder wordList(ModelSource v) {
+            if (v == null) {
+                throw new OcrException("word list is null");
+            }
+            wordLists.add(v);
+            return this;
+        }
+
+        public Builder wordList(Path v) {
+            if (v == null) {
+                throw new OcrException("word list is null");
+            }
+            return wordList(ModelSource.of(v));
+        }
+
+        /** Replaces every word list added so far; an empty list turns the search off. */
+        public Builder wordLists(List<ModelSource> v) {
+            if (v == null) {
+                throw new OcrException("word lists are null");
+            }
+            List<ModelSource> copy = new ArrayList<>(v.size());
+            for (ModelSource source : v) {
+                if (source == null) {
+                    throw new OcrException("word list is null");
+                }
+                copy.add(source);
+            }
+            wordLists.clear();
+            wordLists.addAll(copy);
+            return this;
+        }
 
         public OcrConfig build() {
             if (threads < 1) {
