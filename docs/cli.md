@@ -49,11 +49,15 @@ ocr eval [--model dir]
   in any order and case. An unlisted word is read as a listed one with the same number of letters
   when the image supports that spelling almost as well. See the README, "Word lists in any
   language". Works with `--corrections none` too.
+- `--drop-fragments`: leaves out lines of at most 10 characters whose mean character
+  confidence is below 0.8, after the reading order is found. Those are mostly stamps,
+  ornaments read as CJK characters, and stray marks. Off by default: it also drops real short
+  text the recognizer is unsure of, such as an `X` in a check box or a misread page number.
 - `--json`: one JSON document instead of text (see below).
 - `--dpi N`: PDF render resolution.
 
 Flags accept `--flag value` and `--flag=value`. A switch (`--no-cls`, `--no-det`, `--raw`,
-`--json`) never consumes the next argument. `--json=false` turns it off.
+`--json`, `--drop-fragments`) never consumes the next argument. `--json=false` turns it off.
 
 ## Input checks
 

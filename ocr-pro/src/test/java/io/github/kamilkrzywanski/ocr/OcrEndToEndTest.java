@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -135,6 +136,28 @@ class OcrEndToEndTest {
         OcrResult tight = engine.recognizeLine(tightLine(tightText));
         System.out.println("tight: " + tight.text());
         assertEquals(tightText, tight.text());
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void droppingFragmentsKeepsSureShortLines() {
+        assertFalse(OcrConfig.defaults(Path.of("models")).dropFragments());
+        OcrConfig config = OcrConfig.defaults(Path.of("models")).toBuilder().dropFragments(true).build();
+        assertTrue(config.toBuilder().build().dropFragments());
+        BufferedImage image = new BufferedImage(900, 260, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = Images.prepare(image);
+        try {
+            g.setFont(Samples.font(48f));
+            g.drawString("FAKTURA 2024", 40, 84);
+            g.drawString("NIP", 40, 200);
+        } finally {
+            g.dispose();
+        }
+        try (OcrEngine dropping = OcrEngine.create(config)) {
+            String text = dropping.recognize(image).text();
+            assertTrue(text.contains("FAKTURA"), text);
+            assertTrue(text.contains("NIP"), text);
+        }
     }
 
     /** A line crop: the glyphs fill the bitmap, which is what recognition resizes to height 48. */

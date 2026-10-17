@@ -127,6 +127,15 @@ on load.
 `test2` and `test3` have not been scored with lists yet. `Corrections.POLISH` adds these two lists
 on its own.
 
+### Dropping fragments
+
+`.dropFragments(true)` (`--drop-fragments`) leaves out lines of at most 10 characters whose mean
+character confidence is below 0.8, after the reading order is found. These are mostly stamps,
+ornaments read as CJK characters and stray marks. On `dev` and `test` pooled CER went from 0.0230
+to 0.0224 and from 0.0461 to 0.0455, with no extra time. It is off by default because it also
+drops real short text the recognizer is unsure of: on 7 of the 66 pages the result got slightly
+worse (check boxes read as an unsure `X`, a misread page number).
+
 ### Public API
 
 The public API is in `io.github.kamilkrzywanski.ocr`:

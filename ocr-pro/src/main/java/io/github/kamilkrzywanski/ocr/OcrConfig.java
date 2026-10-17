@@ -44,6 +44,7 @@ public final class OcrConfig {
     private final Layout layout;
     private final Alphabet alphabet;
     private final List<ModelSource> wordLists;
+    private final boolean dropFragments;
 
     private OcrConfig(Builder b) {
         this.detModel = b.detModel;
@@ -79,6 +80,7 @@ public final class OcrConfig {
         this.layout = b.layout;
         this.alphabet = b.alphabet;
         this.wordLists = List.copyOf(b.wordLists);
+        this.dropFragments = b.dropFragments;
     }
 
     public ModelSource detModel() { return detModel; }
@@ -115,6 +117,8 @@ public final class OcrConfig {
     public Alphabet alphabet() { return alphabet; }
     /** Word lists for the CTC lexicon search, see {@link Builder#wordList(ModelSource)}. Unmodifiable. */
     public List<ModelSource> wordLists() { return wordLists; }
+    /** Whether short, unsure lines are left out, see {@link Builder#dropFragments(boolean)}. */
+    public boolean dropFragments() { return dropFragments; }
 
     public static Builder builder() {
         return new Builder();
@@ -191,6 +195,7 @@ public final class OcrConfig {
         private Layout layout = Layout.AUTO;
         private Alphabet alphabet = Alphabet.ALL;
         private final List<ModelSource> wordLists = new ArrayList<>();
+        private boolean dropFragments = false;
 
         public Builder() {
         }
@@ -229,6 +234,7 @@ public final class OcrConfig {
             this.layout = c.layout;
             this.alphabet = c.alphabet;
             this.wordLists.addAll(c.wordLists);
+            this.dropFragments = c.dropFragments;
         }
 
         public Builder detModel(Path v) { detModel = v == null ? null : ModelSource.of(v); return this; }
@@ -290,6 +296,14 @@ public final class OcrConfig {
             }
             return wordList(ModelSource.of(v));
         }
+
+        /**
+         * Leaves out a line of at most 10 characters whose mean character probability is below
+         * 0.8. Such lines are mostly stamps, bleed-through, ornaments and stray marks read as
+         * text. Off by default, because it also drops real short text the recognizer is unsure
+         * of, such as an {@code X} in a check box or a misread page number.
+         */
+        public Builder dropFragments(boolean v) { dropFragments = v; return this; }
 
         /** Replaces every word list added so far; an empty list turns the search off. */
         public Builder wordLists(List<ModelSource> v) {

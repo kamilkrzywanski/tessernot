@@ -120,7 +120,12 @@ failures come down to one share just under its threshold.
    narrowest that kept the EU Official Journal and the receipts whole; a looser first version
    cut justified text and broke them, so score all of `dev` and `test` after any change there.
    Ink cuts run inside the engine: after changing them, re-dump the `ro.sh` cache.
-3. **Detection size.** 2048 px is better on `dev` and `test`; on `test2` the two tie on Polish
+3. **Detection size.** Checked on 2026-10-17 and dropped as a line-height rule: per page, the
+   pages where 2048 px beats 960 px are not the ones with small print (thermal receipts with
+   25-37 px lines at 960 still need 2048), and a height threshold that keeps the accuracy sends
+   two thirds of the pages to a second pass, so the time does not go down. On a few pages 960 px
+   is much better (OJ C10 2020 0.028 to 0.002, OJ L91 0.079 to 0.027): looser boxes there suit the
+   reading order, which is a layout lead, not a detection-size one. Earlier notes: 2048 px is better on `dev` and `test`; on `test2` the two tie on Polish
    pages (0.031) and 960 px is much worse on English ones (0.310 against 0.107). Try a two-pass rule: detect at 960, measure the
    median line height in detector pixels, re-detect larger only for small print. The numbers
    for each page are in `bench/out/*-fast.tsv` and `*-plain.tsv` after a benchmark run.
@@ -156,6 +161,15 @@ failures come down to one share just under its threshold.
    in `ModelFiles`, so a bundle from another release fails at load time.
 
 ## Tried and dropped
+
+- **Fusing several reads of a line** (2026-10-17). Each line read as it is, with a band of
+  background above and below, and stretched 1.2 times; the greedy text of each variant was a
+  candidate and the one with the highest summed CTC log probability over the three won (the
+  variants have different timestep counts, so steps cannot be averaged). `dev`: word F1 +0.16
+  points at three times the recognition cost, 92 lines fixed and 59 broken, mostly spaces and
+  punctuation. `test`: CER 0.046 to 0.049, worse on 11 pages. Errors are only moderately
+  concentrated in unsure lines (the least sure 20 % of lines hold 56 % of wrong words), so
+  reading only unsure lines again would not change that.
 
 - **Tesseract's LSTM as the line recognizer** (2026-10-15). `bench/tools/tessline.py` crops every
   line box from the `ro.sh` cache the way the engine does, reads it with `tesseract --psm 7`

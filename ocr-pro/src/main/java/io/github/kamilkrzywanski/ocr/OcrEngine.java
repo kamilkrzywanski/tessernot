@@ -381,6 +381,11 @@ public final class OcrEngine implements AutoCloseable {
         }
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized, columns);
+        if (cfg.dropFragments()) {
+            // After the order is found: a fragment is still ink on the page, and leaving it out
+            // of the layout moved column and row bounds on the test set.
+            rows = withoutFragments(rows);
+        }
         List<TextLine> flat = ReadingOrder.flatten(rows);
         return new OcrResult(
                 ReadingOrder.join(rows),
@@ -389,6 +394,31 @@ public final class OcrEngine implements AutoCloseable {
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart);
+    }
+
+    /** {@link OcrConfig.Builder#dropFragments}: a fragment is at most this many characters... */
+    private static final int FRAGMENT_CHARS = 10;
+    /** ...and its mean character probability is below this. */
+    private static final float FRAGMENT_SCORE = 0.8f;
+
+    /**
+     * Without short, unsure lines. On the dev and test sets these were mostly stamps, CJK
+     * characters read from ornaments, and stray marks; the result barely moved between 0.7 and 0.9.
+     */
+    private static List<List<TextLine>> withoutFragments(List<List<TextLine>> rows) {
+        List<List<TextLine>> out = new ArrayList<>(rows.size());
+        for (List<TextLine> row : rows) {
+            List<TextLine> kept = new ArrayList<>(row.size());
+            for (TextLine line : row) {
+                if (line.text().strip().length() > FRAGMENT_CHARS || line.score() >= FRAGMENT_SCORE) {
+                    kept.add(line);
+                }
+            }
+            if (!kept.isEmpty()) {
+                out.add(kept);
+            }
+        }
+        return out;
     }
 
     /**

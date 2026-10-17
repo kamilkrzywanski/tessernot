@@ -74,6 +74,10 @@ by reflection.
 - **Classifier**: input size comes from the model signature (80×160 for the default model).
 - **CTC**: greedy, blank at 0, repeats collapsed. The score is the mean probability of the kept
   steps. A second softmax is not applied when the output already sums to 1.
+- **Fragments** (`dropFragments`, off by default): after the reading order is found, a line of
+  at most 10 characters with mean character probability below 0.8 is left out. Removing it
+  earlier changed column and row bounds on the test set, since the fragment is still ink on the
+  page. The results barely moved between thresholds 0.7 and 0.9.
 - **Word-list search** (`CtcWords`, only with word lists): each greedy letter run that no list
   holds gets a prefix beam search (width 16) over its own timesteps, from the end of the previous
   emitted character to the start of the next. Per timestep it tries the six most probable
