@@ -124,8 +124,13 @@ failures come down to one share just under its threshold.
    pages where 2048 px beats 960 px are not the ones with small print (thermal receipts with
    25-37 px lines at 960 still need 2048), and a height threshold that keeps the accuracy sends
    two thirds of the pages to a second pass, so the time does not go down. On a few pages 960 px
-   is much better (OJ C10 2020 0.028 to 0.002, OJ L91 0.079 to 0.027): looser boxes there suit the
-   reading order, which is a layout lead, not a detection-size one. Earlier notes: 2048 px is better on `dev` and `test`; on `test2` the two tie on Polish
+   is much better (OJ C10 2020 0.028 to 0.002, OJ L91 0.079 to 0.027, about 350 edits on `dev` and
+   `test` together). Looked at line by line, these are not one layout problem: on OJ C10 2020 one
+   line is read as noise and on Nature 1896 and the Arct dictionary a line is missing (detection),
+   on the Unia-Proch notice the detector at 2048 cuts every line into word boxes (121 boxes
+   against 31), so a lone `w` reads as `W` and `o` as `0`; only OJ L91 is reading order (its
+   two-column footnotes are joined into rows). Word splitting is strong on 4 of 66 pages only,
+   and on two of those 960 px is worse anyway. Earlier notes: 2048 px is better on `dev` and `test`; on `test2` the two tie on Polish
    pages (0.031) and 960 px is much worse on English ones (0.310 against 0.107). Try a two-pass rule: detect at 960, measure the
    median line height in detector pixels, re-detect larger only for small print. The numbers
    for each page are in `bench/out/*-fast.tsv` and `*-plain.tsv` after a benchmark run.
@@ -162,6 +167,10 @@ failures come down to one share just under its threshold.
 
 ## Tried and dropped
 
+- **A margin around the line crop** (2026-10-17). The crop grown by a share of the box height
+  above and below, taken from the page: `dev` CER 0.0230 with none, 0.0254 at 0.05, 0.0316 at
+  0.1, 0.0871 at 0.2 (at 0.05 seven pages better, eighteen worse). The recognizer wants the tight
+  detector box; the old note from the three scans holds in general.
 - **Fusing several reads of a line** (2026-10-17). Each line read as it is, with a band of
   background above and below, and stretched 1.2 times; the greedy text of each variant was a
   candidate and the one with the highest summed CTC log probability over the three won (the
