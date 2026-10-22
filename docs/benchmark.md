@@ -88,7 +88,7 @@ the median over documents.
 | Engine | Setup |
 | --- | --- |
 | **ocr-pro** | `OcrConfig.defaults` (`Corrections.NONE`, detection at 2048 px), 12 threads, Vector API on |
-| **ocr-pro + polish** | the same with `--corrections polish` and the word lists from `models/` |
+| **ocr-pro + polish** | the same with `--corrections polish` and the word lists from `models/`. Rescored on 2026-10-23, after the word-list search replaced the fixed letter swaps (see [corrections.md](corrections.md)); other jobs were running, so its page times are left out |
 | **ocr-pro, fast** | the defaults with detection at 960 px (`--limit 960`) |
 | **ocr-pro, rows** | the defaults with `--layout rows`: row by row, no layout analysis |
 | **ocr-pro, Latin alphabet** | the defaults with `--alphabet latin`: the recognizer outputs only Latin-script characters |
@@ -110,7 +110,7 @@ group and the mean of the groups (`report.py --manifest`).
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.031 / 0.107 / 0.079 | 0.033 | 0.912 / 0.970 / 0.951 | 6.7 s |
-| ocr-pro + polish | 0.031 / 0.107 / 0.079 | 0.031 | 0.915 / 0.970 / 0.951 | 7.0 s |
+| ocr-pro + polish | 0.028 / 0.107 / 0.077 | 0.027 | 0.932 / 0.974 / 0.960 | — |
 | ocr-pro, fast (960 px) | 0.031 / 0.310 / 0.205 | 0.037 | 0.903 / 0.951 / 0.935 | 5.7 s |
 | ocr-pro, rows (`--layout rows`) | 0.631 / 0.667 / 0.654 | 0.659 | 0.912 / 0.970 / 0.951 | 7.1 s |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.031 / 0.107 / 0.079 | 0.033 | 0.912 / 0.970 / 0.951 | 6.3 s |
@@ -120,7 +120,7 @@ group and the mean of the groups (`report.py --manifest`).
 | Engine | Invoices, bills, receipts (4) | Letters, forms, notices (2) | Books, newspapers, gazettes (14) | Mean of groups |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.053 | 0.111 | 0.079 | 0.081 |
-| ocr-pro + polish | 0.055 | 0.111 | 0.078 | 0.081 |
+| ocr-pro + polish | 0.053 | 0.111 | 0.077 | 0.080 |
 | ocr-pro, fast (960 px) | 0.063 | 0.110 | 0.213 | 0.128 |
 | ocr-pro, rows (`--layout rows`) | 0.053 | 0.073 | 0.691 | 0.272 |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.053 | 0.111 | 0.078 | 0.081 |
@@ -157,7 +157,7 @@ Per document, CER / word F1:
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.960 / 0.930 | 3.7 s |
-| ocr-pro + polish | 0.054 / 0.027 / 0.046 | 0.025 | 0.922 / 0.959 / 0.934 | 3.5 s |
+| ocr-pro + polish | 0.052 / 0.025 / 0.044 | 0.020 | 0.934 / 0.969 / 0.946 | — |
 | ocr-pro, fast (960 px) | 0.068 / 0.028 / 0.056 | 0.029 | 0.893 / 0.960 / 0.915 | 2.6 s |
 | ocr-pro, rows (`--layout rows`) | 0.506 / 0.498 / 0.504 | 0.157 | 0.914 / 0.960 / 0.930 | 3.4 s |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.961 / 0.930 | 3.0 s |
@@ -167,7 +167,7 @@ Per document, CER / word F1:
 | Engine | Invoices, bills, receipts (8) | Letters, forms, notices (9) | Books, newspapers, gazettes (10) | Mean of groups |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.123 | 0.066 | 0.014 | 0.068 |
-| ocr-pro + polish | 0.122 | 0.065 | 0.014 | 0.067 |
+| ocr-pro + polish | 0.120 | 0.065 | 0.011 | 0.065 |
 | ocr-pro, fast (960 px) | 0.138 | 0.097 | 0.010 | 0.082 |
 | ocr-pro, rows (`--layout rows`) | 0.127 | 0.393 | 0.671 | 0.397 |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.123 | 0.066 | 0.014 | 0.068 |
@@ -211,7 +211,7 @@ Per document, CER / word F1:
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.021 / 0.025 / 0.023 | 0.018 | 0.940 / 0.968 / 0.956 | 3.5 s |
-| ocr-pro + polish | 0.021 / 0.025 / 0.023 | 0.019 | 0.939 / 0.967 / 0.955 | 3.5 s |
+| ocr-pro + polish | 0.019 / 0.024 / 0.022 | 0.018 | 0.953 / 0.971 / 0.964 | — |
 | ocr-pro, fast (960 px) | 0.093 / 0.048 / 0.069 | 0.021 | 0.921 / 0.948 / 0.937 | 2.4 s |
 | ocr-pro, rows (`--layout rows`) | 0.526 / 0.605 / 0.569 | 0.120 | 0.940 / 0.968 / 0.957 | 3.5 s |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.021 / 0.025 / 0.023 | 0.018 | 0.940 / 0.968 / 0.957 | 3.3 s |
@@ -221,7 +221,7 @@ Per document, CER / word F1:
 | Engine | Invoices, bills, receipts (6) | Letters, forms, notices (10) | Books, newspapers, gazettes (23) | Mean of groups |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.030 | 0.063 | 0.020 | 0.038 |
-| ocr-pro + polish | 0.031 | 0.061 | 0.020 | 0.038 |
+| ocr-pro + polish | 0.031 | 0.061 | 0.019 | 0.037 |
 | ocr-pro, fast (960 px) | 0.028 | 0.069 | 0.070 | 0.056 |
 | ocr-pro, rows (`--layout rows`) | 0.030 | 0.064 | 0.623 | 0.239 |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.029 | 0.063 | 0.020 | 0.038 |

@@ -205,8 +205,8 @@ adds:
 - second reads of a line crop for invoice details
 
 The second reads and CTC swaps were tuned on three scans and checked on the `dev` set. With the
-word-list search the profile gives word F1 0.964 on `dev` and 0.946 on `test`, against 0.956 and
-0.930 for the plain pipeline; `test2` has not been scored with it yet. It is **off by default**. See
+word-list search the profile gives word F1 0.964 on `dev`, 0.946 on `test` and 0.960 on `test2`,
+against 0.956, 0.930 and 0.951 for the plain pipeline. It is **off by default**. See
 [docs/corrections.md](docs/corrections.md) for the rules and what they get wrong.
 
 ## Not in scope

@@ -22,6 +22,28 @@ the rules were tuned on, so those numbers say nothing about other documents.
 
 For other documents, see [benchmark.md](benchmark.md).
 
+**Now** (2026-10-23, with the word-list search of rule 3 in place of the old letter swaps), the
+profile against the plain pipeline, CER pooled over the Polish pages and Polish word F1:
+
+| Set | CER pl | Word F1 pl | Pages better / worse |
+| --- | --- | --- | --- |
+| `dev` (39) | 0.021 → 0.019 | 0.940 → 0.953 | 16 / 3 |
+| `test` (27) | 0.054 → 0.052 | 0.915 → 0.934 | 16 / 1 |
+| `test2` (20) | 0.031 → 0.028 | 0.912 → 0.932 | 9 / 2 |
+
+English pages gain too (the Aparri News 1900 by 30 edits, Britannica 1911 by 11), because the
+search uses both lists. What still hurts, and why:
+
+- **Historical spelling.** A mark the image gives no evidence for costs exactly 3 nats in the
+  search, inside the 4-nat margin, so a listed modern form wins over an unlisted old one:
+  `zdala` became `zdała` on the 1914 gazette and `Krola` became `Króla` on Volumina Legum
+  (+18 edits, the one loss on `dev` above 10). The same floor is what restores `osiągnięty`
+  from `osiagnięty` when the print lost the hook, so the search cannot tell the two apart. For
+  a document of its period, pass its own word list with `--words`; the search then has the
+  printed form.
+- **The letter swaps of rule 1 on English lines.** The parking ticket on `dev` loses 9 edits
+  to `ł` for `l` and the like.
+
 **On `dev`** (20 documents) the first version of these rules was checked:
 
 - **Overall:** Polish word F1 rose from 0.895 to 0.916.
