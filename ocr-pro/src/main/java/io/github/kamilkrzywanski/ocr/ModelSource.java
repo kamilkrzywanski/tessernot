@@ -125,13 +125,21 @@ public final class ModelSource {
         return path.getParent() == null ? Path.of(".") : path.getParent();
     }
 
-    /** A file with another name from the same place: the same directory, or the bundles. Null when there is no directory. */
+    /**
+     * A file with another name from the same place: the directory of a file on disk, else a bundle
+     * on the class path. Null when neither has it. A directory that holds only the model files
+     * still finds the word lists of {@code ocr-pro-models-pl} this way.
+     */
     ModelSource sibling(String other) {
-        if (path == null) {
-            return bundled(other);
+        Path dir = directory();
+        if (dir != null) {
+            ModelSource beside = of(dir.resolve(other));
+            if (beside.exists()) {
+                return beside;
+            }
         }
-        Path parent = path.getParent();
-        return parent == null ? null : of(parent.resolve(other));
+        ModelSource bundled = bundled(other);
+        return bundled.exists() ? bundled : null;
     }
 
     private InputStream open() throws IOException {

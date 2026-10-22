@@ -43,7 +43,8 @@ import java.util.regex.Pattern;
  * Concurrent callers use {@link OcrPool}, which lends each of them a separate engine.
  * <p>
  * Detection may split GEMM across {@code pool} on the calling thread. Page workers therefore use
- * {@link Session#fork()} with no pool and run lines inline, so they never submit back to {@code pool}.
+ * forked sessions with no pool, made for the document and shared by its pages, and run lines
+ * inline, so they never submit back to {@code pool}.
  * A multi-page PDF keeps at most {@code threads} bitmaps in flight. One page still detects on {@code pool}.
  * Do not call {@link #recognize} from an {@code ocr-worker} thread.
  */
@@ -69,6 +70,11 @@ public final class OcrEngine implements AutoCloseable {
     /** Lists for the CTC word-list search: the user's, plus the Polish profile's own. Null when there is none. */
     private Vocabulary words;
     private PostalCities postal;
+    /**
+     * Detection for page workers: {@code threads} forks that live for one multi-page document. A
+     * fork's arena holds the buffers of a whole detection map, so idle engines do not keep them.
+     */
+    private ArrayBlockingQueue<Session> detPool;
     private ArrayBlockingQueue<Session> recPool;
     private ArrayBlockingQueue<Session> clsPool;
     private String detInput;
@@ -123,7 +129,7 @@ public final class OcrEngine implements AutoCloseable {
             this.recInput = rec.inputName();
             this.charset = full;
             // The word lists belong to the Polish corrections. Without them the files are not read.
-            // They sit next to the dict: in its directory, or in a bundle (ocr-pro-models-pl).
+            // They sit next to the dict on disk, or else in a bundle (ocr-pro-models-pl).
             this.lexicon = corrected ? lexicon(cfg.dict()) : null;
             this.postal = corrected ? postal(cfg.dict()) : null;
             this.words = vocabulary(cfg.wordLists(), lexicon);
@@ -238,15 +244,20 @@ public final class OcrEngine implements AutoCloseable {
             return results;
         }
         int[] index = {0};
-        return joinWindow(pool, cfg.threads(), pageCount, i -> {
-            BufferedImage image = pages.apply(i);
-            return () -> run(image, false);
-        }, result -> {
-            if (handler != null) {
-                handler.onPage(index[0], pageCount, result);
-            }
-            index[0]++;
-        });
+        detPool = det == null ? null : forks(det);
+        try {
+            return joinWindow(pool, cfg.threads(), pageCount, i -> {
+                BufferedImage image = pages.apply(i);
+                return () -> run(image, false);
+            }, result -> {
+                if (handler != null) {
+                    handler.onPage(index[0], pageCount, result);
+                }
+                index[0]++;
+            });
+        } finally {
+            detPool = null;
+        }
     }
 
     /** Called in order while {@link #recognizePages(int, IntFunction, PageHandler)} is still running. */
@@ -277,6 +288,7 @@ public final class OcrEngine implements AutoCloseable {
         rec = null;
         cls = null;
         charset = null;
+        detPool = null;
         recPool = null;
         clsPool = null;
     }
@@ -297,11 +309,11 @@ public final class OcrEngine implements AutoCloseable {
         }
     }
 
-    /** Both gzip word lists next to the dict, or null when either one is absent. */
+    /** Both gzip word lists next to the dict or in a bundle, or null when either one is absent. */
     private static Lexicon lexicon(ModelSource dict) {
         ModelSource polish = dict.sibling(Lexicon.POLISH_FILE);
         ModelSource english = dict.sibling(Lexicon.ENGLISH_FILE);
-        if (polish == null || english == null || !polish.exists() || !english.exists()) {
+        if (polish == null || english == null) {
             return null;
         }
         return Lexicon.read(wordList(polish), polish.toString(), wordList(english), english.toString());
@@ -323,10 +335,10 @@ public final class OcrEngine implements AutoCloseable {
         return Vocabulary.of(lists);
     }
 
-    /** The gzip list of postal codes next to the dict, or null when it is absent. */
+    /** The gzip list of postal codes next to the dict or in a bundle, or null when it is absent. */
     private static PostalCities postal(ModelSource dict) {
         ModelSource file = dict.sibling(PostalCities.FILE);
-        if (file == null || !file.exists()) {
+        if (file == null) {
             return null;
         }
         return PostalCities.read(wordList(file), file.toString());
@@ -440,12 +452,46 @@ public final class OcrEngine implements AutoCloseable {
         return cut(page, inked, geometric, lineParallel);
     }
 
-    /** Each line in {@code cuts} is cut at the given fractions of its length and its pieces read again. */
+    /**
+     * Fraction of a cut line's characters its pieces must read back. Below it the cut lost text,
+     * as on a false gutter, and the line stays whole. A lone dash or dot at a real gutter that
+     * does not read costs less than that, and the pieces still win.
+     */
+    static final float CUT_KEEP = 0.7f;
+
+    /** True when the pieces read from a cut line keep too little of its text; null is a piece that did not read. */
+    static boolean keepWhole(String original, List<String> pieces) {
+        int before = inkChars(original);
+        int after = 0;
+        for (String piece : pieces) {
+            if (piece != null) {
+                after += inkChars(piece);
+            }
+        }
+        return after < before * CUT_KEEP;
+    }
+
+    private static int inkChars(String text) {
+        int n = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (!Character.isWhitespace(text.charAt(i))) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Each line in {@code cuts} is cut at the given fractions of its length and its pieces read
+     * again. A piece that does not read is dropped, as a line is. The line stays whole instead
+     * when the pieces keep less than {@link #CUT_KEEP} of its characters, see {@link #keepWhole}.
+     */
     private List<TextLine> cut(Bgr page, List<TextLine> lines, Map<TextLine, float[]> cuts, boolean lineParallel) {
         if (cuts.isEmpty()) {
             return lines;
         }
         List<DbPost.Box> pieces = new ArrayList<>(cuts.size() * 3);
+        List<TextLine> whole = new ArrayList<>(cuts.size());
         List<TextLine> out = new ArrayList<>(lines.size() + cuts.size() * 2);
         for (TextLine line : lines) {
             float[] ts = cuts.get(line);
@@ -453,6 +499,7 @@ public final class OcrEngine implements AutoCloseable {
                 out.add(line);
                 continue;
             }
+            whole.add(line);
             float[] q = line.quad();
             float prevTopX = q[0];
             float prevTopY = q[1];
@@ -472,7 +519,26 @@ public final class OcrEngine implements AutoCloseable {
                 prevBottomY = bottomY;
             }
         }
-        out.addAll(recognizeBoxes(page, pieces, lineParallel));
+        List<TextLine> read = recognizeEach(page, pieces, lineParallel);
+        int at = 0;
+        for (TextLine line : whole) {
+            int count = cuts.get(line).length + 1;
+            List<TextLine> own = read.subList(at, at + count);
+            at += count;
+            List<String> texts = new ArrayList<>(own.size());
+            for (TextLine piece : own) {
+                texts.add(piece == null ? null : piece.text());
+            }
+            if (keepWhole(line.text(), texts)) {
+                out.add(line);
+                continue;
+            }
+            for (TextLine piece : own) {
+                if (piece != null) {
+                    out.add(piece);
+                }
+            }
+        }
         return out;
     }
 
@@ -676,8 +742,20 @@ public final class OcrEngine implements AutoCloseable {
         float[] input = Images.resizeNormalize(bgr, size[0], size[1], cfg.mean(), cfg.std(),
                 lineParallel ? pool : null, cfg.threads());
         Tensor tensor = Tensor.f32(new int[]{1, 3, size[1], size[0]}, input);
-        Session session = lineParallel ? det : det.fork();
-        Tensor output = only(session.run(Map.of(detInput, tensor)));
+        // A page worker borrows a fork from the queue of its document. The field is read once, so
+        // a worker left behind by an interrupted join returns its fork to the queue it took it
+        // from after the document has dropped that queue. One that arrives after the drop takes
+        // a fresh fork and never the primary, which runs on the pool the worker belongs to.
+        ArrayBlockingQueue<Session> forks = lineParallel ? null : detPool;
+        Session session = lineParallel ? det : forks != null ? borrow(forks) : det.fork();
+        Tensor output;
+        try {
+            output = only(session.run(Map.of(detInput, tensor)));
+        } finally {
+            if (forks != null) {
+                forks.offer(session);
+            }
+        }
         Planar map = planar(output);
         DbPost.asProbability(map.data);
         List<DbPost.Box> found = DbPost.find(
@@ -695,7 +773,19 @@ public final class OcrEngine implements AutoCloseable {
         return scaled;
     }
 
+    /** The lines that read, in box order. */
     private List<TextLine> recognizeBoxes(Bgr page, List<DbPost.Box> boxes, boolean lineParallel) {
+        List<TextLine> lines = new ArrayList<>(boxes.size());
+        for (TextLine line : recognizeEach(page, boxes, lineParallel)) {
+            if (line != null) {
+                lines.add(line);
+            }
+        }
+        return lines;
+    }
+
+    /** One entry per box, in order: its line, or null when the box did not read. */
+    private List<TextLine> recognizeEach(Bgr page, List<DbPost.Box> boxes, boolean lineParallel) {
         if (!cfg.useRec() || rec == null) {
             List<TextLine> lines = new ArrayList<>(boxes.size());
             for (DbPost.Box box : boxes) {
@@ -719,13 +809,7 @@ public final class OcrEngine implements AutoCloseable {
                     }
                 });
             }
-            List<TextLine> lines = new ArrayList<>();
-            for (TextLine line : awaitTasks(tasks)) {
-                if (line != null) {
-                    lines.add(line);
-                }
-            }
-            return lines;
+            return awaitTasks(tasks);
         }
         if (!lineParallel && recPool != null) {
             Session recSession = borrow(recPool);
@@ -743,12 +827,9 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private List<TextLine> sequential(Bgr page, List<DbPost.Box> boxes, Session recSession, Session clsSession) {
-        List<TextLine> lines = new ArrayList<>();
+        List<TextLine> lines = new ArrayList<>(boxes.size());
         for (DbPost.Box box : boxes) {
-            TextLine line = decode(page, box, recSession, clsSession);
-            if (line != null) {
-                lines.add(line);
-            }
+            lines.add(decode(page, box, recSession, clsSession));
         }
         return lines;
     }
@@ -1284,11 +1365,20 @@ public final class OcrEngine implements AutoCloseable {
         return queue;
     }
 
+    /** {@code threads} forks and not the primary, which runs on {@code pool} and stays with the calling thread. */
+    private ArrayBlockingQueue<Session> forks(Session primary) {
+        ArrayBlockingQueue<Session> queue = new ArrayBlockingQueue<>(cfg.threads());
+        for (int i = 0; i < cfg.threads(); i++) {
+            queue.add(primary.fork());
+        }
+        return queue;
+    }
+
     private static Session borrow(ArrayBlockingQueue<Session> queue) {
         try {
             Session session = queue.poll(10, TimeUnit.MINUTES);
             if (session == null) {
-                throw new OcrException("timed out waiting for a recognizer session");
+                throw new OcrException("timed out waiting for a model session");
             }
             return session;
         } catch (InterruptedException e) {

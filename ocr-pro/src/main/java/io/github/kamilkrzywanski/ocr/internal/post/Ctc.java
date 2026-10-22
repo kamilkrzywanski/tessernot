@@ -62,12 +62,20 @@ public final class Ctc {
         int batch = tensor.dims.length >= 3 && axis > 0 ? tensor.dims[0] : 1;
         int timeOuter = before / Math.max(batch, 1);
         int time = timeOuter * after;
-        float[] packed = new float[Math.max(time, 0) * classes];
-        for (int outer = 0; outer < timeOuter; outer++) {
-            for (int c = 0; c < classes; c++) {
-                int base = (outer * classes + c) * after;
-                for (int inner = 0; inner < after; inner++) {
-                    packed[(outer * after + inner) * classes + c] = tensor.f[base + inner];
+        int n = Math.max(time, 0) * classes;
+        float[] packed;
+        if (after == 1) {
+            // [time, classes] or [batch, time, classes]: the first item is already in that order,
+            // and the decoder only reads it. The usual [1, T, C] head copies nothing here.
+            packed = tensor.f.length == n ? tensor.f : Arrays.copyOf(tensor.f, n);
+        } else {
+            packed = new float[n];
+            for (int outer = 0; outer < timeOuter; outer++) {
+                for (int c = 0; c < classes; c++) {
+                    int base = (outer * classes + c) * after;
+                    for (int inner = 0; inner < after; inner++) {
+                        packed[(outer * after + inner) * classes + c] = tensor.f[base + inner];
+                    }
                 }
             }
         }

@@ -11,7 +11,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * CTC labels. Index 0 is the blank. Empty dict lines are skipped and character text is not trimmed.
@@ -22,6 +24,8 @@ public final class Charset {
     private final String[] tokens;
     /** {@link #plain()} and {@link #marked()}, built together on first use. */
     private volatile Marks marks;
+    /** Token to its first index, built on first {@link #indexOf}; the decoder asks for the same few tokens per line. */
+    private volatile Map<String, Integer> index;
 
     private record Marks(int[] plain, int[][] marked) {
     }
@@ -210,11 +214,16 @@ public final class Charset {
     }
 
     public int indexOf(String token) {
-        for (int i = 0; i < tokens.length; i++) {
-            if (tokens[i].equals(token)) {
-                return i;
+        Map<String, Integer> map = index;
+        if (map == null) {
+            map = new HashMap<>(tokens.length * 2);
+            // Backwards, so a repeated token keeps its first index, as the linear scan found it.
+            for (int i = tokens.length - 1; i >= 0; i--) {
+                map.put(tokens[i], i);
             }
+            index = map;
         }
-        return -1;
+        Integer at = map.get(token);
+        return at == null ? -1 : at;
     }
 }

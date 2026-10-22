@@ -108,6 +108,9 @@ public final class Cli {
 
     private static int download(Parsed parsed) {
         only(parsed, "model");
+        if (parsed.positionals.size() > 1 && parsed.flag("model") != null) {
+            throw new OcrException("download takes a directory or --model, not both");
+        }
         Path dir = parsed.positionals.size() > 1 ? Path.of(parsed.positionals.get(1)) : downloadDir(parsed);
         ModelFiles.ensure(dir);
         System.out.println(dir.toAbsolutePath());
@@ -286,6 +289,14 @@ public final class Cli {
         if (parsed.positionals.size() != wanted) {
             throw new OcrException("usage: ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--drop-fragments] [--out dir]"
                     + " [--model dir] [--limit N] [--threads N]  |  ocr score <ref-dir> --hyp <dir>");
+        }
+        if (hyp != null) {
+            // Ready outputs run no engine, so an engine flag would be ignored. Say so instead.
+            for (String key : parsed.flags.keySet()) {
+                if (!key.equals("hyp") && !key.equals("out")) {
+                    throw new OcrException("--" + key + " is not used by score --hyp");
+                }
+            }
         }
         integerIfPresent(parsed, "limit");
         integerIfPresent(parsed, "threads");
@@ -487,7 +498,7 @@ public final class Cli {
                 An encrypted PDF, and a TIFF or GIF with more than one image, stops before the model is loaded.
                 An extra argument, an empty --model=, a --model path that is a file, and a repeated flag are rejected before a file is opened.
                 Missing model files for ocr and bench, and an empty model file, are reported before the image is read.
-                A flag the command does not use, such as --dpi on ocr, is rejected before a file is opened.
+                A flag the command does not use, such as --dpi on ocr, is rejected before a file is opened. So is an engine flag on score --hyp, and a directory together with --model on download.
                 A multi-page PDF prints "--- page N ---" before each page. Timings stay on stderr.
                 A ruled grid is printed after the page text as "--- table N ---", with cells separated by tabs. A page with no rules prints no table.
                 With --json, ocr and pdf print one JSON document instead of the page text: a page object, or {"pages":[...]} for a PDF. Timings stay on stderr.

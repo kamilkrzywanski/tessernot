@@ -128,6 +128,16 @@ class CliArgsTest {
         assertEquals(1, usage.code);
         assertTrue(usage.err.contains("usage: ocr score"), usage.err);
 
+        // Ready outputs run no engine, so an engine flag is an error and not silently ignored.
+        Run engineFlag = run(() -> Cli.execute(new String[]{
+                "score", refs.toString(), "--hyp", hyps.toString(), "--corrections", "polish"}));
+        assertEquals(1, engineFlag.code);
+        assertTrue(engineFlag.err.contains("--corrections is not used by score --hyp"), engineFlag.err);
+        assertEquals("", engineFlag.out);
+        Run outFlag = run(() -> Cli.execute(new String[]{
+                "score", refs.toString(), "--hyp", hyps.toString(), "--out", dir.resolve("copy").toString()}));
+        assertEquals(0, outFlag.code, outFlag.err);
+
         Run noModels = run(() -> Cli.execute(new String[]{"score", refs.toString(), dir.toString(),
                 "--model", dir.toString(), "--no-det", "--no-cls"}));
         assertEquals(1, noModels.code);
@@ -605,6 +615,11 @@ class CliArgsTest {
             Run downloadFlag = run(() -> Cli.execute(new String[]{"download", "--model", file.toString()}));
             assertEquals(1, downloadFlag.code);
             assertTrue(downloadFlag.err.contains("not a directory"), downloadFlag.err);
+
+            Run both = run(() -> Cli.execute(new String[]{"download", dir.toString(), "--model", dir.toString()}));
+            assertEquals(1, both.code);
+            assertTrue(both.err.contains("a directory or --model, not both"), both.err);
+            assertEquals("", both.out);
 
             OcrException rejected = assertThrows(OcrException.class, () -> OcrConfig.defaults(file));
             assertTrue(rejected.getMessage().contains("not a directory"), rejected.getMessage());

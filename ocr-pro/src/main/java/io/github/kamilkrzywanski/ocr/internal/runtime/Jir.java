@@ -163,6 +163,7 @@ public final class Jir {
         g.opset = in.i32();
         in.i32();
         int nStrings = count(in.i32());
+        in.need(4L * nStrings);
         String[] table = new String[nStrings];
         for (int i = 0; i < nStrings; i++) {
             int len = count(in.i32());
@@ -184,9 +185,11 @@ public final class Jir {
             String op = in.str(table);
             String name = in.str(table);
             int nIn = count(in.i32());
+            in.need(4L * nIn);
             String[] inputs = new String[nIn];
             for (int k = 0; k < nIn; k++) inputs[k] = in.str(table);
             int nOut = count(in.i32());
+            in.need(4L * nOut);
             String[] outputs = new String[nOut];
             for (int k = 0; k < nOut; k++) outputs[k] = in.str(table);
             int act = in.i32();
@@ -203,12 +206,14 @@ public final class Jir {
                     case 2 -> Attr.of(an, in.str(table));
                     case 3 -> {
                         int n = count(in.i32());
+                        in.need(8L * n);
                         long[] v = new long[n];
                         for (int k = 0; k < n; k++) v[k] = in.i64();
                         yield Attr.ints(an, v);
                     }
                     case 4 -> {
                         int n = count(in.i32());
+                        in.need(4L * n);
                         float[] v = new float[n];
                         for (int k = 0; k < n; k++) v[k] = in.f32();
                         yield Attr.floats(an, v);
@@ -252,7 +257,8 @@ public final class Jir {
             int rank = in.i32();
             int[] dims = null;
             if (rank >= 0) {
-                dims = new int[count(rank)];
+                in.need(4L * rank);
+                dims = new int[rank];
                 for (int d = 0; d < rank; d++) dims[d] = in.i32();
             }
             sigs.add(new Sig(name, dtype, dims));
@@ -272,17 +278,21 @@ public final class Jir {
         }
     }
 
+    /** Every count is checked against the bytes left before its array is allocated: a corrupt count fails as truncated, not with an OutOfMemoryError. */
     private static Tensor readTensor(In in) {
         int dtype = in.i32();
         int rank = count(in.i32());
+        in.need(4L * rank);
         int[] dims = new int[rank];
         for (int i = 0; i < rank; i++) dims[i] = in.i32();
         int n = count(in.i32());
         if (dtype == Tensor.F32) {
+            in.need(4L * n);
             float[] f = new float[n];
             for (int i = 0; i < n; i++) f[i] = in.f32();
             return Tensor.f32(dims, f);
         }
+        in.need(8L * n);
         long[] v = new long[n];
         for (int i = 0; i < n; i++) v[i] = in.i64();
         return Tensor.i64(dims, v);
@@ -369,8 +379,8 @@ public final class Jir {
             return Jir.str(table, i32());
         }
 
-        void need(int n) {
-            if (n < 0 || pos < 0 || (long) pos + n > end) {
+        void need(long n) {
+            if (n < 0 || pos < 0 || pos + n > end) {
                 throw new OcrException(n < 0 ? "bad JIR" : "truncated JIR");
             }
         }

@@ -64,7 +64,9 @@ public final class PdfPages {
      * An owner password with an empty user password still opens.
      * The scan reads the last 64 KiB and the object named by {@code startxref}.
      * A long cross-reference stream keeps {@code /Encrypt} in that object, above the tail.
-     * The parse is skipped when neither place contains the marker.
+     * The parse is skipped when neither place contains the marker. When it runs, PDFBox reads the
+     * file in place: the cross-reference and the encryption dictionary, not the whole file into
+     * memory as {@link #open} does for rendering.
      */
     public static void requireUnlocked(Path pdf) {
         requirePdf(pdf);
@@ -72,7 +74,7 @@ public final class PdfPages {
             return;
         }
         try {
-            try (PDDocument document = Loader.loadPDF(Files.readAllBytes(pdf))) {
+            try (PDDocument document = Loader.loadPDF(pdf.toFile())) {
                 // The empty password opened this file.
             }
         } catch (InvalidPasswordException e) {

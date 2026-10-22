@@ -545,13 +545,6 @@ public final class Images {
 
     /** Aspect-fit to {@code height} and pad on the right to {@code width}. Used by the 80x160 classifier. */
     public static float[] clsTensor(Bgr image, int height, int width, float mean, float std) {
-        int resizedW = (int) Math.ceil(height * (image.width() / (double) Math.max(1, image.height())));
-        if (resizedW < 1) {
-            resizedW = 1;
-        }
-        if (resizedW > width) {
-            resizedW = width;
-        }
         return recTensor(image, height, width, width, mean, std);
     }
 

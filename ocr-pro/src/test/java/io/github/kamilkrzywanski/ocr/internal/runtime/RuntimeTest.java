@@ -854,6 +854,25 @@ class RuntimeTest {
         assertTrue(truncated.getMessage().contains("truncated"), truncated.getMessage());
         OcrException junk = assertThrows(OcrException.class, () -> Jir.read(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}));
         assertTrue(junk.getMessage().contains("not a JIR"), junk.getMessage());
+
+        // A count far beyond the file, with the checksum recomputed, is truncated and not an OutOfMemoryError.
+        byte[] hugeCount = withChecksum(new byte[]{
+                'J', 'I', 'R', '1', 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, (byte) 0xff, (byte) 0xff, (byte) 0xff, 0x7f});
+        OcrException huge = assertThrows(OcrException.class, () -> Jir.read(hugeCount));
+        assertTrue(huge.getMessage().contains("truncated"), huge.getMessage());
+    }
+
+    private static byte[] withChecksum(byte[] body) {
+        CRC32 crc = new CRC32();
+        crc.update(body);
+        int sum = (int) crc.getValue();
+        byte[] file = new byte[body.length + 4];
+        System.arraycopy(body, 0, file, 0, body.length);
+        file[body.length] = (byte) sum;
+        file[body.length + 1] = (byte) (sum >>> 8);
+        file[body.length + 2] = (byte) (sum >>> 16);
+        file[body.length + 3] = (byte) (sum >>> 24);
+        return file;
     }
 
     @Test
