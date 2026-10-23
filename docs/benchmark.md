@@ -88,7 +88,7 @@ the median over documents.
 | Engine | Setup |
 | --- | --- |
 | **ocr-pro** | `OcrConfig.defaults` (`Corrections.NONE`, detection at 2048 px), 12 threads, Vector API on |
-| **ocr-pro + polish** | the same with `--corrections polish` and the word lists from `models/`. Rescored on 2026-10-23, after the word-list search replaced the fixed letter swaps (see [corrections.md](corrections.md)); other jobs were running, so its page times are left out |
+| **ocr-pro + polish** | the same with `--corrections polish` and the word lists from `models/`. Rescored on 2026-10-23, after the word-list search replaced the fixed letter swaps (see [corrections.md](corrections.md)); other jobs were running, so its page times are left out. Its `test2` row predates the Otsu ink split of rule 2, which moved two pages of `dev` and none of `test` |
 | **ocr-pro, fast** | the defaults with detection at 960 px (`--limit 960`) |
 | **ocr-pro, rows** | the defaults with `--layout rows`: row by row, no layout analysis |
 | **ocr-pro, Latin alphabet** | the defaults with `--alphabet latin`: the recognizer outputs only Latin-script characters |
@@ -221,7 +221,7 @@ Per document, CER / word F1:
 | Engine | Invoices, bills, receipts (6) | Letters, forms, notices (10) | Books, newspapers, gazettes (23) | Mean of groups |
 | --- | --- | --- | --- | --- |
 | ocr-pro | 0.030 | 0.063 | 0.020 | 0.038 |
-| ocr-pro + polish | 0.031 | 0.061 | 0.019 | 0.037 |
+| ocr-pro + polish | 0.028 | 0.061 | 0.019 | 0.036 |
 | ocr-pro, fast (960 px) | 0.028 | 0.069 | 0.070 | 0.056 |
 | ocr-pro, rows (`--layout rows`) | 0.030 | 0.064 | 0.623 | 0.239 |
 | ocr-pro, Latin alphabet (`--alphabet latin`) | 0.029 | 0.063 | 0.020 | 0.038 |

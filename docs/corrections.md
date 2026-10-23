@@ -41,8 +41,19 @@ search uses both lists. What still hurts, and why:
   from `osiagnięty` when the print lost the hook, so the search cannot tell the two apart. For
   a document of its period, pass its own word list with `--words`; the search then has the
   printed form.
-- **The letter swaps of rule 1 on English lines.** The parking ticket on `dev` loses 9 edits
-  to `ł` for `l` and the like.
+- **Faint print under rule 2** (fixed 2026-10-23). The parking ticket on `dev` lost a line of
+  faint brown digits: with ink defined as luma below 150, a speck was the heavier band and the
+  digits were cut away. Ink is now the darker of the crop's two luma classes (Otsu): the
+  ticket has 19 edits against 29 before and 18 without the profile, and the 1935 MSZ letter
+  loses the 3 edits the profile gained on it. Nothing else on `dev` or `test` moved. The letter
+  swaps of rule 1 were suspected first and were not it. Leaving them to the word-list search
+  when the Polish lexicon is loaded was tried and dropped: five pages lost one or two edits
+  each (3 on `dev`, 2 on `test`) and none gained.
+
+The profile is still worse than the plain pipeline on seven pages of `dev` and `test`
+together: Volumina Legum (+18, the historical spelling above), the arXiv paper and Dziennik
+Ustaw 1994 (+2 each), and the 1896 Monthly Weather Review, the Kuria letter, Wieś Ilustrowana
+1911 and the 1936 ZHP statute (+1 each).
 
 **On `dev`** (20 documents) the first version of these rules was checked:
 
@@ -78,7 +89,9 @@ differs from the first read in the one expected way. Any other difference keeps 
    `Ś` for `S` (≥ 0.015) and `ó` for `o` (≥ 0.05).
 2. **Main ink band.** After rotation and before the resize to height 48, a second ink band is
    dropped when at least 20 white rows separate it and it has clearly less ink. A neighbor line
-   caught in the box then stops sharing the model height.
+   caught in the box then stops sharing the model height. Ink and paper are the two luma
+   classes of the crop itself (Otsu's split), so faint print counts and a speck does not set
+   the cut; a crop whose two classes are less than 40 of luma apart is left alone.
 3. **Word-list search.** These are optional files next to the models: `lexicon-pl.txt.gz`
    (sjp.pl) and `lexicon-en.txt.gz` (SCOWL). With both present, every unlisted word is searched
    again on the CTC output with the two lists, as described in the README under "Word lists in

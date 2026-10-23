@@ -201,6 +201,38 @@ class ImagePrepTest {
     }
 
     @Test
+    void faintInkIsStillTheBand() {
+        // Thermal-ticket digits at luma 185 on paper at 250, with a black speck of two rows
+        // (over one percent of the crop) more than 20 rows above them: the digits are the band,
+        // not the speck. A fixed cut at 150 kept the speck alone, and a percentile anchor on
+        // the darkest pixels would have followed it.
+        int w = 40;
+        int h = 80;
+        byte[] data = new byte[w * h * 3];
+        Arrays.fill(data, (byte) 250);
+        for (int y = 30; y < 70; y++) {
+            for (int x = 4; x < 36; x++) {
+                int o = (y * w + x) * 3;
+                data[o] = data[o + 1] = data[o + 2] = (byte) 185;
+            }
+        }
+        for (int y = 2; y < 4; y++) {
+            for (int x = 4; x < 24; x++) {
+                int o = (y * w + x) * 3;
+                data[o] = data[o + 1] = data[o + 2] = 0;
+            }
+        }
+        Bgr faint = new Bgr(data, w, h);
+        Bgr out = Images.mainInkBand(faint);
+        assertTrue(out.height() >= 40 && out.height() < h, "kept " + out.height() + " rows");
+
+        byte[] blank = new byte[w * h * 3];
+        Arrays.fill(blank, (byte) 240);
+        Bgr paper = new Bgr(blank, w, h);
+        assertSame(paper, Images.mainInkBand(paper));
+    }
+
+    @Test
     void shortGapAndAHairlineStayOnTheLine() {
         int w = 20;
         int h = 40;

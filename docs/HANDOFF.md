@@ -108,6 +108,19 @@ failures come down to one share just under its threshold.
    is right. There is no heuristic to borrow from it. Make the text-column path in
    `ReadingOrder.textColumns` more conservative on narrow pages and on sides whose lines end in
    prices or quantities; reproduce on `dev` receipts first (and collect more receipts for `dev`).
+   Checked on 2026-10-22 with `ro.sh` (auto against `-Drows=true` on every cached page): on `dev`
+   and `test` a false column costs three pages and about 60 edits in all (the MSZ 2010 letter,
+   36, is the stamp block moving; the PGE invoice 17; the Mennica receipt 8), and column analysis
+   wins on 29 pages. There is nothing left to reproduce the memo or Smyk case on, so no rule
+   was changed: it would be fitted to `test2`. Collect receipts and memos for `dev` first. The
+   remaining order loss on `dev` is single pages: the JFK telegram header (three blocks of small
+   print beside a logo, 180 edits) and OJ L91 (176 edits), where the signature block on the right
+   sits at the height of the footnotes on the left, so the bottom of the page reads as two columns
+   with the footnotes split between them. Two rules were considered for OJ L91 and left out: the
+   short footnote rule in the ink as a section boundary (it would also split a newspaper column
+   at every ornament between articles, interleaving the columns), and a blank band across the
+   whole block as a zone boundary before columns are tried (that is exactly the figure-across-
+   the-columns case the transcription rules keep whole).
 2. **Dense historical newspapers.** Mostly done. `InkGutters` finds column gutters in the page
    ink (blank strips inside boxes that line up next to column margins) and the engine cuts
    merged lines there, and `ReadingOrder.stacked` keeps lines of a curved photo out of one row.
@@ -131,9 +144,33 @@ failures come down to one share just under its threshold.
    against 31), so a lone `w` reads as `W` and `o` as `0`; only OJ L91 is reading order (its
    two-column footnotes are joined into rows). Word splitting is strong on 4 of 66 pages only,
    and on two of those 960 px is worse anyway. Earlier notes: 2048 px is better on `dev` and `test`; on `test2` the two tie on Polish
-   pages (0.031) and 960 px is much worse on English ones (0.310 against 0.107). Try a two-pass rule: detect at 960, measure the
-   median line height in detector pixels, re-detect larger only for small print. The numbers
+   pages (0.031) and 960 px is much worse on English ones (0.310 against 0.107). The numbers
    for each page are in `bench/out/*-fast.tsv` and `*-plain.tsv` after a benchmark run.
+   **Two passes merged (2026-10-22, branch `coarse-detection`, not merged):** with `DetMerge`,
+   `--coarse 960` and `OcrConfig.detCoarseLimit`,
+   the 960 px boxes are folded into the 2048 px ones. What survived measuring on `dev` and
+   `test`: a coarse box replaces the fine boxes inside it only when they are three or more word
+   pieces, each as high as the coarse box and at most four heights long, together covering half
+   its width. Two rules were dropped after a first run: adding a coarse box that overlaps no fine
+   box (it brought in margin marks read as CJK on Wisła 1912, 0.024 to 0.81, and seal text on the
+   Kuria letter), and merging two pieces (label and value on the Fanzz and Shell receipts; the
+   rows then held two boxes instead of four and read as two columns, 0.014 to 0.138). With the
+   final rules no page of `dev` or `test` is worse; Unia-Proch 0.031 to 0.018 (960 alone 0.003:
+   its two-word lines stay split) and the Mennica receipt 0.470 to 0.238 (a stamp box changed
+   and the order fell right, not the mechanism). On `test2`, scored once with it, no page
+   changed (0.0786 both ways). Median page time +8 % in the first run; total time +17 % on
+   `dev` and +4 % on `test` in a second. Not merged: one page gains by the mechanism, and the
+   option would be public API that a user has no way to choose for. The missed lines of OJ C10
+   2020, Nature 1896 and the Arct dictionary are not recovered, because the fine pass has a box
+   over them that reads wrong, not no box.
+   **Box threshold (2026-10-23):** the 1981 notice on `test` loses a whole block of 13 lines
+   whose boxes score 0.43–0.49 under `boxThresh` 0.5 (the print is clean; the detector is just
+   unsure there). Scored with 0.4 (`bench/out/r2/*-box0.4.tsv`): `test` 0.0461 to 0.0423, the
+   notice 0.095 to 0.068 and Nature 1896 0.053 to 0.025, two pages worse (the 1932 bill +16, the
+   1954 memo +13); `dev` 0.0230 to 0.0227, three better (Bristol Mercury −69) and five worse
+   (the 2017 diploma +17). 0.3 with `detThresh` 0.3 is worse on `dev`. Not adopted: the gain is
+   two pages and the losses are noise lines that extra low boxes bring in. Worth trying together
+   with `--drop-fragments`, which is what those extra lines mostly are.
 4. **Speed and memory.** Done so far: `Alphabet.LATIN` (8–18 % per set, up to 25 % on text-heavy
    pages, same accuracy) and faster `ReduceMean` / `MaxPool` (a few %). The profile is in
    [internals.md](internals.md#performance-notes). Tried and dropped: 6×2 and 4×3 register
@@ -149,6 +186,16 @@ failures come down to one share just under its threshold.
    lists lack (Volumina Legum prints `Krola`, the search writes `Króla`: give such documents a
    list of their own). Next steps: a word-frequency or bigram prior for ties, letting the search
    insert a space, and scoring `test2` with lists and the polish profile once.
+   **2026-10-23:** scored on all three sets, see corrections.md and benchmark.md: Polish CER
+   falls on each (`test2` 0.031 to 0.028, word F1 0.912 to 0.932) and no page loses more than
+   the Volumina Legum spelling case. `Images.mainInkBand` now splits the crop's luma into ink
+   and paper with Otsu instead of a fixed 150: the parking ticket keeps its faint digits (29
+   edits to 19) and the 1935 MSZ letter loses 3; nothing else on `dev` or `test` moved. Leaving
+   the letter swaps of rule 1 to the search when the Polish lexicon is loaded was tried and
+   dropped: five pages worse by one or two edits, none better, word F1 0.964 to 0.963 on `dev`.
+   The search traced with `-Docr.ctcwords.trace=true` shows the floor at work:
+   a swap that costs exactly 3 nats had no evidence in the image; on the 1914 gazette those are
+   `osiagnięty` (right to fix) and `zdala` (a period spelling, wrong to fix) alike.
 6. **Stamps and handwriting.** References leave them out, but every engine reads them (the 1932
    telephone bill loses most of its CER to a purple stamp). A color filter for stamp ink could
    drop such lines.

@@ -685,11 +685,16 @@ public final class Images {
         return new Bgr(out, w, h);
     }
 
+    /** Below this spread between the crop's ink and paper luma there is no ink to find bands in. */
+    private static final int BAND_CONTRAST = 40;
+
     /**
      * Keeps the heavier ink band when a second band is split off by at least 20 white rows.
      * A shorter gap stays, so a dot over a letter is not cut away. Two bands of similar
      * weight stay as well. Recognition then scales the remaining glyphs to the model height
-     * instead of sharing that height with a neighbor line.
+     * instead of sharing that height with a neighbor line. Ink and paper are the two luma
+     * classes of the crop itself (Otsu's split), so the faint brown digits of a thermal
+     * ticket count as ink too; with a fixed cut at 150 they did not, and a speck was the band.
      */
     public static Bgr mainInkBand(Bgr image) {
         int w = image.width();
@@ -698,12 +703,16 @@ public final class Images {
             return image;
         }
         byte[] data = image.data();
+        int threshold = inkThreshold(data, w * h);
+        if (threshold < 0) {
+            return image;
+        }
         int[] dark = new int[h];
         for (int y = 0; y < h; y++) {
             int row = y * w * 3;
             int count = 0;
             for (int x = 0; x < w; x++) {
-                if (inkLuma(data, row + x * 3) < 150) {
+                if (inkLuma(data, row + x * 3) < threshold) {
                     count++;
                 }
             }
@@ -872,6 +881,52 @@ public final class Images {
             }
         }
         return rule;
+    }
+
+    /**
+     * Luma below which a pixel of the crop is ink: Otsu's split of the crop's luma histogram
+     * into the two classes with the largest variance between them, weighted by their sizes, so
+     * a speck does not pull the split down to itself the way a percentile anchor would. -1 when
+     * the class means are closer than {@link #BAND_CONTRAST}, as on a blank crop.
+     */
+    static int inkThreshold(byte[] data, int pixels) {
+        int[] hist = new int[256];
+        long sumAll = 0;
+        for (int i = 0; i < pixels; i++) {
+            int v = inkLuma(data, i * 3);
+            hist[v]++;
+            sumAll += v;
+        }
+        long weightDark = 0;
+        long sumDark = 0;
+        double best = -1;
+        int split = -1;
+        double meanDark = 0;
+        double meanLight = 0;
+        for (int t = 0; t < 256; t++) {
+            weightDark += hist[t];
+            sumDark += (long) t * hist[t];
+            long weightLight = pixels - weightDark;
+            if (weightDark == 0) {
+                continue;
+            }
+            if (weightLight == 0) {
+                break;
+            }
+            double mDark = sumDark / (double) weightDark;
+            double mLight = (sumAll - sumDark) / (double) weightLight;
+            double between = (double) weightDark * weightLight * (mDark - mLight) * (mDark - mLight);
+            if (between > best) {
+                best = between;
+                split = t;
+                meanDark = mDark;
+                meanLight = mLight;
+            }
+        }
+        if (split < 0 || meanLight - meanDark < BAND_CONTRAST) {
+            return -1;
+        }
+        return split + 1;
     }
 
     private static int inkLuma(byte[] data, int i) {
