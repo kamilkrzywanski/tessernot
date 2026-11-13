@@ -62,7 +62,7 @@ public final class PostalCities {
 
     /**
      * The same line, or the official city when only diacritics were missing.
-     * The code and the spaces around it stay as recognized.
+     * The code, the spaces around it and the case of every letter stay as recognized.
      */
     public String apply(String line) {
         if (line == null || line.isEmpty() || cities.isEmpty()) {
@@ -88,7 +88,34 @@ public final class PostalCities {
         if (!fold(city).equals(fold(official))) {
             return line;
         }
-        return line.substring(0, matcher.start(2)) + official + line.substring(to);
+        String spelled = cased(official, city);
+        if (spelled.equals(city)) {
+            return line;
+        }
+        return line.substring(0, matcher.start(2)) + spelled + line.substring(to);
+    }
+
+    /**
+     * The official letters in the case the line was read in, letter by letter: {@code LODZ} becomes
+     * {@code ŁÓDŹ} and not {@code Łódź}. The two have the same letters, so the same length.
+     */
+    private static String cased(String official, String read) {
+        if (official.length() != read.length()) {
+            return official;
+        }
+        StringBuilder out = new StringBuilder(official.length());
+        for (int i = 0; i < official.length(); i++) {
+            char letter = official.charAt(i);
+            char as = read.charAt(i);
+            if (Character.isUpperCase(as)) {
+                out.append(Character.toUpperCase(letter));
+            } else if (Character.isLowerCase(as)) {
+                out.append(Character.toLowerCase(letter));
+            } else {
+                out.append(letter);
+            }
+        }
+        return out.toString();
     }
 
     private static int marks(String text) {

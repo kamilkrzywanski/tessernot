@@ -66,6 +66,37 @@ class LexiconTest {
         assertThrows(OcrException.class, () -> Lexicon.optional(dir));
     }
 
+    /** A list in another order, with capitals or with \r\n line ends would find nothing and say nothing. */
+    @Test
+    void aListThatIsNotSortedLowercaseLinesFailsTheLoad() throws Exception {
+        Path dir = Files.createTempDirectory("lexicon");
+        writeGz(dir.resolve(Lexicon.ENGLISH_FILE), "poland\n");
+        for (String bad : new String[]{"zebra\nmama\n", "mama\r\nzebra\r\n", "Mama\nzebra\n", "mama\nmama\n",
+                "mama\n\nzebra\n", "mama zebra\n"}) {
+            writeGz(dir.resolve(Lexicon.POLISH_FILE), bad);
+            OcrException error = assertThrows(OcrException.class, () -> Lexicon.optional(dir), bad);
+            assertTrue(error.getMessage().contains(Lexicon.POLISH_FILE), error.getMessage());
+            assertTrue(error.getMessage().contains("not sorted"), error.getMessage());
+            byte[] polish = Files.readAllBytes(dir.resolve(Lexicon.POLISH_FILE));
+            byte[] english = Files.readAllBytes(dir.resolve(Lexicon.ENGLISH_FILE));
+            assertThrows(OcrException.class, () -> Lexicon.read(polish, "pl", english, "en"), bad);
+        }
+        writeGz(dir.resolve(Lexicon.POLISH_FILE), "mama\nzebra\nżaba");
+        Lexicon loaded = Lexicon.optional(dir);
+        assertTrue(loaded.word("zebra"));
+        assertTrue(loaded.word("żaba"));
+        writeGz(dir.resolve(Lexicon.POLISH_FILE), "");
+        assertFalse(Lexicon.optional(dir).word("zebra"));
+    }
+
+    @Test
+    void theShippedListsAreSorted() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(Files.isRegularFile(Path.of("models", Lexicon.POLISH_FILE)));
+        Lexicon shipped = Lexicon.optional(Path.of("models"));
+        assertTrue(shipped.word("żółć"));
+        assertTrue(shipped.word("house"));
+    }
+
     private static void writeGz(Path path, String text) throws Exception {
         try (GZIPOutputStream out = new GZIPOutputStream(Files.newOutputStream(path))) {
             out.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));

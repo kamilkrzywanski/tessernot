@@ -36,13 +36,58 @@ final class WordList implements Vocabulary {
         } catch (IOException e) {
             throw new OcrException("cannot read word list " + path + ": " + e.getMessage(), e);
         }
-        return read(data, path.getFileName().toString().endsWith(".gz"), path.toString());
+        return sorted(data, path.getFileName().toString().endsWith(".gz"), path.toString());
     }
 
-    /** A list already in memory, gzip or plain. {@code label} names it in errors. */
-    static WordList read(byte[] data, boolean gzip, String label) {
+    /**
+     * A list that ships next to the models, gzip or plain, and must already be what the search
+     * needs: one word per {@code \n}, lowercase, strictly increasing by its bytes. A file in
+     * another order or with {@code \r\n} line ends would find nothing and say nothing, so it fails
+     * here. {@code label} names it in errors.
+     */
+    static WordList sorted(byte[] data, boolean gzip, String label) {
         byte[] raw = bytes(data, gzip, label);
+        int line = firstUnsorted(raw);
+        if (line >= 0) {
+            throw new OcrException("word list " + label + " is not sorted lowercase words, one per line: line "
+                    + (line + 1) + " (sort it by bytes with LC_ALL=C sort -u, with \\n line ends)");
+        }
         return new WordList(raw, offsets(raw));
+    }
+
+    /**
+     * The first line that is empty, holds a control character, a space or an ASCII capital, or
+     * does not come after the line before it; -1 when there is none. Bytes only, so four million
+     * words take a fraction of a second.
+     */
+    private static int firstUnsorted(byte[] raw) {
+        int line = 0;
+        int previous = -1;
+        int previousEnd = -1;
+        int start = 0;
+        for (int i = 0; i <= raw.length; i++) {
+            if (i < raw.length && raw[i] != '\n') {
+                int b = raw[i] & 255;
+                if (b <= ' ' || b >= 'A' && b <= 'Z') {
+                    return line;
+                }
+                continue;
+            }
+            if (i == start) {
+                if (i < raw.length) {
+                    return line;
+                }
+                break;
+            }
+            if (previous >= 0 && Arrays.compareUnsigned(raw, previous, previousEnd, raw, start, i) >= 0) {
+                return line;
+            }
+            previous = start;
+            previousEnd = i;
+            start = i + 1;
+            line++;
+        }
+        return -1;
     }
 
     private static byte[] bytes(byte[] data, boolean gzip, String label) {

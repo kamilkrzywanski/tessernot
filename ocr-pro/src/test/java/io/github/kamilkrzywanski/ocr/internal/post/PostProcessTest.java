@@ -121,6 +121,58 @@ class PostProcessTest {
         assertEquals(".", Ctc.greedy(new float[]{0.01f, 0.65f, 0.34f}, 1, 3, Charset.of(".", ",")).text());
     }
 
+    /** A letter that wins two timesteps is one letter, whichever of them carries the runner-up. */
+    @Test
+    void ctcRunnerUpIsDecidedOncePerRunOfTheWinner() {
+        Charset el = Charset.of("l", "ł");
+        assertEquals("ł", Ctc.greedy(new float[]{0.01f, 0.63f, 0.36f, 0.01f, 0.90f, 0.09f}, 2, 3, el, true).text());
+        assertEquals("ł", Ctc.greedy(new float[]{0.01f, 0.90f, 0.09f, 0.01f, 0.63f, 0.36f}, 2, 3, el, true).text());
+        assertEquals("ł", Ctc.greedy(new float[]{0.01f, 0.63f, 0.36f, 0.01f, 0.63f, 0.36f}, 2, 3, el, true).text());
+        assertEquals("l", Ctc.greedy(new float[]{0.01f, 0.90f, 0.09f, 0.01f, 0.90f, 0.09f}, 2, 3, el, true).text());
+        Charset tee = Charset.of("t", "ł");
+        assertEquals("ł", Ctc.greedy(new float[]{0.04f, 0.80f, 0.16f, 0.04f, 0.92f, 0.04f}, 2, 3, tee, true).text());
+        Charset oo = Charset.of("o", "ó");
+        assertEquals("ó", Ctc.greedy(new float[]{0.02f, 0.96f, 0.02f, 0.02f, 0.92f, 0.06f}, 2, 3, oo, true).text());
+        // A blank between two runs keeps them two letters, and only the run with the runner-up changes.
+        assertEquals("łl", Ctc.greedy(new float[]{
+                0.01f, 0.63f, 0.36f,
+                0.98f, 0.01f, 0.01f,
+                0.01f, 0.90f, 0.09f}, 3, 3, el, true).text());
+        // A swapped run right before a run of that same letter is still one letter, as a repeat is.
+        assertEquals("ł", Ctc.greedy(new float[]{
+                0.01f, 0.63f, 0.36f,
+                0.01f, 0.09f, 0.90f}, 2, 3, el, true).text());
+        // The comma rule looks at the text before the whole run.
+        Charset amount = Charset.of("9", ".", ",");
+        assertEquals("9,", Ctc.greedy(new float[]{
+                0f, 1f, 0f, 0f,
+                0.01f, 0f, 0.90f, 0.09f,
+                0.01f, 0f, 0.65f, 0.34f}, 3, 4, amount, true).text());
+    }
+
+    /** A runner-up that wins keeps the winner's probability, so a correction does not drop the line. */
+    @Test
+    void ctcScoreOfARunnerUpIsTheWinnersProbability() {
+        Ctc.Result capital = Ctc.greedy(new float[]{0.010f, 0.975f, 0.015f}, 1, 3, Charset.of("S", "Ś"), true);
+        assertEquals("Ś", capital.text());
+        assertEquals(0.975f, capital.score(), 1e-6);
+        Charset colon = Charset.of(":", "a", " ");
+        Ctc.Result spaced = Ctc.greedy(new float[]{0f, 1f, 0f, 0f, 0.60f, 0f, 0f, 0.40f}, 2, 4, colon, true);
+        assertEquals(": ", spaced.text());
+        assertEquals(0.8f, spaced.score(), 1e-6);
+        Ctc.Result plain = Ctc.greedy(new float[]{0.010f, 0.975f, 0.015f}, 1, 3, Charset.of("S", "Ś"));
+        assertEquals(capital.score(), plain.score(), 0f);
+    }
+
+    @Test
+    void runnerUpRulesLeaveOutCharactersTheCharsetLacks() {
+        RunnerUps rules = RunnerUps.polish(Charset.of("a", "l"));
+        assertEquals(-1, rules.swap(2, 1, 0.9f, true));
+        assertEquals(-1, rules.spaceAfterColon(1, 0.9f));
+        Ctc.Result result = Ctc.greedy(new float[]{0f, 0.1f, 0.9f}, 1, 3, Charset.of("a", "l"), rules, null);
+        assertEquals("l", result.text());
+    }
+
     @Test
     void ctcSoftmaxesLogitsOnce() {
         Charset charset = Charset.of("a", "b");

@@ -87,6 +87,10 @@ differs from the first read in the one expected way. Any other difference keeps 
    a space after a colon (≥ 0.35 when blank wins), `x` for `×` (≥ 0.35), `ł`/`Ł` for `l`/`L`
    (≥ 0.34), `ł`/`Ł` for `t`/`T` (≥ 0.15), `,` for `.` after a digit (≥ 0.34), `ć` for `ó` (≥ 0.15),
    `Ś` for `S` (≥ 0.015) and `ó` for `o` (≥ 0.05).
+   A rule is decided once for the whole run of timesteps the winner holds, and applies when any
+   of them meets the bar, so a letter spread over two timesteps stays one letter. The character
+   keeps the winner's probability in the line score: a correction does not push a line under
+   the recognition threshold. The table is `RunnerUps.polish`; the decoder itself has no rules.
 2. **Main ink band.** After rotation and before the resize to height 48, a second ink band is
    dropped when at least 20 white rows separate it and it has clearly less ink. A neighbor line
    caught in the box then stops sharing the model height. Ink and paper are the two luma
@@ -96,6 +100,8 @@ differs from the first read in the one expected way. Any other difference keeps 
    (sjp.pl) and `lexicon-en.txt.gz` (SCOWL). With both present, every unlisted word is searched
    again on the CTC output with the two lists, as described in the README under "Word lists in
    any language". This is the same search `--words` runs; it has no Polish rules of its own.
+   Both files must be sorted by bytes, lowercase, one word per `\n`; a file in another order or
+   with `\r\n` line ends fails the load instead of silently finding nothing.
 
    Until 2026-10-17 this step was a fixed, ordered family of letter swaps measured on the three
    scans (one or two diacritics, `t`→`ł`, `i`→`j`, `ó`/`e`/`o`→`ć`, `l`→`i`/`j`, `o`→`c`, capitals
@@ -116,7 +122,8 @@ differs from the first read in the one expected way. Any other difference keeps 
 7. **City spelling.** This uses the optional `postal-pl.txt.gz` file (GeoNames, CC BY 4.0).
    A line that is only a postal code and a city gets the official spelling. The code must have a
    single place name, the letters must already match without diacritics, and the list may not
-   remove a diacritic the read has.
+   remove a diacritic the read has. Each letter keeps the case it was read in: `LODZ` becomes
+   `ŁÓDŹ`.
 8. **Margin rereads.** These run only without the word lists. A line with `t` or `l` is read
    three more times: with 4 white rows above and below, with the ink shifted 4 px down, and
    with 8 white rows below. A read is kept when the only changes are `ł` for `t`/`l` or at most

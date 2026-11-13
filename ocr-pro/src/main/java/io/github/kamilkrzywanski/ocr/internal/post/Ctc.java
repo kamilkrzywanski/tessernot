@@ -8,10 +8,11 @@ import java.util.Arrays;
 /**
  * Greedy CTC. Blank is index 0. Repeats are collapsed and blanks are dropped.
  * <p>
- * With {@code corrected}, used by {@code Corrections.POLISH}, a few runner-ups win:
- * after a colon, a blank that only barely beats a space is read as that space, and
- * x for a multiplication sign, ł for l or t, ć for ó, a comma for a period, Ś for a
- * capital S, and ó for o replace the winner when the margin was measured on the printed scans.
+ * With a {@link RunnerUps} table, which {@code Corrections.POLISH} brings, a few runner-ups win:
+ * the class that came second replaces the winner of a run of timesteps where that table says so.
+ * The score of a character is the probability of the winner on the first timestep of its run,
+ * also when a runner-up replaced it: the score says how sure the recognizer is that a character
+ * stands there, and a correction must not make a line look like noise.
  */
 public final class Ctc {
     public record Result(String text, float score) {
@@ -34,8 +35,13 @@ public final class Ctc {
         return greedy(tensor, charset, corrected, null);
     }
 
-    /** With a vocabulary, unlisted words are searched again on their timesteps, see {@link CtcWords}. */
+    /** The Polish runner-up rules when {@code corrected}; a caller that decodes many lines builds the table once. */
     public static Result greedy(Tensor tensor, Charset charset, boolean corrected, Vocabulary words) {
+        return greedy(tensor, charset, corrected ? RunnerUps.polish(charset) : null, words);
+    }
+
+    /** With a vocabulary, unlisted words are searched again on their timesteps, see {@link CtcWords}. */
+    public static Result greedy(Tensor tensor, Charset charset, RunnerUps rules, Vocabulary words) {
         if (tensor == null || tensor.f == null) {
             throw new OcrException("CTC expects a float tensor");
         }
@@ -79,7 +85,7 @@ public final class Ctc {
                 }
             }
         }
-        return greedy(packed, time, classes, charset, corrected, words);
+        return greedy(packed, time, classes, charset, rules, words);
     }
 
     public static Result greedy(float[] data, int time, int classes, Charset charset) {
@@ -92,82 +98,88 @@ public final class Ctc {
 
     public static Result greedy(float[] data, int time, int classes, Charset charset, boolean corrected,
                                 Vocabulary words) {
+        return greedy(data, time, classes, charset, corrected ? RunnerUps.polish(charset) : null, words);
+    }
+
+    public static Result greedy(float[] data, int time, int classes, Charset charset, RunnerUps rules,
+                                Vocabulary words) {
         if (time <= 0 || classes <= 0) {
             return new Result("", 0f);
         }
         float[] probs = probabilities(data, time, classes) ? data : softmax(data, time, classes);
-        int space = charset.indexOf(" ");
-        int times = charset.indexOf("×");
-        int ex = charset.indexOf("x");
-        int el = charset.indexOf("l");
-        int ell = charset.indexOf("ł");
-        int tee = charset.indexOf("t");
-        int capitalEl = charset.indexOf("L");
-        int capitalEll = charset.indexOf("Ł");
-        int capitalTee = charset.indexOf("T");
-        int dot = charset.indexOf(".");
-        int comma = charset.indexOf(",");
-        int oo = charset.indexOf("ó");
-        int acute = charset.indexOf("ć");
-        int capitalS = charset.indexOf("S");
-        int capitalSAcute = charset.indexOf("Ś");
-        int smallO = charset.indexOf("o");
+        // The winner of every timestep, and the class that came second with its probability.
+        int[] winner = new int[time];
+        int[] second = new int[time];
+        float[] secondBest = new float[time];
+        for (int t = 0; t < time; t++) {
+            int base = t * classes;
+            int arg = 0;
+            float best = probs[base];
+            int next = -1;
+            float nextBest = -1f;
+            for (int c = 1; c < classes; c++) {
+                float v = probs[base + c];
+                if (v > best) {
+                    nextBest = best;
+                    next = arg;
+                    best = v;
+                    arg = c;
+                } else if (v > nextBest) {
+                    nextBest = v;
+                    next = c;
+                }
+            }
+            winner[t] = arg;
+            second[t] = next;
+            secondBest[t] = nextBest;
+        }
         StringBuilder text = new StringBuilder();
         double score = 0;
         int kept = 0;
         int previous = -1;
         int[] path = new int[time];
-        for (int t = 0; t < time; t++) {
-            int arg = 0;
-            float best = probs[t * classes];
-            int second = -1;
-            float secondBest = -1f;
-            for (int c = 1; c < classes; c++) {
-                float v = probs[t * classes + c];
-                if (v > best) {
-                    secondBest = best;
-                    second = arg;
-                    best = v;
-                    arg = c;
-                } else if (v > secondBest) {
-                    secondBest = v;
-                    second = c;
+        for (int t = 0; t < time; ) {
+            int arg = winner[t];
+            int end = t + 1;
+            while (end < time && winner[end] == arg) {
+                end++;
+            }
+            if (arg == 0) {
+                // Blanks emit nothing, except the one right after a colon that the rules read as a space.
+                for (int f = t; f < end; f++) {
+                    int emitted = 0;
+                    if (rules != null && text.length() > 0 && text.charAt(text.length() - 1) == ':') {
+                        emitted = Math.max(0, rules.spaceAfterColon(second[f], secondBest[f]));
+                    }
+                    if (emitted != 0 && emitted != previous) {
+                        text.append(charset.at(emitted));
+                        score += probs[f * classes];
+                        kept++;
+                    }
+                    previous = emitted;
+                    path[f] = emitted;
                 }
+            } else {
+                int emitted = arg;
+                if (rules != null) {
+                    boolean digitBefore = afterDigit(text);
+                    for (int f = t; f < end; f++) {
+                        int swapped = rules.swap(arg, second[f], secondBest[f], digitBefore);
+                        if (swapped >= 0) {
+                            emitted = swapped;
+                            break;
+                        }
+                    }
+                }
+                if (emitted != previous) {
+                    text.append(charset.at(emitted));
+                    score += probs[t * classes + arg];
+                    kept++;
+                }
+                previous = emitted;
+                Arrays.fill(path, t, end, emitted);
             }
-            // Both NIP lines on the scanned invoice drop the space after the colon.
-            // Blank wins there, and the space is the runner-up at 0.35 or more.
-            // The same timestep on Nixon and on the receipt stays under that.
-            if (corrected && arg == 0 && second == space && secondBest >= 0.35f && text.length() > 0
-                    && text.charAt(text.length() - 1) == ':') {
-                arg = space;
-                best = secondBest;
-            }
-            // Measured on the three scans. Each swap hits only a real miss, and a lower bar does not.
-            // × on the 4,99 row is 0.36 for x. l in zapłaty is 0.35 for ł.
-            // t in Wrocław, łącznie and Zapłacono is at least 0.16 for ł. The period in 90.00 is 0.35 for a comma.
-            // ó in dziewięćdziesiąt is 0.17 for ć. A bar of 0.10 for t adds nothing on these scans.
-            // The comma swap needs a digit before it: on the dev set it turned an English sentence end into a comma.
-            // Capital S in Świat is 0.023 for Ś. The next capital S on these scans is 0.0023.
-            // o in Spółka is 0.061 for ó. No other o on these scans reaches 0.04.
-            if (corrected && (runnerUp(arg, second, secondBest, times, ex, 0.35f)
-                    || runnerUp(arg, second, secondBest, el, ell, 0.34f)
-                    || runnerUp(arg, second, secondBest, capitalEl, capitalEll, 0.34f)
-                    || runnerUp(arg, second, secondBest, tee, ell, 0.15f)
-                    || runnerUp(arg, second, secondBest, capitalTee, capitalEll, 0.15f)
-                    || runnerUp(arg, second, secondBest, dot, comma, 0.34f) && afterDigit(text)
-                    || runnerUp(arg, second, secondBest, oo, acute, 0.15f)
-                    || runnerUp(arg, second, secondBest, capitalS, capitalSAcute, 0.015f)
-                    || runnerUp(arg, second, secondBest, smallO, oo, 0.05f))) {
-                arg = second;
-                best = secondBest;
-            }
-            if (arg != 0 && arg != previous) {
-                text.append(charset.at(arg));
-                score += best;
-                kept++;
-            }
-            previous = arg;
-            path[t] = arg;
+            t = end;
         }
         String decoded = words == null ? text.toString()
                 : CtcWords.decode(probs, time, classes, charset, path, words, MARGIN);
@@ -177,10 +189,6 @@ public final class Ctc {
     /** A decimal comma only follows a digit; a period after a word ends a sentence. */
     private static boolean afterDigit(StringBuilder text) {
         return text.length() > 0 && Character.isDigit(text.charAt(text.length() - 1));
-    }
-
-    private static boolean runnerUp(int arg, int second, float secondBest, int from, int to, float min) {
-        return from >= 0 && arg == from && second == to && secondBest >= min;
     }
 
     /** True when the first few timesteps already look like a probability distribution. */

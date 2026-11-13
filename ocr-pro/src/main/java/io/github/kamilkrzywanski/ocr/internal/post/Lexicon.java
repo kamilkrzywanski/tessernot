@@ -44,7 +44,7 @@ public final class Lexicon implements Vocabulary {
 
     /** Both gzip lists already in memory, for files that come from a JAR. The labels name them in errors. */
     public static Lexicon read(byte[] polish, String polishLabel, byte[] english, String englishLabel) {
-        return new Lexicon(WordList.read(polish, true, polishLabel), WordList.read(english, true, englishLabel));
+        return new Lexicon(WordList.sorted(polish, true, polishLabel), WordList.sorted(english, true, englishLabel));
     }
 
     static Lexicon of(String[] polish, String[] english) {

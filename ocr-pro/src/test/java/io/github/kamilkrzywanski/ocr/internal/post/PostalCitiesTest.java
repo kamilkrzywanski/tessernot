@@ -42,6 +42,18 @@ class PostalCitiesTest {
     }
 
     @Test
+    void theCaseOfEveryLetterStaysAsRead() {
+        assertEquals("90-031 ŁÓDŹ", cities.apply("90-031 LODZ"));
+        assertEquals("90-031 ŁÓDŹ", cities.apply("90-031 ŁÓDŹ"));
+        assertEquals("90-031 ŁÓDŹ", cities.apply("90-031 ŁODZ"));
+        assertEquals("05-800 PRUSZKÓW", cities.apply("05-800 PRUSZKOW"));
+        assertEquals("05-800 PRUSZKÓW", cities.apply("05-800 PRUSZKÓW"));
+        assertEquals("90-031 łódź", cities.apply("90-031 lodz"));
+        assertEquals("90-031 ŁóDŹ", cities.apply("90-031 LoDZ"));
+        assertEquals("59-300 LUBIN", cities.apply("59-300 LUBIN"));
+    }
+
+    @Test
     void anAsciiOfficialSpellingDoesNotStripMarks() {
         PostalCities ascii = PostalCities.of("90-031\tLodz");
         assertEquals("90-031 Łódź", ascii.apply("90-031 Łódź"));

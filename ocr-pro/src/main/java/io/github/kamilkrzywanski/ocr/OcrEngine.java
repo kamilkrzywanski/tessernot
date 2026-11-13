@@ -10,6 +10,7 @@ import io.github.kamilkrzywanski.ocr.internal.post.InkGutters;
 import io.github.kamilkrzywanski.ocr.internal.post.Lexicon;
 import io.github.kamilkrzywanski.ocr.internal.post.PostalCities;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
+import io.github.kamilkrzywanski.ocr.internal.post.RunnerUps;
 import io.github.kamilkrzywanski.ocr.internal.post.Tables;
 import io.github.kamilkrzywanski.ocr.internal.post.Vocabulary;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Graph;
@@ -78,6 +79,8 @@ public final class OcrEngine implements AutoCloseable {
     private Session rec;
     private Session cls;
     private Charset charset;
+    /** The runner-up rules of {@link Corrections#POLISH} for this charset; null without corrections. */
+    private RunnerUps runnerUps;
     private Lexicon lexicon;
     /** Lists for the CTC word-list search: the user's, plus the Polish profile's own. Null when there is none. */
     private Vocabulary words;
@@ -144,6 +147,7 @@ public final class OcrEngine implements AutoCloseable {
             this.rec = Session.create(recGraph, lineOptions());
             this.recInput = rec.inputName();
             this.charset = full;
+            this.runnerUps = corrected ? RunnerUps.polish(full) : null;
             // The word lists belong to the Polish corrections. Without them the files are not read.
             // They sit next to the dict on disk, or else in a bundle (ocr-pro-models-pl).
             this.lexicon = corrected ? lexicon(cfg.dict()) : null;
@@ -335,6 +339,7 @@ public final class OcrEngine implements AutoCloseable {
         rec = null;
         cls = null;
         charset = null;
+        runnerUps = null;
         lexicon = null;
         words = null;
         postal = null;
@@ -828,7 +833,7 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight());
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(session.run(Map.of(recInput, input)));
-        Ctc.Result result = Ctc.greedy(output, charset, corrected, words);
+        Ctc.Result result = Ctc.greedy(output, charset, runnerUps, words);
         if (result.text().isEmpty() || result.score() < cfg.recThresh()) {
             return "";
         }
@@ -1252,7 +1257,7 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight());
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(recSession.run(Map.of(recInput, input)));
-        return Ctc.greedy(output, charset, corrected, words);
+        return Ctc.greedy(output, charset, runnerUps, words);
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {
