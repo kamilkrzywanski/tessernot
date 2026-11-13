@@ -2,6 +2,7 @@ package io.github.kamilkrzywanski.ocr.internal.post;
 
 import io.github.kamilkrzywanski.ocr.internal.eval.Metrics;
 import org.junit.jupiter.api.Test;
+import io.github.kamilkrzywanski.ocr.DetLimit;
 import io.github.kamilkrzywanski.ocr.ModelFiles;
 import io.github.kamilkrzywanski.ocr.OcrConfig;
 import io.github.kamilkrzywanski.ocr.OcrEngine;
@@ -624,17 +625,17 @@ class PostProcessTest {
 
     @Test
     void detSizeRoundsHalfUpTo32() {
-        assertArrayEquals(new int[]{32, 32}, Images.detSize(40, 40, 960, "max"));
-        assertArrayEquals(new int[]{64, 64}, Images.detSize(48, 48, 960, "max"));
-        assertArrayEquals(new int[]{960, 480}, Images.detSize(1000, 500, 960, "max"));
-        assertArrayEquals(new int[]{960, 960}, Images.detSize(40, 40, 960, "min"));
-        assertArrayEquals(new int[]{32, 32}, Images.detSize(1, 1, 960, "max"));
-        assertArrayEquals(new int[]{32, 32}, Images.detSize(16, 15, 960, "max"));
+        assertArrayEquals(new int[]{32, 32}, Images.detSize(40, 40, 960, DetLimit.MAX));
+        assertArrayEquals(new int[]{64, 64}, Images.detSize(48, 48, 960, DetLimit.MAX));
+        assertArrayEquals(new int[]{960, 480}, Images.detSize(1000, 500, 960, DetLimit.MAX));
+        assertArrayEquals(new int[]{960, 960}, Images.detSize(40, 40, 960, DetLimit.MIN));
+        assertArrayEquals(new int[]{32, 32}, Images.detSize(1, 1, 960, DetLimit.MAX));
+        assertArrayEquals(new int[]{32, 32}, Images.detSize(16, 15, 960, DetLimit.MAX));
         OcrException huge = assertThrows(OcrException.class,
-                () -> Images.detSize(Integer.MAX_VALUE, 1, Integer.MAX_VALUE, "max"));
+                () -> Images.detSize(Integer.MAX_VALUE, 1, Integer.MAX_VALUE, DetLimit.MAX));
         assertTrue(huge.getMessage().contains("2147483647x1"), huge.getMessage());
         OcrException scaled = assertThrows(OcrException.class,
-                () -> Images.detSize(100_000, 1, 100_000, "min"));
+                () -> Images.detSize(100_000, 1, 100_000, DetLimit.MIN));
         assertTrue(scaled.getMessage().contains("100000x1"), scaled.getMessage());
     }
 

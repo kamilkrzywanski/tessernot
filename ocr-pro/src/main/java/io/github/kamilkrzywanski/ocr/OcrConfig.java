@@ -18,7 +18,7 @@ public final class OcrConfig {
     private final boolean useVector;
     private final int threads;
     private final int detLimitSideLen;
-    private final String detLimitType;
+    private final DetLimit detLimitType;
     private final float detThresh;
     private final float boxThresh;
     private final float unclipRatio;
@@ -39,7 +39,6 @@ public final class OcrConfig {
     private final boolean quantize;
     private final float mean;
     private final float std;
-    private final boolean opDebug;
     private final Corrections corrections;
     private final Layout layout;
     private final Alphabet alphabet;
@@ -75,7 +74,6 @@ public final class OcrConfig {
         this.quantize = b.quantize;
         this.mean = b.mean;
         this.std = b.std;
-        this.opDebug = b.opDebug;
         this.corrections = b.corrections;
         this.layout = b.layout;
         this.alphabet = b.alphabet;
@@ -90,7 +88,7 @@ public final class OcrConfig {
     public boolean useVector() { return useVector; }
     public int threads() { return threads; }
     public int detLimitSideLen() { return detLimitSideLen; }
-    public String detLimitType() { return detLimitType; }
+    public DetLimit detLimitType() { return detLimitType; }
     public float detThresh() { return detThresh; }
     public float boxThresh() { return boxThresh; }
     public float unclipRatio() { return unclipRatio; }
@@ -108,10 +106,10 @@ public final class OcrConfig {
     public boolean rotateVertical() { return rotateVertical; }
     public boolean deskew() { return deskew; }
     public boolean adaptiveThreshold() { return adaptiveThreshold; }
-    public boolean quantize() { return quantize; }
+    /** Experimental int8 path for 1×1 convolutions; slower and less exact in pure Java, so not part of the API. */
+    boolean quantize() { return quantize; }
     public float mean() { return mean; }
     public float std() { return std; }
-    public boolean opDebug() { return opDebug; }
     public Corrections corrections() { return corrections; }
     public Layout layout() { return layout; }
     public Alphabet alphabet() { return alphabet; }
@@ -169,7 +167,7 @@ public final class OcrConfig {
         private boolean useVector = true;
         private int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
         private int detLimitSideLen = 2048;
-        private String detLimitType = "max";
+        private DetLimit detLimitType = DetLimit.MAX;
         private float detThresh = 0.35f;
         private float boxThresh = 0.5f;
         private float unclipRatio = 1.6f;
@@ -190,7 +188,6 @@ public final class OcrConfig {
         private boolean quantize = false;
         private float mean = 0.5f;
         private float std = 0.5f;
-        private boolean opDebug = false;
         private Corrections corrections = Corrections.NONE;
         private Layout layout = Layout.AUTO;
         private Alphabet alphabet = Alphabet.ALL;
@@ -229,7 +226,6 @@ public final class OcrConfig {
             this.quantize = c.quantize;
             this.mean = c.mean;
             this.std = c.std;
-            this.opDebug = c.opDebug;
             this.corrections = c.corrections;
             this.layout = c.layout;
             this.alphabet = c.alphabet;
@@ -248,7 +244,7 @@ public final class OcrConfig {
         public Builder useVector(boolean v) { useVector = v; return this; }
         public Builder threads(int v) { threads = v; return this; }
         public Builder detLimitSideLen(int v) { detLimitSideLen = v; return this; }
-        public Builder detLimitType(String v) { detLimitType = v; return this; }
+        public Builder detLimitType(DetLimit v) { detLimitType = v; return this; }
         public Builder detThresh(float v) { detThresh = v; return this; }
         public Builder boxThresh(float v) { boxThresh = v; return this; }
         public Builder unclipRatio(float v) { unclipRatio = v; return this; }
@@ -266,10 +262,9 @@ public final class OcrConfig {
         public Builder rotateVertical(boolean v) { rotateVertical = v; return this; }
         public Builder deskew(boolean v) { deskew = v; return this; }
         public Builder adaptiveThreshold(boolean v) { adaptiveThreshold = v; return this; }
-        public Builder quantize(boolean v) { quantize = v; return this; }
+        Builder quantize(boolean v) { quantize = v; return this; }
         public Builder mean(float v) { mean = v; return this; }
         public Builder std(float v) { std = v; return this; }
-        public Builder opDebug(boolean v) { opDebug = v; return this; }
         public Builder corrections(Corrections v) { corrections = v; return this; }
         public Builder layout(Layout v) { layout = v; return this; }
         public Builder alphabet(Alphabet v) { alphabet = v; return this; }
@@ -344,8 +339,8 @@ public final class OcrConfig {
             if (detLimitSideLen < 1) {
                 throw new OcrException("detLimitSideLen must be >= 1");
             }
-            if (!"max".equals(detLimitType) && !"min".equals(detLimitType)) {
-                throw new OcrException("detLimitType must be max or min");
+            if (detLimitType == null) {
+                throw new OcrException("detLimitType is null");
             }
             if (!Float.isFinite(detThresh) || !Float.isFinite(boxThresh) || !Float.isFinite(unclipRatio)) {
                 throw new OcrException("detection thresholds must be finite");

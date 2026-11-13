@@ -85,7 +85,9 @@ to the models: in the same directory, or in `ocr-pro-models-pl`; without them th
 without the dictionary steps.
 
 An engine is not meant for concurrent calls. For parallel requests, use a pool, which gives
-each caller its own engine:
+each caller its own engine. The engines share the weights and word lists, which are loaded once,
+and divide the thread count of the configuration between them, so four engines on twelve
+processors run three threads each:
 
 ```java
 try (OcrPool pool = OcrPool.open(4)) {
@@ -144,7 +146,7 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 | Class | Role |
 | --- | --- |
 | `OcrEngine`, `OcrPool` | run OCR on images or on the pages of a document, one caller at a time or several in parallel |
-| `OcrConfig`, `Corrections`, `Layout`, `Alphabet` | models, thresholds, threads, the optional Polish rules, automatic or row-by-row reading order, and the characters the recognizer may output |
+| `OcrConfig`, `Corrections`, `Layout`, `Alphabet`, `DetLimit` | models, thresholds, threads, the optional Polish rules, automatic or row-by-row reading order, the characters the recognizer may output, and which side of the page the detection size limits |
 | `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, ruled tables |
 | `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
 | `ModelFiles`, `ModelSource`, `ModelBundle` | download and check the default models; where a model file comes from; the interface of a model JAR |

@@ -1,5 +1,6 @@
 package io.github.kamilkrzywanski.ocr.internal.image;
 
+import io.github.kamilkrzywanski.ocr.DetLimit;
 import io.github.kamilkrzywanski.ocr.OcrException;
 
 import javax.imageio.ImageIO;
@@ -287,12 +288,12 @@ public final class Images {
         return (channel * alpha + 255 * (255 - alpha)) / 255;
     }
 
-    /** Sides rounded to a multiple of 32, minimum 32. {@code limitType} is {@code max} or {@code min}. */
-    public static int[] detSize(int width, int height, int limit, String limitType) {
+    /** Sides rounded to a multiple of 32, minimum 32. */
+    public static int[] detSize(int width, int height, int limit, DetLimit limitType) {
         double ratio = 1.0;
         int maxSide = Math.max(width, height);
         int minSide = Math.max(1, Math.min(width, height));
-        if ("min".equals(limitType)) {
+        if (limitType == DetLimit.MIN) {
             if (minSide < limit) {
                 ratio = (double) limit / minSide;
             }

@@ -2,6 +2,7 @@ package io.github.kamilkrzywanski.ocr.cli;
 
 import io.github.kamilkrzywanski.ocr.Alphabet;
 import io.github.kamilkrzywanski.ocr.Corrections;
+import io.github.kamilkrzywanski.ocr.DetLimit;
 import io.github.kamilkrzywanski.ocr.Layout;
 import io.github.kamilkrzywanski.ocr.ModelFiles;
 import io.github.kamilkrzywanski.ocr.OcrConfig;
@@ -656,10 +657,12 @@ class CliArgsTest {
             OcrException side = assertThrows(OcrException.class, () -> limits.detLimitSideLen(0).build());
             assertTrue(side.getMessage().contains("detLimitSideLen"), side.getMessage());
             limits.detLimitSideLen(2048);
-            OcrException type = assertThrows(OcrException.class, () -> limits.detLimitType("MAX").build());
+            OcrException type = assertThrows(OcrException.class, () -> limits.detLimitType(null).build());
             assertTrue(type.getMessage().contains("detLimitType"), type.getMessage());
-            assertEquals("min", limits.detLimitType("min").build().detLimitType());
-            limits.detLimitType("max");
+            assertEquals(DetLimit.MAX, limits.detLimitType(DetLimit.MAX).build().detLimitType());
+            assertEquals(DetLimit.MIN, limits.detLimitType(DetLimit.parse("Min")).build().detLimitType());
+            assertThrows(OcrException.class, () -> DetLimit.parse("longest"));
+            limits.detLimitType(DetLimit.MAX);
             assertThrows(OcrException.class, () -> limits.detThresh(Float.NaN).build());
             limits.detThresh(0.3f);
             assertThrows(OcrException.class, () -> limits.unclipRatio(Float.POSITIVE_INFINITY).build());

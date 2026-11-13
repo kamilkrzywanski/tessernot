@@ -213,31 +213,19 @@ public final class ReadingOrder {
     }
 
     static float top(TextLine line) {
-        float y = line.quad()[1];
-        y = Math.min(y, line.quad()[3]);
-        y = Math.min(y, line.quad()[5]);
-        return Math.min(y, line.quad()[7]);
+        return line.top();
     }
 
     static float bottom(TextLine line) {
-        float y = line.quad()[1];
-        y = Math.max(y, line.quad()[3]);
-        y = Math.max(y, line.quad()[5]);
-        return Math.max(y, line.quad()[7]);
+        return line.bottom();
     }
 
     static float left(TextLine line) {
-        float x = line.quad()[0];
-        x = Math.min(x, line.quad()[2]);
-        x = Math.min(x, line.quad()[4]);
-        return Math.min(x, line.quad()[6]);
+        return line.left();
     }
 
     static float right(TextLine line) {
-        float x = line.quad()[0];
-        x = Math.max(x, line.quad()[2]);
-        x = Math.max(x, line.quad()[4]);
-        return Math.max(x, line.quad()[6]);
+        return line.right();
     }
 
     /**
