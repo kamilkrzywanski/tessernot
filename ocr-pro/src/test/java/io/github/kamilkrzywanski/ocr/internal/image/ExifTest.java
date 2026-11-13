@@ -127,6 +127,84 @@ class ExifTest {
         }
     }
 
+    /**
+     * A phone photo with a gain map or a motion clip has a second JPEG, or bytes that look like the
+     * start of one, behind the picture. The JPEG reader of the JDK counts those as more images.
+     */
+    @Test
+    void jpegWithMoreBytesBehindThePictureIsOneImage() throws Exception {
+        byte[] first = jpegOf(new BufferedImage(8, 4, BufferedImage.TYPE_INT_RGB));
+        byte[] second = jpegOf(new BufferedImage(6, 6, BufferedImage.TYPE_INT_RGB));
+        byte[] trailer = {0, 0, (byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xe0, 0, 4, 1, 2, 3, 4};
+        Path two = Files.createTempFile("ocr-two", ".jpg");
+        Path tail = Files.createTempFile("ocr-tail", ".jpg");
+        try {
+            Files.write(two, concat(first, second));
+            BufferedImage read = Images.read(two);
+            assertEquals(8, read.getWidth());
+            assertEquals(4, read.getHeight());
+            Files.write(tail, concat(first, trailer));
+            read = Images.read(tail);
+            assertEquals(8, read.getWidth());
+            assertEquals(4, read.getHeight());
+        } finally {
+            Files.deleteIfExists(two);
+            Files.deleteIfExists(tail);
+        }
+    }
+
+    /** A damaged TIFF fails inside its reader with an index error; the caller still gets an OcrException. */
+    @Test
+    void aDamagedTiffFailsWithOcrExceptionOnly() throws Exception {
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("tiff");
+        assumeTrue(writers.hasNext(), "no tiff writer");
+        ImageWriter writer = writers.next();
+        Path whole = Files.createTempFile("ocr-tiff", ".tif");
+        Path damaged = Files.createTempFile("ocr-tiff", ".tif");
+        try {
+            writeTiff(writer, whole, 1);
+            byte[] bytes = Files.readAllBytes(whole);
+            int failed = 0;
+            for (int at = 4; at < bytes.length; at++) {
+                for (byte value : new byte[]{(byte) 0xff, 0x7f}) {
+                    byte[] copy = bytes.clone();
+                    copy[at] = value;
+                    Files.write(damaged, copy);
+                    try {
+                        Images.read(damaged);
+                    } catch (OcrException expected) {
+                        failed++;
+                    }
+                }
+            }
+            assertTrue(failed > 0, "no damaged byte made the file unreadable");
+            for (int length = 8; length < bytes.length; length += 7) {
+                Files.write(damaged, java.util.Arrays.copyOf(bytes, length));
+                try {
+                    Images.read(damaged);
+                } catch (OcrException expected) {
+                    failed++;
+                }
+            }
+        } finally {
+            writer.dispose();
+            Files.deleteIfExists(whole);
+            Files.deleteIfExists(damaged);
+        }
+    }
+
+    private static byte[] jpegOf(BufferedImage image) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(image, "jpg", out));
+        return out.toByteArray();
+    }
+
+    private static byte[] concat(byte[] a, byte[] b) {
+        byte[] out = java.util.Arrays.copyOf(a, a.length + b.length);
+        System.arraycopy(b, 0, out, a.length, b.length);
+        return out;
+    }
+
     private static void writeTiff(ImageWriter writer, Path path, int pages) throws IOException {
         try (ImageOutputStream out = ImageIO.createImageOutputStream(path.toFile())) {
             writer.setOutput(out);

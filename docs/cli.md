@@ -71,7 +71,9 @@ Before the image is read, missing or empty model files are reported with a point
 `ocr download`.
 
 - JPEG input is turned upright from EXIF Orientation (1–8). PNG and `BufferedImage` input are not rotated.
-- A multi-image TIFF or GIF is rejected with the image count.
+- A multi-image TIFF or GIF is rejected with the image count. A JPEG with more data behind the
+  picture (a gain map, a motion clip) is read as that one picture.
+- Images are decoded in memory; no temporary file is written.
 - A file with `%PDF-` in its first kilobyte is sent to `ocr pdf`, unless it starts as PNG, JPEG, GIF, BMP or TIFF.
 - A PDF with a user password is rejected before the model loads. A PDF with an empty user password and an owner password opens.
 - An image whose packed BGR would not fit one Java array fails with `image is too large`.

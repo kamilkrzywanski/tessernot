@@ -5,6 +5,7 @@ import io.github.kamilkrzywanski.ocr.OcrException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.Graphics2D;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -42,22 +44,57 @@ public final class Images {
         if (!Files.isRegularFile(path)) {
             throw new OcrException("cannot read image " + path + ": not a file");
         }
+        byte[] bytes;
         try {
-            byte[] bytes = Files.readAllBytes(path);
-            if (looksLikePdf(bytes)) {
-                throw new OcrException(path + " is a PDF; use ocr pdf");
-            }
-            int images = imageCount(bytes);
-            if (images > 1) {
-                throw new OcrException(path + " has " + images + " images; ocr reads one image");
-            }
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
-            if (image == null) {
-                throw new OcrException("cannot read image " + path);
-            }
-            return Exif.upright(image, Exif.orientation(bytes));
+            bytes = Files.readAllBytes(path);
         } catch (IOException e) {
             throw new OcrException("cannot read image " + path + ": " + e.getMessage(), e);
+        }
+        if (looksLikePdf(bytes)) {
+            throw new OcrException(path + " is a PDF; use ocr pdf");
+        }
+        return Exif.upright(decode(bytes, path), Exif.orientation(bytes));
+    }
+
+    /**
+     * Decodes from memory: ImageIO's own stream for an {@code InputStream} is a cache file, which
+     * fails where the temporary directory cannot be written. Only a TIFF or a GIF is asked how many
+     * images it holds. The JPEG reader counts every start marker after the first picture, so a
+     * photo with a gain map or a motion clip behind it would look like several images.
+     */
+    private static BufferedImage decode(byte[] bytes, Path path) {
+        try (ImageInputStream in = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))) {
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+            if (!readers.hasNext()) {
+                throw new OcrException("cannot read image " + path);
+            }
+            ImageReader reader = readers.next();
+            try {
+                String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+                boolean container = format.startsWith("tif") || format.equals("gif");
+                // Counting needs a stream that can go back; the other formats read forward only, as ImageIO.read does.
+                reader.setInput(in, !container, true);
+                if (container) {
+                    int images = reader.getNumImages(true);
+                    if (images > 1) {
+                        throw new OcrException(path + " has " + images + " images; ocr reads one image");
+                    }
+                }
+                BufferedImage image = reader.read(0);
+                if (image == null) {
+                    throw new OcrException("cannot read image " + path);
+                }
+                return image;
+            } finally {
+                reader.dispose();
+            }
+        } catch (IOException | RuntimeException e) {
+            // A truncated TIFF fails inside its reader with an index error, not an IOException.
+            if (e instanceof OcrException ocr) {
+                throw ocr;
+            }
+            String reason = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            throw new OcrException("cannot read image " + path + ": " + reason, e);
         }
     }
 
@@ -107,28 +144,6 @@ public final class Images {
         boolean littleTiff = n >= 4 && head[0] == 'I' && head[1] == 'I' && head[2] == 42 && head[3] == 0;
         boolean bigTiff = n >= 4 && head[0] == 'M' && head[1] == 'M' && head[2] == 0 && head[3] == 42;
         return littleTiff || bigTiff;
-    }
-
-    /** {@code -1} when the count is unknown. More than one image is rejected by {@link #read}. */
-    private static int imageCount(byte[] bytes) {
-        try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
-            if (in == null) {
-                return -1;
-            }
-            Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
-            if (!readers.hasNext()) {
-                return -1;
-            }
-            ImageReader reader = readers.next();
-            try {
-                reader.setInput(in, false, false);
-                return reader.getNumImages(true);
-            } finally {
-                reader.dispose();
-            }
-        } catch (IOException e) {
-            return -1;
-        }
     }
 
     public static Bgr toBgr(BufferedImage image) {
