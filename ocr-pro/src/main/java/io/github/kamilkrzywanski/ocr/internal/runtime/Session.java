@@ -20,6 +20,11 @@ import java.util.concurrent.ExecutorService;
  */
 public final class Session {
     private static final boolean PROFILE = Boolean.getBoolean("ocr.profile");
+    /**
+     * What a session keeps of its activation buffers after a run: enough for the next text line
+     * to reuse, and a fraction of what one detection map takes.
+     */
+    public static final long RETAIN_BYTES = 64L << 20;
 
     private final Graph graph;
     private final Arena arena = new Arena();
@@ -92,6 +97,21 @@ public final class Session {
         return graph;
     }
 
+    /** Bytes of the activation buffers this session keeps for its next run. */
+    public long idleBytes() {
+        return arena.idleBytes();
+    }
+
+    /** Drops idle activation buffers, the largest first, until at most {@code keepBytes} are left. */
+    public void trim(long keepBytes) {
+        arena.trim(keepBytes);
+    }
+
+    /** Bytes of every activation buffer this session has created. */
+    public long allocatedBytes() {
+        return arena.allocatedBytes();
+    }
+
     public boolean vector() {
         return vector;
     }
@@ -127,7 +147,19 @@ public final class Session {
         Jir.save(graph, path);
     }
 
+    /**
+     * Runs the graph. Afterwards the session keeps at most {@link #RETAIN_BYTES} of activation
+     * buffers, also when the run failed.
+     */
     public Map<String, Tensor> run(Map<String, Tensor> inputs) {
+        try {
+            return execute(inputs);
+        } finally {
+            arena.trim(RETAIN_BYTES);
+        }
+    }
+
+    private Map<String, Tensor> execute(Map<String, Tensor> inputs) {
         Map<String, Tensor> env = new HashMap<>(graph.initializers.size() + inputs.size() + graph.nodes.size());
         env.putAll(graph.initializers);
         for (Sig sig : graph.inputs) {

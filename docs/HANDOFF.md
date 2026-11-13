@@ -179,7 +179,9 @@ failures come down to one share just under its threshold.
    about half the AVX2 peak. Batching lines does not raise GEMM speed either: the recognizer's
    1×1 convolutions already have 400–1,300 columns, and the kernel runs as fast at 160. What is
    left is to skip work: two-pass detection, and fewer second reads in the Polish profile.
-   About 1.5 GB of heap at 2048 px; a two-pass detection would also save time on large print.
+   About 1 GB of heap at 2048 px (2026-11-14: arena size classes, sessions trimmed after every
+   run and call, heap budgets for detection and for pages in flight; see internals.md); a two-pass
+   detection would also save time on large print.
 5. **Word lists (2026-10-17).** `CtcWords` (see internals.md) replaced the fixed lexicon swaps
    and takes lists in any language. What it cannot do: tell two listed words apart (Spółka /
    Spotka; it has no context), split glued words (`imagazyn`), or keep a historical spelling the

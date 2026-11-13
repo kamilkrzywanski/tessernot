@@ -35,9 +35,13 @@ models need and nothing more. It is not a general ONNX runtime.
   in the same epilogue.
 - **JIR** (`JIR1` magic) is the optimized graph plus weights. It loads faster and is not
   optimized again. A truncated or inconsistent file fails with `OcrException`.
-- **Memory**: an arena of power-of-two buckets for activations, with no zeroing on allocation.
-  Weights are read-only and shared between sessions. `Session.fork()` gives a worker its own
-  arena over the same graph.
+- **Memory**: an arena of size-class buckets for activations (four sizes per doubling), with no
+  zeroing on allocation. A request takes the smallest idle buffer that fits, up to twice its size,
+  before a new array is made. After every run a session keeps at most 64 MB of idle buffers, the
+  small ones first, and after every engine call 8 MB; an idle engine holds its weights and little
+  else. One detection takes about 190 bytes of activations per pixel of the scaled page (500 MB at
+  1440×2048). Weights are read-only and shared between sessions. `Session.fork()` gives a worker
+  its own arena over the same graph.
 
 ### Kernels
 
@@ -191,6 +195,22 @@ A multi-page document (`recognizePages`, which the PDF input of `ocr-pro-pdf` us
 engine. Its pages run in parallel in a window as wide as the pool,
 so at most that many bitmaps are in memory. Page workers run detection on their own thread, so
 the pool never waits on itself.
+
+**Heap budgets** (`MemoryBudget`) keep that parallel work inside the heap, whatever the number
+of threads:
+
+- Detection, in every engine of the JVM, takes 224 bytes per pixel of the scaled page from a
+  budget of four tenths of the heap and waits when that is used up. Twelve threads on a 3 GB heap
+  run one or two detections at a time, not twelve.
+- The pages of one document take 8 bytes per pixel of the bitmap plus 96 MB for a recognizer from
+  a budget of three tenths of the heap; the next page waits, already rendered, until an earlier
+  one is done.
+- A piece larger than its whole budget takes all of it, so the largest page still runs, alone.
+- Sessions are lent last in, first out, so with few pages in flight only that many recognizers
+  hold buffers.
+
+Twelve A4 pages at 300 dpi (2472×3508) on twelve threads are read with a 1 GB heap; before the
+budgets the same document ran out of memory with 9 GB.
 
 ## Modules and model files
 

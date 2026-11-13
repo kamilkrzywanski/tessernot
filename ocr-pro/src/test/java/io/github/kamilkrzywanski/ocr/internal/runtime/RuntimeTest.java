@@ -810,16 +810,88 @@ class RuntimeTest {
     }
 
     @Test
-    @Timeout(value = 120, unit = TimeUnit.SECONDS)
-    void arenaPowerOfTwoBucketServesNearbySizes() {
+    void arenaSizeClassesServeNearbySizes() {
         Arena arena = new Arena();
         float[] exact = arena.allocF(200);
         assertEquals(200, exact.length);
+        // Four sizes per doubling above 256: 320, 384, 448, 512, 640, ...
         float[] wide = arena.allocF(300);
-        assertEquals(512, wide.length);
+        assertEquals(320, wide.length);
+        assertEquals(512, arena.allocF(512).length);
+        assertEquals(640, arena.allocF(513).length);
         arena.freeF(wide);
-        float[] again = arena.allocF(400);
-        assertSame(wide, again);
+        assertSame(wide, arena.allocF(310));
+    }
+
+    @Test
+    void arenaServesASmallerRequestFromALargerIdleBufferUpToTwiceItsSize() {
+        Arena arena = new Arena();
+        float[] large = arena.allocF(600);
+        assertEquals(640, large.length);
+        arena.freeF(large);
+        // 330 rounds to 384, and 640 is within twice that.
+        assertSame(large, arena.allocF(330));
+        arena.freeF(large);
+        // 257 rounds to 320; 640 is exactly twice that and still serves it.
+        assertSame(large, arena.allocF(257));
+        arena.freeF(large);
+        float[] huge = arena.allocF(4000);
+        arena.freeF(huge);
+        arena.allocF(600);
+        // 4096 is more than twice 320, so it waits for a request of its own size.
+        float[] fresh = arena.allocF(300);
+        assertEquals(320, fresh.length);
+        assertSame(huge, arena.allocF(3000));
+    }
+
+    @Test
+    void arenaCountsWhatItHoldsAndTrimsTheLargestFirst() {
+        Arena arena = new Arena();
+        float[] small = arena.allocF(1024);
+        float[] middle = arena.allocF(4096);
+        float[] large = arena.allocF(1 << 20);
+        assertEquals(4L * (1024 + 4096 + (1 << 20)), arena.allocatedBytes());
+        assertEquals(0L, arena.idleBytes());
+        arena.freeF(small);
+        arena.freeF(middle);
+        arena.freeF(large);
+        assertEquals(arena.allocatedBytes(), arena.idleBytes());
+
+        arena.trim(4L * (1024 + 4096));
+        assertEquals(4L * (1024 + 4096), arena.idleBytes());
+        assertSame(small, arena.allocF(1024));
+        assertSame(middle, arena.allocF(4096));
+        assertEquals(0L, arena.idleBytes());
+        // The large buffer is gone: the same request makes a new array.
+        long before = arena.allocatedBytes();
+        arena.allocF(1 << 20);
+        assertEquals(before + 4L * (1 << 20), arena.allocatedBytes());
+
+        arena.freeF(small);
+        Tensor ints = Tensor.pooledI64(new int[]{8}, arena.allocI(8));
+        arena.free(ints);
+        assertEquals(4L * 1024 + 8L * 8, arena.idleBytes());
+        arena.trim(0L);
+        assertEquals(0L, arena.idleBytes());
+        arena.trim(0L);
+    }
+
+    @Test
+    void sessionKeepsABoundedShareOfItsBuffersAfterARun() {
+        Graph graph = new Graph();
+        graph.opset = 14;
+        graph.inputs.add(new Sig("x", Tensor.F32, new int[]{1, -1}));
+        graph.outputs.add(new Sig("y", Tensor.F32, new int[]{1, -1}));
+        graph.nodes.add(Node.of("Relu", "a", new String[]{"x"}, new String[]{"h"}));
+        graph.nodes.add(Node.of("Relu", "b", new String[]{"h"}, new String[]{"y"}));
+        Session session = Session.create(graph, Session.Options.scalar());
+        int n = (int) (Session.RETAIN_BYTES / 4) + 1024;
+        Tensor out = session.run(Map.of("x", Tensor.f32(new int[]{1, n}, new float[n]))).get("y");
+        assertEquals(n, out.f.length);
+        assertTrue(session.allocatedBytes() > Session.RETAIN_BYTES, "the run needed more than a session keeps");
+        assertTrue(session.idleBytes() <= Session.RETAIN_BYTES, "kept " + session.idleBytes());
+        session.trim(0L);
+        assertEquals(0L, session.idleBytes());
     }
 
     @Test

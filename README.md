@@ -23,8 +23,9 @@ Tesseract still orders the text slightly better. See the [benchmark](#accuracy-a
 
 Expect 2–8 s per page on a laptop CPU, depending on how much text the page has; a dense
 newspaper page with a hundred lines takes longest. Detection at 960 px instead of the default
-2048 px (`--limit 960`) is about a quarter faster. It needs Java 21 and about 1.5 GB of heap at
-the default, under 1 GB at 960 px. Without the incubator module, the scalar path is slower.
+2048 px (`--limit 960`) is about a quarter faster. It needs Java 21 and about 1 GB of heap at
+the default, about 512 MB at 960 px; a multi-page PDF fits in the same heap, with fewer pages read
+side by side when the heap is small. Without the incubator module, the scalar path is slower.
 
 ## Quick start
 

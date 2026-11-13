@@ -26,12 +26,12 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -57,6 +57,18 @@ public final class OcrEngine implements AutoCloseable {
      * 190 turns the last letter into ż, and 245 collapses the code.
      */
     private static final int POSTAL_INK = 220;
+    /**
+     * Heap one detection takes per pixel of the scaled page: about 190 bytes of activations
+     * (measured on 640 to 2048 px pages, see {@code RuntimeTest}), 12 of input and the rest for the
+     * probability map and its copies.
+     */
+    static final long DET_BYTES_PER_PIXEL = 224;
+    /** Heap one page in flight takes per pixel: the bitmap and its BGR copy. */
+    private static final long PAGE_BYTES_PER_PIXEL = 8;
+    /** Heap the recognizer and the classifier of one page worker take: what a session keeps, and a line at work. */
+    private static final long PAGE_SESSION_BYTES = Session.RETAIN_BYTES + (32L << 20);
+    /** What each session keeps of its activation buffers once a call has returned. */
+    private static final long IDLE_BYTES = 8L << 20;
 
     private final OcrConfig cfg;
     /** {@link Corrections#POLISH}: CTC runner-ups, word lists, and the second reads in {@link #decode}. */
@@ -74,9 +86,13 @@ public final class OcrEngine implements AutoCloseable {
      * Detection for page workers: {@code threads} forks that live for one multi-page document. A
      * fork's arena holds the buffers of a whole detection map, so idle engines do not keep them.
      */
-    private ArrayBlockingQueue<Session> detPool;
-    private ArrayBlockingQueue<Session> recPool;
-    private ArrayBlockingQueue<Session> clsPool;
+    private LinkedBlockingDeque<Session> detPool;
+    /**
+     * Sessions are taken from the front and returned to the front, so a few busy workers keep
+     * using the same few sessions and the others stay empty.
+     */
+    private LinkedBlockingDeque<Session> recPool;
+    private LinkedBlockingDeque<Session> clsPool;
     private String detInput;
     private String recInput;
     private String clsInput;
@@ -208,13 +224,21 @@ public final class OcrEngine implements AutoCloseable {
 
     public synchronized OcrResult recognize(BufferedImage image) {
         ensureOpen();
-        return run(image, true);
+        try {
+            return run(image, true);
+        } finally {
+            trimSessions();
+        }
     }
 
     /** Skips detection and treats the whole bitmap as one text line. */
     public synchronized OcrResult recognizeLine(BufferedImage image) {
         ensureOpen();
-        return run(image, true, false);
+        try {
+            return run(image, true, false);
+        } finally {
+            trimSessions();
+        }
     }
 
     /**
@@ -223,6 +247,10 @@ public final class OcrEngine implements AutoCloseable {
      * the next pages are rendered while earlier ones are read. {@code handler} is called in page
      * order as soon as a page is done, before later pages finish; a null handler only collects the
      * list. PDF input is in {@code ocr-pro-pdf}: {@code OcrPdf.recognize(engine, path, dpi)}.
+     * <p>
+     * At most {@code threads} pages are in flight, and fewer when their bitmaps and recognizers
+     * would take more than three tenths of the heap; detection waits for its share of the heap
+     * too. A small heap therefore reads a document more slowly instead of running out of memory.
      */
     public synchronized List<OcrResult> recognizePages(int pageCount, IntFunction<BufferedImage> pages, PageHandler handler) {
         ensureOpen();
@@ -232,6 +260,14 @@ public final class OcrEngine implements AutoCloseable {
         if (pages == null) {
             throw new OcrException("pages are null");
         }
+        try {
+            return readPages(pageCount, pages, handler);
+        } finally {
+            trimSessions();
+        }
+    }
+
+    private List<OcrResult> readPages(int pageCount, IntFunction<BufferedImage> pages, PageHandler handler) {
         if (pageCount <= 1 || pool == null) {
             List<OcrResult> results = new ArrayList<>(pageCount);
             for (int i = 0; i < pageCount; i++) {
@@ -245,10 +281,21 @@ public final class OcrEngine implements AutoCloseable {
         }
         int[] index = {0};
         detPool = det == null ? null : forks(det);
+        MemoryBudget inFlight = MemoryBudget.pages();
         try {
             return joinWindow(pool, cfg.threads(), pageCount, i -> {
                 BufferedImage image = pages.apply(i);
-                return () -> run(image, false);
+                // Waits here, on the calling thread, until earlier pages have finished and
+                // returned their share.
+                int held = inFlight.acquire(image == null ? 0L
+                        : PAGE_SESSION_BYTES + PAGE_BYTES_PER_PIXEL * image.getWidth() * image.getHeight());
+                return () -> {
+                    try {
+                        return run(image, false);
+                    } finally {
+                        inFlight.release(held);
+                    }
+                };
             }, result -> {
                 if (handler != null) {
                     handler.onPage(index[0], pageCount, result);
@@ -288,6 +335,9 @@ public final class OcrEngine implements AutoCloseable {
         rec = null;
         cls = null;
         charset = null;
+        lexicon = null;
+        words = null;
+        postal = null;
         detPool = null;
         recPool = null;
         clsPool = null;
@@ -349,6 +399,57 @@ public final class OcrEngine implements AutoCloseable {
             return source.read();
         } catch (IOException e) {
             throw new OcrException("cannot read word list " + source + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * After a call, every session keeps at most {@link #IDLE_BYTES} of its activation buffers: an
+     * idle engine holds its weights and little else. A session is taken out of its queue while it
+     * is trimmed, so a worker that a failed call left behind cannot run it at the same time.
+     */
+    private void trimSessions() {
+        trim(det);
+        trim(recPool, rec);
+        trim(clsPool, cls);
+    }
+
+    /** Activation buffers the sessions of this engine hold between calls, in bytes. */
+    synchronized long idleBytes() {
+        long bytes = det == null ? 0L : det.idleBytes();
+        bytes += idle(recPool, rec);
+        bytes += idle(clsPool, cls);
+        return bytes;
+    }
+
+    private static long idle(LinkedBlockingDeque<Session> queue, Session primary) {
+        if (queue == null) {
+            return primary == null ? 0L : primary.idleBytes();
+        }
+        long bytes = 0L;
+        for (Session session : queue) {
+            bytes += session.idleBytes();
+        }
+        return bytes;
+    }
+
+    private static void trim(LinkedBlockingDeque<Session> queue, Session primary) {
+        if (queue == null) {
+            trim(primary);
+            return;
+        }
+        for (int i = queue.size(); i > 0; i--) {
+            Session session = queue.poll();
+            if (session == null) {
+                return;
+            }
+            session.trim(IDLE_BYTES);
+            queue.offerLast(session);
+        }
+    }
+
+    private static void trim(Session session) {
+        if (session != null) {
+            session.trim(IDLE_BYTES);
         }
     }
 
@@ -577,7 +678,7 @@ public final class OcrEngine implements AutoCloseable {
             return out;
         } finally {
             if (borrowed) {
-                recPool.offer(session);
+                recPool.offerFirst(session);
             }
         }
     }
@@ -714,7 +815,7 @@ public final class OcrEngine implements AutoCloseable {
             return Tables.find(page, lines, crop -> readSlice(session, crop));
         } finally {
             if (borrowed) {
-                recPool.offer(session);
+                recPool.offerFirst(session);
             }
         }
     }
@@ -736,8 +837,22 @@ public final class OcrEngine implements AutoCloseable {
         return result.text();
     }
 
+    /**
+     * Detection holds its share of {@link MemoryBudget#DETECTION} from the scaled input to the
+     * boxes. Pages of one document, and the engines of a pool, detect side by side only as far as
+     * the heap allows; the rest wait here.
+     */
     private List<DbPost.Box> detect(Bgr bgr, boolean lineParallel) {
         int[] size = Images.detSize(bgr.width(), bgr.height(), cfg.detLimitSideLen(), cfg.detLimitType());
+        int held = MemoryBudget.DETECTION.acquire(DET_BYTES_PER_PIXEL * size[0] * size[1]);
+        try {
+            return detect(bgr, size, lineParallel);
+        } finally {
+            MemoryBudget.DETECTION.release(held);
+        }
+    }
+
+    private List<DbPost.Box> detect(Bgr bgr, int[] size, boolean lineParallel) {
         // Page workers already occupy pool, so they keep this resize on their own thread.
         float[] input = Images.resizeNormalize(bgr, size[0], size[1], cfg.mean(), cfg.std(),
                 lineParallel ? pool : null, cfg.threads());
@@ -746,14 +861,14 @@ public final class OcrEngine implements AutoCloseable {
         // a worker left behind by an interrupted join returns its fork to the queue it took it
         // from after the document has dropped that queue. One that arrives after the drop takes
         // a fresh fork and never the primary, which runs on the pool the worker belongs to.
-        ArrayBlockingQueue<Session> forks = lineParallel ? null : detPool;
+        LinkedBlockingDeque<Session> forks = lineParallel ? null : detPool;
         Session session = lineParallel ? det : forks != null ? borrow(forks) : det.fork();
         Tensor output;
         try {
             output = only(session.run(Map.of(detInput, tensor)));
         } finally {
             if (forks != null) {
-                forks.offer(session);
+                forks.offerFirst(session);
             }
         }
         Planar map = planar(output);
@@ -803,9 +918,9 @@ public final class OcrEngine implements AutoCloseable {
                         return decode(page, box, recSession, clsSession);
                     } finally {
                         if (clsSession != null) {
-                            clsPool.offer(clsSession);
+                            clsPool.offerFirst(clsSession);
                         }
-                        recPool.offer(recSession);
+                        recPool.offerFirst(recSession);
                     }
                 });
             }
@@ -818,9 +933,9 @@ public final class OcrEngine implements AutoCloseable {
                 return sequential(page, boxes, recSession, clsSession);
             } finally {
                 if (clsSession != null) {
-                    clsPool.offer(clsSession);
+                    clsPool.offerFirst(clsSession);
                 }
-                recPool.offer(recSession);
+                recPool.offerFirst(recSession);
             }
         }
         return sequential(page, boxes, rec, cls);
@@ -1356,8 +1471,8 @@ public final class OcrEngine implements AutoCloseable {
         return new Session.Options(cfg.useVector(), 1, null, cfg.quantize(), cfg.opDebug(), true);
     }
 
-    private ArrayBlockingQueue<Session> sessions(Session primary) {
-        ArrayBlockingQueue<Session> queue = new ArrayBlockingQueue<>(cfg.threads());
+    private LinkedBlockingDeque<Session> sessions(Session primary) {
+        LinkedBlockingDeque<Session> queue = new LinkedBlockingDeque<>(cfg.threads());
         queue.add(primary);
         for (int i = 1; i < cfg.threads(); i++) {
             queue.add(primary.fork());
@@ -1366,15 +1481,15 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     /** {@code threads} forks and not the primary, which runs on {@code pool} and stays with the calling thread. */
-    private ArrayBlockingQueue<Session> forks(Session primary) {
-        ArrayBlockingQueue<Session> queue = new ArrayBlockingQueue<>(cfg.threads());
+    private LinkedBlockingDeque<Session> forks(Session primary) {
+        LinkedBlockingDeque<Session> queue = new LinkedBlockingDeque<>(cfg.threads());
         for (int i = 0; i < cfg.threads(); i++) {
             queue.add(primary.fork());
         }
         return queue;
     }
 
-    private static Session borrow(ArrayBlockingQueue<Session> queue) {
+    private static Session borrow(LinkedBlockingDeque<Session> queue) {
         try {
             Session session = queue.poll(10, TimeUnit.MINUTES);
             if (session == null) {
