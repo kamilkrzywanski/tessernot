@@ -895,6 +895,117 @@ class RuntimeTest {
     }
 
     @Test
+    void packedInt64DataIsVarintsEvenWhenItComesToEightBytesAValue() {
+        // -1, -1, -1 and 300 take 10 + 10 + 10 + 2 bytes: 32, the size of four fixed values.
+        ProtoBuf packed = new ProtoBuf();
+        packed.varint(-1);
+        packed.varint(-1);
+        packed.varint(-1);
+        packed.varint(300);
+        assertEquals(32, packed.toByteArray().length);
+        Graph graph = Onnx.read(int64Model(packed.toByteArray(), 4L), Path.of("."));
+        assertArrayEquals(new long[]{-1, -1, -1, 300}, graph.initializers.get("w").i);
+
+        byte[] fixed = new byte[16];
+        fixed[0] = 5;
+        fixed[8] = 7;
+        Graph stored = Onnx.read(int64Model(fixed, 2L), Path.of("."));
+        assertArrayEquals(new long[]{5, 7}, stored.initializers.get("w").i);
+    }
+
+    @Test
+    void anInt64ShapeFarLargerThanItsDataFailsBeforeTheArrayIsMade() {
+        OcrException huge = assertThrows(OcrException.class,
+                () -> Onnx.read(int64Model(new byte[]{1}, 2147483647L), Path.of(".")));
+        assertTrue(huge.getMessage().contains("cannot decode tensor"), huge.getMessage());
+        assertThrows(OcrException.class, () -> Onnx.read(int64Model(new byte[]{1, 2}, 1_000_000_000L), Path.of(".")));
+    }
+
+    /** {@code [3]} after a convolution with a width of 3 adds one value per column, not per channel. */
+    @Test
+    void aConstantAlongTheWidthIsNotFoldedIntoTheBias() {
+        float[][] out = new float[2][];
+        for (int pass = 0; pass < 2; pass++) {
+            Graph graph = new Graph();
+            graph.opset = 14;
+            graph.inputs.add(new Sig("x", Tensor.F32, null));
+            graph.outputs.add(new Sig("y", Tensor.F32, null));
+            graph.initializers.put("w", Tensor.f32(new int[]{3, 1, 1, 1}, new float[]{1, 2, 3}));
+            graph.initializers.put("k", Tensor.f32(new int[]{3}, new float[]{10, 20, 30}));
+            graph.nodes.add(node("Conv", "c", "x", "w", "c0"));
+            graph.nodes.add(node("Add", "a", "c0", "k", "y"));
+            Session session = Session.create(graph, new Session.Options(false, 1, null, false, false, pass == 1));
+            out[pass] = session.run(Map.of("x", Tensor.f32(new int[]{1, 1, 2, 3}, new float[]{1, 1, 1, 1, 1, 1})))
+                    .get("y").f.clone();
+        }
+        assertArrayEquals(new float[]{11, 21, 31, 11, 21, 31, 12, 22, 32, 12, 22, 32, 13, 23, 33, 13, 23, 33}, out[0], 0f);
+        assertArrayEquals(out[0], out[1], 0f);
+    }
+
+    /** The same constant shaped {@code [1, 3, 1, 1]} is a bias, and folding it changes nothing. */
+    @Test
+    void aConstantOverTheChannelsIsFoldedIntoTheBias() {
+        float[][] out = new float[2][];
+        for (int pass = 0; pass < 2; pass++) {
+            Graph graph = new Graph();
+            graph.opset = 14;
+            graph.inputs.add(new Sig("x", Tensor.F32, null));
+            graph.outputs.add(new Sig("y", Tensor.F32, null));
+            graph.initializers.put("w", Tensor.f32(new int[]{3, 1, 1, 1}, new float[]{1, 2, 3}));
+            graph.initializers.put("k", Tensor.f32(new int[]{1, 3, 1, 1}, new float[]{10, 20, 30}));
+            graph.nodes.add(node("Conv", "c", "x", "w", "c0"));
+            graph.nodes.add(node("Add", "a", "c0", "k", "y"));
+            Session session = Session.create(graph, new Session.Options(false, 1, null, false, false, pass == 1));
+            if (pass == 1) {
+                assertEquals(1, session.graph().nodes.size(), "the Add is part of the convolution");
+            }
+            out[pass] = session.run(Map.of("x", Tensor.f32(new int[]{1, 1, 2, 3}, new float[]{1, 1, 1, 1, 1, 1})))
+                    .get("y").f.clone();
+        }
+        assertArrayEquals(new float[]{11, 11, 11, 11, 11, 11, 22, 22, 22, 22, 22, 22, 33, 33, 33, 33, 33, 33}, out[0], 0f);
+        assertArrayEquals(out[0], out[1], 0f);
+    }
+
+    @Test
+    void aConvolutionOutputTheGraphHandsOutSurvivesFusion() {
+        Graph graph = new Graph();
+        graph.opset = 14;
+        graph.inputs.add(new Sig("x", Tensor.F32, null));
+        graph.outputs.add(new Sig("h", Tensor.F32, null));
+        graph.outputs.add(new Sig("y", Tensor.F32, null));
+        graph.initializers.put("w", Tensor.f32(new int[]{1, 1, 1, 1}, new float[]{-2}));
+        graph.nodes.add(node("Conv", "c", "x", "w", "h"));
+        graph.nodes.add(node("Relu", "r", "h", "y"));
+        Session session = Session.create(graph, new Session.Options(false, 1, null, false, false, true));
+        Map<String, Tensor> out = session.run(Map.of("x", Tensor.f32(new int[]{1, 1, 1, 2}, new float[]{1, -1})));
+        assertArrayEquals(new float[]{-2, 2}, out.get("h").f, 0f);
+        assertArrayEquals(new float[]{0, 2}, out.get("y").f, 0f);
+    }
+
+    /** Old exporters list every weight among the graph inputs. A folded weight must not become a required input. */
+    @Test
+    void aFoldedWeightListedAsAGraphInputIsNotAskedFor() {
+        Graph graph = new Graph();
+        graph.opset = 14;
+        graph.inputs.add(new Sig("w", Tensor.F32, new int[]{1, 1, 1, 1}));
+        graph.inputs.add(new Sig("x", Tensor.F32, null));
+        graph.outputs.add(new Sig("y", Tensor.F32, null));
+        graph.initializers.put("w", Tensor.f32(new int[]{1, 1, 1, 1}, new float[]{2}));
+        graph.initializers.put("scale", Tensor.f32(new int[]{1}, new float[]{3}));
+        graph.initializers.put("shift", Tensor.f32(new int[]{1}, new float[]{1}));
+        graph.initializers.put("mean", Tensor.f32(new int[]{1}, new float[]{0}));
+        graph.initializers.put("var", Tensor.f32(new int[]{1}, new float[]{1}));
+        graph.nodes.add(node("Conv", "c", "x", "w", "c0"));
+        graph.nodes.add(node("BatchNormalization", "bn", attrs(Attr.of("epsilon", 0f)),
+                "c0", "scale", "shift", "mean", "var", "y"));
+        Session session = Session.create(graph, new Session.Options(false, 1, null, false, false, true));
+        assertEquals(1, session.graph().nodes.size(), "the batch norm is part of the convolution");
+        assertEquals("x", session.inputName());
+        Tensor y = session.run(Map.of("x", Tensor.f32(new int[]{1, 1, 1, 1}, new float[]{5}))).get("y");
+        assertEquals(31f, y.f[0], 1e-5f);
+    }
+
+    @Test
     void jirRoundTripAndTruncation() {
         Graph graph = new Graph();
         graph.opset = 14;
@@ -1049,6 +1160,8 @@ class RuntimeTest {
         assertTrue(missing.getMessage().contains("no ai.onnx opset"), missing.getMessage());
     }
 
+    @Test
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
     void classifierSmokeOnZeros() {
         assumeTrue(Files.exists(model(ModelFiles.CLS)));
         Session session = Session.load(model(ModelFiles.CLS), new Session.Options(true, 1, null, false, false, true));
@@ -1204,6 +1317,20 @@ class RuntimeTest {
         if (raw != null) {
             tensor.msg(9, raw);
         }
+        ProtoBuf graph = new ProtoBuf();
+        graph.msg(5, tensor.toByteArray());
+        return withOpset(graph.toByteArray());
+    }
+
+    /** Minimal ONNX model whose only initializer is an int64 tensor with packed {@code int64_data}. */
+    private static byte[] int64Model(byte[] packed, long... dims) {
+        ProtoBuf tensor = new ProtoBuf();
+        for (long dim : dims) {
+            tensor.uint(1, dim);
+        }
+        tensor.uint(2, 7);
+        tensor.msg(7, packed);
+        tensor.str(8, "w");
         ProtoBuf graph = new ProtoBuf();
         graph.msg(5, tensor.toByteArray());
         return withOpset(graph.toByteArray());

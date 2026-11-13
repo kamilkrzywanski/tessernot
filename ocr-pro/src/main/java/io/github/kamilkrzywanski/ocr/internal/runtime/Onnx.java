@@ -460,13 +460,15 @@ public final class Onnx {
             return fromRaw(name, dtype, dims, n, raw);
         }
         if (dtype == 7) {
-            if (int64Blob != null && int64Blob.length == n * 8L) {
-                return Tensor.i64(dims, leLongs(int64Blob, n));
-            }
             if (int64Blob != null) {
+                // Protobuf packs int64_data as varints, and those may add up to eight bytes a
+                // value by chance. Fixed eight-byte values are what a few writers store instead.
                 long[] packed = tryVarints(int64Blob, n);
                 if (packed != null) {
                     return Tensor.i64(dims, packed);
+                }
+                if (int64Blob.length == n * 8L) {
+                    return Tensor.i64(dims, leLongs(int64Blob, n));
                 }
             }
             if (int64Scalars.size() == n) {
@@ -606,7 +608,12 @@ public final class Onnx {
         return v;
     }
 
+    /** Exactly {@code expect} varints that use the whole blob, or null. */
     private static long[] tryVarints(byte[] blob, int expect) {
+        // A varint is at least one byte: the shape of a small file must not size the array.
+        if (expect > blob.length) {
+            return null;
+        }
         try {
             Proto s = new Proto(blob, 0, blob.length);
             long[] v = new long[expect];

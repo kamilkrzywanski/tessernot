@@ -21,7 +21,8 @@ models need and nothing more. It is not a general ONNX runtime.
 
 - **ONNX parsing** uses its own protobuf reader, with no protobuf library and no Python. Weight
   and signature dimensions that are negative or overflow `int` are rejected. A symbolic
-  `dim_param` stays dynamic.
+  `dim_param` stays dynamic. Packed `int64_data` is read as varints first and as fixed eight-byte
+  values only when that fails; a shape larger than its data fails before an array is made.
 - **Operators**: Identity, Add, Sub, Mul, Div, Pow, Sqrt, Erf, Conv (grouped, with and without
   bias), ConvTranspose 2D, Relu, Sigmoid, HardSigmoid, HardSwish, GlobalAveragePool,
   AveragePool, MaxPool (including `SAME_UPPER`), BatchNormalization (inference),
@@ -30,7 +31,8 @@ models need and nothing more. It is not a general ONNX runtime.
   GELU in PP-OCRv6 is built from Erf. An unknown operator fails with
   `Unsupported op: NAME` and the input shapes.
 - **Graph optimization** removes Identity nodes and folds Conv+BatchNorm. It folds a bias Add
-  into the convolution and fuses a ReLU, Sigmoid or HardSwish epilogue. A scalar multiply and
+  into the convolution, when the constant is shaped `[M,1,1]` or `[1,M,1,1]`, and fuses a ReLU,
+  Sigmoid or HardSwish epilogue. A convolution whose output the graph hands out is left alone. A scalar multiply and
   add right after a convolution go into its weights. A second affine after the activation stays
   in the same epilogue.
 - **JIR** (`JIR1` magic) is the optimized graph plus weights. It loads faster and is not
@@ -72,12 +74,12 @@ by reflection.
 - **Detection**:
   - Thresholds: 0.35, box threshold 0.5, unclip 1.6, 2×2 dilation with the OpenCV `(0, 0)`
     anchor, up to 1000 candidates.
-  - Size: the longer side is limited to 960, then rounded to a multiple of 32 with
+  - Size: the longer side is limited to 2048 (`detLimitSideLen`), then rounded to a multiple of 32 with
     `Math.round` (half up). Python's half-to-even `round` can differ by 32 px.
   - The output gets a sigmoid when its values leave about `[0, 1.2]`.
 - **Classifier**: input size comes from the model signature (80×160 for the default model).
 - **CTC**: greedy, blank at 0, repeats collapsed. The score is the mean probability of the kept
-  steps. A second softmax is not applied when the output already sums to 1.
+  steps: for each character, the winner on the first timestep of its run. A second softmax is not applied when the output already sums to 1.
 - **Fragments** (`dropFragments`, off by default): after the reading order is found, a line of
   at most 10 characters with mean character probability below 0.8 is left out. Removing it
   earlier changed column and row bounds on the test set, since the fragment is still ink on the

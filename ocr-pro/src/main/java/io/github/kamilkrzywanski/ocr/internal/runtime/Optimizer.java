@@ -85,7 +85,8 @@ final class Optimizer {
                 continue;
             }
             List<Node> cs = cons.get(conv.outputs[0]);
-            if (cs == null || cs.size() != 1 || !"BatchNormalization".equals(cs.get(0).op)) {
+            if (cs == null || cs.size() != 1 || !"BatchNormalization".equals(cs.get(0).op)
+                    || exposed(g, conv.outputs[0])) {
                 continue;
             }
             Node bn = cs.get(0);
@@ -149,7 +150,7 @@ final class Optimizer {
                 continue;
             }
             List<Node> cs = cons.get(conv.outputs[0]);
-            if (cs == null || cs.size() != 1 || !"Add".equals(cs.get(0).op)) {
+            if (cs == null || cs.size() != 1 || !"Add".equals(cs.get(0).op) || exposed(g, conv.outputs[0])) {
                 continue;
             }
             Node add = cs.get(0);
@@ -201,7 +202,7 @@ final class Optimizer {
             }
             String out = conv.outputs[0];
             List<Node> cs = cons.get(out);
-            if (cs == null) {
+            if (cs == null || exposed(g, out)) {
                 continue;
             }
             if (cs.size() == 1) {
@@ -238,7 +239,7 @@ final class Optimizer {
                     continue;
                 }
                 List<Node> hsCons = cons.get(hs.outputs[0]);
-                if (hsCons == null || hsCons.size() != 1 || hsCons.get(0) != mul) {
+                if (hsCons == null || hsCons.size() != 1 || hsCons.get(0) != mul || exposed(g, hs.outputs[0])) {
                     continue;
                 }
                 boolean mulInputs = (mul.inputs[0].equals(out) && mul.inputs[1].equals(hs.outputs[0]))
@@ -274,7 +275,7 @@ final class Optimizer {
                 continue;
             }
             AffineMatch match = scalarAffine(g, cons, conv.outputs[0]);
-            if (match == null || exposed(g, match.mul.outputs[0])) {
+            if (match == null || exposed(g, match.mul.outputs[0]) || exposed(g, conv.outputs[0])) {
                 continue;
             }
             if (!scaleConvWeights(g, conv, match.scale, match.shift)) {
@@ -303,7 +304,7 @@ final class Optimizer {
                 continue;
             }
             AffineMatch match = scalarAffine(g, cons, conv.outputs[0]);
-            if (match == null || exposed(g, match.mul.outputs[0])) {
+            if (match == null || exposed(g, match.mul.outputs[0]) || exposed(g, conv.outputs[0])) {
                 continue;
             }
             float s0 = conv.flt("out_scale", 1f);
@@ -402,6 +403,7 @@ final class Optimizer {
         return t.f[0];
     }
 
+    /** Whether the graph hands this tensor out: a node that produces it must keep producing it. */
     private static boolean exposed(Graph g, String name) {
         for (Sig s : g.outputs) {
             if (name.equals(s.name)) {
@@ -440,18 +442,22 @@ final class Optimizer {
         return w.dims[1] * group;
     }
 
+    /**
+     * Whether a constant of this shape adds one value per channel of an NCHW map: {@code [M,1,1]}
+     * or {@code [1,M,1,1]}, or a single value when there is one channel. {@code [M]} is not one:
+     * it broadcasts along the width.
+     */
     private static boolean channelShape(int[] dims, int m) {
-        int nonOne = 0;
-        for (int d : dims) {
-            if (d == 1) {
-                continue;
-            }
-            if (d != m) {
+        if (dims.length > 4) {
+            return false;
+        }
+        int channel = dims.length - 3;
+        for (int i = 0; i < dims.length; i++) {
+            if (dims[i] != (i == channel ? m : 1)) {
                 return false;
             }
-            nonOne++;
         }
-        return nonOne <= 1;
+        return channel >= 0 || m == 1;
     }
 
     private static Map<String, List<Node>> consumers(Graph g) {
@@ -478,6 +484,11 @@ final class Optimizer {
             }
         }
         used.addAll(g.redirects.values());
+        Set<String> dropped = new HashSet<>(g.initializers.keySet());
+        dropped.removeAll(used);
         g.initializers.keySet().retainAll(used);
+        // An old exporter lists every weight as a graph input too. A weight that a fold replaced
+        // is no input any more, or a run would ask the caller for it.
+        g.inputs.removeIf(sig -> dropped.contains(sig.name));
     }
 }
