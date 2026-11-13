@@ -41,6 +41,35 @@ class OcrPoolTest {
 
     @Test
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void enginesShareTheWeightsAndTheThreadBudget() {
+        assumeTrue(modelsPresent(), "models/ is missing");
+        OcrConfig six = OcrConfig.defaults(Path.of("models")).toBuilder().threads(6).build();
+        try (OcrPool pool = OcrPool.open(six, 2)) {
+            assertEquals(3, pool.config().threads());
+            assertEquals(six.detLimitSideLen(), pool.config().detLimitSideLen());
+            // Two engines at once: the inner call takes the second slot.
+            Boolean same = pool.call(first -> pool.call(second -> {
+                assertTrue(first != second);
+                assertEquals(3, first.config().threads());
+                return first.recognitionGraph() == second.recognitionGraph();
+            }));
+            assertEquals(Boolean.TRUE, same);
+        }
+        try (OcrPool pool = OcrPool.open(six, 4)) {
+            assertEquals(1, pool.config().threads());
+        }
+        OcrConfig two = six.toBuilder().threads(2).build();
+        try (OcrPool pool = OcrPool.open(two, 4)) {
+            assertEquals(1, pool.config().threads(), "every engine keeps at least one thread");
+            assertEquals(4, pool.size());
+        }
+        try (OcrPool pool = OcrPool.open(two, 1)) {
+            assertTrue(two == pool.config(), "a pool of one keeps the configuration as given");
+        }
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void parallelCallsMatchASingleEngine() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         OcrConfig cfg = OcrConfig.defaults(Path.of("models")).toBuilder().threads(1).build();

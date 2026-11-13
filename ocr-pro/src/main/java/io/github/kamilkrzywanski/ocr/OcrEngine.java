@@ -103,7 +103,7 @@ public final class OcrEngine implements AutoCloseable {
     private int clsWidth = 160;
     private boolean closed;
 
-    private OcrEngine(OcrConfig cfg) {
+    private OcrEngine(OcrConfig cfg, ModelSet models) {
         this.cfg = cfg;
         this.corrected = cfg.corrections() == Corrections.POLISH;
         ExecutorService workers = cfg.threads() > 1
@@ -115,7 +115,7 @@ public final class OcrEngine implements AutoCloseable {
                 : null;
         this.pool = workers;
         try {
-            loadModels();
+            openSessions(models);
         } catch (RuntimeException e) {
             if (workers != null) {
                 workers.shutdownNow();
@@ -124,35 +124,21 @@ public final class OcrEngine implements AutoCloseable {
         }
     }
 
-    private void loadModels() {
-        if (cfg.useDet()) {
-            ModelFiles.require(cfg.detModel(), "detection model");
-            this.det = Session.create(graph(cfg.detModel()), new Session.Options(
-                    cfg.useVector(), cfg.threads(), pool, cfg.quantize(), cfg.opDebug(), true));
+    /** Sessions over the graphs of {@code models}: the weights are shared, the activation buffers are this engine's. */
+    private void openSessions(ModelSet models) {
+        if (models.det != null) {
+            this.det = Session.create(models.det, new Session.Options(
+                    cfg.useVector(), cfg.threads(), pool, cfg.quantize(), false, true));
             this.detInput = det.inputName();
-        } else {
-            this.det = null;
-            this.detInput = null;
         }
-        if (cfg.useRec()) {
-            ModelFiles.require(cfg.recModel(), "recognition model");
-            ModelFiles.require(cfg.dict(), "recognition dict");
-            Charset full = charset(cfg.dict(), cfg.useSpaceChar());
-            Graph recGraph = graph(cfg.recModel());
-            if (cfg.alphabet() == Alphabet.LATIN) {
-                int[] keep = full.latin();
-                narrowHead(recGraph, full.size(), keep);
-                full = full.subset(keep);
-            }
-            this.rec = Session.create(recGraph, lineOptions());
+        if (models.rec != null) {
+            this.rec = Session.create(models.rec, lineOptions());
             this.recInput = rec.inputName();
-            this.charset = full;
-            this.runnerUps = corrected ? RunnerUps.polish(full) : null;
-            // The word lists belong to the Polish corrections. Without them the files are not read.
-            // They sit next to the dict on disk, or else in a bundle (ocr-pro-models-pl).
-            this.lexicon = corrected ? lexicon(cfg.dict()) : null;
-            this.postal = corrected ? postal(cfg.dict()) : null;
-            this.words = vocabulary(cfg.wordLists(), lexicon);
+            this.charset = models.charset;
+            this.runnerUps = models.runnerUps;
+            this.lexicon = models.lexicon;
+            this.postal = models.postal;
+            this.words = models.words;
             int classes = staticDim(rec.outputSig(), rec.outputSig().dims == null ? -1 : rec.outputSig().dims.length - 1);
             if (classes > 0 && classes != charset.size()) {
                 throw new OcrException("REC classes " + classes + " != charset " + charset.size());
@@ -167,39 +153,23 @@ public final class OcrEngine implements AutoCloseable {
                 throw new OcrException("REC height " + cfg.recHeight() + " != model input " + modelHeight);
             }
             this.recPool = pool == null ? null : sessions(rec);
-        } else {
-            this.rec = null;
-            this.recInput = null;
-            this.charset = null;
-            this.recPool = null;
         }
-        if (cfg.useCls()) {
-            ModelFiles.require(cfg.clsModel(), "classifier model");
-            this.cls = Session.create(graph(cfg.clsModel()), lineOptions());
+        if (models.cls != null) {
+            this.cls = Session.create(models.cls, lineOptions());
             this.clsInput = cls.inputName();
-            int height = 80;
-            int width = 160;
             for (Sig sig : cls.graph().inputs) {
                 if (clsInput.equals(sig.name) && sig.dims != null && sig.dims.length >= 2) {
                     int h = sig.dims[sig.dims.length - 2];
                     int w = sig.dims[sig.dims.length - 1];
                     if (h > 0) {
-                        height = h;
+                        this.clsHeight = h;
                     }
                     if (w > 0) {
-                        width = w;
+                        this.clsWidth = w;
                     }
                 }
             }
-            this.clsHeight = height;
-            this.clsWidth = width;
             this.clsPool = pool == null ? null : sessions(cls);
-        } else {
-            this.cls = null;
-            this.clsInput = null;
-            this.clsHeight = 80;
-            this.clsWidth = 160;
-            this.clsPool = null;
         }
     }
 
@@ -219,7 +189,12 @@ public final class OcrEngine implements AutoCloseable {
         if (config == null) {
             throw new OcrException("config is null");
         }
-        return new OcrEngine(config);
+        return new OcrEngine(config, ModelSet.load(config));
+    }
+
+    /** An engine over models that are already loaded: the engines of a pool share one {@link ModelSet}. */
+    static OcrEngine create(OcrConfig config, ModelSet models) {
+        return new OcrEngine(config, models);
     }
 
     public OcrConfig config() {
@@ -348,65 +323,6 @@ public final class OcrEngine implements AutoCloseable {
         clsPool = null;
     }
 
-    private static Graph graph(ModelSource source) {
-        try {
-            return Session.read(source.read(), source.toString(), source.directory());
-        } catch (IOException e) {
-            throw new OcrException("cannot load " + source + ": " + e.getMessage(), e);
-        }
-    }
-
-    private static Charset charset(ModelSource source, boolean useSpaceChar) {
-        try {
-            return Charset.load(source.read(), source.toString(), useSpaceChar);
-        } catch (IOException e) {
-            throw new OcrException("cannot read dict " + source + ": " + e.getMessage(), e);
-        }
-    }
-
-    /** Both gzip word lists next to the dict or in a bundle, or null when either one is absent. */
-    private static Lexicon lexicon(ModelSource dict) {
-        ModelSource polish = dict.sibling(Lexicon.POLISH_FILE);
-        ModelSource english = dict.sibling(Lexicon.ENGLISH_FILE);
-        if (polish == null || english == null) {
-            return null;
-        }
-        return Lexicon.read(wordList(polish), polish.toString(), wordList(english), english.toString());
-    }
-
-    private static Vocabulary vocabulary(List<ModelSource> sources, Lexicon lexicon) {
-        List<Vocabulary> lists = new ArrayList<>();
-        for (ModelSource source : sources) {
-            ModelFiles.require(source, "word list");
-            try {
-                lists.add(Vocabulary.read(source.read(), source.toString()));
-            } catch (IOException e) {
-                throw new OcrException("cannot read word list " + source + ": " + e.getMessage(), e);
-            }
-        }
-        if (lexicon != null) {
-            lists.add(lexicon);
-        }
-        return Vocabulary.of(lists);
-    }
-
-    /** The gzip list of postal codes next to the dict or in a bundle, or null when it is absent. */
-    private static PostalCities postal(ModelSource dict) {
-        ModelSource file = dict.sibling(PostalCities.FILE);
-        if (file == null) {
-            return null;
-        }
-        return PostalCities.read(wordList(file), file.toString());
-    }
-
-    private static byte[] wordList(ModelSource source) {
-        try {
-            return source.read();
-        } catch (IOException e) {
-            throw new OcrException("cannot read word list " + source + ": " + e.getMessage(), e);
-        }
-    }
-
     /**
      * After a call, every session keeps at most {@link #IDLE_BYTES} of its activation buffers: an
      * idle engine holds its weights and little else. A session is taken out of its queue while it
@@ -416,6 +332,11 @@ public final class OcrEngine implements AutoCloseable {
         trim(det);
         trim(recPool, rec);
         trim(clsPool, cls);
+    }
+
+    /** The recognition graph with its weights; the engines of one pool hold the same one. */
+    synchronized Graph recognitionGraph() {
+        return rec == null ? null : rec.graph();
     }
 
     /** Activation buffers the sessions of this engine hold between calls, in bytes. */
@@ -1428,52 +1349,8 @@ public final class OcrEngine implements AutoCloseable {
         return new Planar(map, width, height);
     }
 
-    /**
-     * Keeps only the {@code keep} columns of the recognition model's last layer: the weight
-     * {@code [hidden, classes]} and the bias {@code [classes]}, and the class count of the output.
-     * The softmax then runs over the kept classes only.
-     */
-    private static void narrowHead(Graph graph, int classes, int[] keep) {
-        int changed = 0;
-        for (Map.Entry<String, Tensor> entry : graph.initializers.entrySet()) {
-            Tensor t = entry.getValue();
-            if (t.f == null) {
-                continue;
-            }
-            if (t.dims.length == 2 && t.dims[1] == classes) {
-                int rows = t.dims[0];
-                float[] out = new float[rows * keep.length];
-                for (int r = 0; r < rows; r++) {
-                    for (int j = 0; j < keep.length; j++) {
-                        out[r * keep.length + j] = t.f[r * classes + keep[j]];
-                    }
-                }
-                entry.setValue(Tensor.f32(new int[]{rows, keep.length}, out));
-                changed++;
-            } else if (t.dims.length == 1 && t.dims[0] == classes) {
-                float[] out = new float[keep.length];
-                for (int j = 0; j < keep.length; j++) {
-                    out[j] = t.f[keep[j]];
-                }
-                entry.setValue(Tensor.f32(new int[]{keep.length}, out));
-                changed++;
-            }
-        }
-        if (changed == 0) {
-            throw new OcrException("alphabet: no [hidden, " + classes + "] weight in the recognition model");
-        }
-        for (int i = 0; i < graph.outputs.size(); i++) {
-            Sig sig = graph.outputs.get(i);
-            if (sig.dims != null && sig.dims.length > 0 && sig.dims[sig.dims.length - 1] == classes) {
-                int[] dims = sig.dims.clone();
-                dims[dims.length - 1] = keep.length;
-                graph.outputs.set(i, new Sig(sig.name, sig.dtype, dims));
-            }
-        }
-    }
-
     private Session.Options lineOptions() {
-        return new Session.Options(cfg.useVector(), 1, null, cfg.quantize(), cfg.opDebug(), true);
+        return new Session.Options(cfg.useVector(), 1, null, cfg.quantize(), false, true);
     }
 
     private LinkedBlockingDeque<Session> sessions(Session primary) {

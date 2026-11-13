@@ -13,11 +13,15 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 /**
- * Several independent engines so callers on different threads can recognize at the same time.
+ * Several engines so callers on different threads can recognize at the same time.
  * <p>
- * Each slot is a full {@link OcrEngine} built from the same config, including the same thread
- * count, so a page reads like a lone engine. A call waits when every slot is busy. One PDF stays
- * on the engine that picked it up, including that engine's page window.
+ * The engines share what is loaded once and never changes: the weights, the charset and the word
+ * lists. Each has its own sessions and worker threads. The thread count of the config is the
+ * budget of the whole pool: every engine gets an equal share of it, at least one thread, so a
+ * pool of four on twelve processors runs twelve threads when all four are busy, not forty-eight.
+ * The text is the same as with a lone engine; a single call is slower than on an engine that has
+ * every thread to itself. A call waits when every slot is busy. One PDF stays on the engine that
+ * picked it up, including that engine's page window.
  * <p>
  * Do not close the engine handed to {@link #call(Function)}. That slot is removed. Do not call
  * this pool again from inside {@code call} when every slot could already be busy: the inner call
@@ -36,11 +40,13 @@ public final class OcrPool implements AutoCloseable {
     private boolean closed;
 
     private OcrPool(OcrConfig config, int size) {
-        this.config = config;
+        int share = Math.max(1, config.threads() / size);
+        this.config = share == config.threads() ? config : config.toBuilder().threads(share).build();
+        ModelSet models = ModelSet.load(this.config);
         List<OcrEngine> created = new ArrayList<>(size);
         try {
             for (int i = 0; i < size; i++) {
-                created.add(OcrEngine.create(config));
+                created.add(OcrEngine.create(this.config, models));
             }
         } catch (RuntimeException e) {
             for (OcrEngine engine : created) {
@@ -52,7 +58,8 @@ public final class OcrPool implements AutoCloseable {
     }
 
     /**
-     * @param size how many calls may run at once; each one loads its own models
+     * @param config its thread count is shared out between the engines, see {@link #config()}
+     * @param size how many calls may run at once
      */
     public static OcrPool open(OcrConfig config, int size) {
         if (config == null) {
@@ -64,7 +71,10 @@ public final class OcrPool implements AutoCloseable {
         return new OcrPool(config, size);
     }
 
-    /** Default models from {@code ocr-pro-models} on the class path, no corrections, one engine per slot. */
+    /**
+     * Default models from {@code ocr-pro-models} on the class path, no corrections, one engine per
+     * slot, and the processors of the machine shared out between them.
+     */
     public static OcrPool open(int size) {
         return open(OcrConfig.defaults(), size);
     }
@@ -77,6 +87,10 @@ public final class OcrPool implements AutoCloseable {
         return open(OcrConfig.defaults(modelDirectory), size);
     }
 
+    /**
+     * The configuration every engine of this pool runs with: the one the pool was opened with,
+     * with its thread count divided by the pool size.
+     */
     public OcrConfig config() {
         return config;
     }

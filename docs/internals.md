@@ -187,8 +187,11 @@ One `OcrEngine` is not safe for concurrent `recognize` calls; the methods are sy
 Inside one call, recognition runs lines in parallel on the engine's pool, and detection splits
 GEMM rows across it.
 
-`OcrPool` lends each concurrent caller a separate engine with the same configuration. The text
-is the same as with a single engine.
+`OcrPool` lends each concurrent caller a separate engine. The text is the same as with a single
+engine. The engines share one `ModelSet` (the optimized graphs with their weights, the charset,
+the word lists and the postal codes: 32 MB, 113 MB with the Polish lists), which is loaded once;
+each engine adds only its sessions and worker threads. The thread count of the configuration is
+the budget of the pool: every engine gets `threads / size` of it, at least one.
 
 - `close` waits for running calls.
 - Closing a borrowed engine removes that slot from the pool.
