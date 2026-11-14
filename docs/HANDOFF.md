@@ -172,6 +172,20 @@ a second batch is still to come. Checked here before use:
   receipt (`test3` has one), a National Security Action Memorandum (`test2` has number 125), a
   1948 bill from Słupsk (`test` has one from another firm there).
 
+**Where the numbers stand at the end of 2026-11-14** (new defaults, all of the day's changes;
+`ocr.sh score`, CER):
+
+| | default profile | Polish profile |
+| --- | --- | --- |
+| `dev`, all 70 pages | 0.0364 | 0.0354 |
+| `dev`, the first 39 pages (0.0230 and 0.0220 in the morning) | 0.0219 | 0.0209 |
+| `dev`, the 31 new business documents | 0.0799 | 0.0784 |
+| `test` (0.0461 and 0.0437 in the morning) | 0.0427 | 0.0403 |
+
+By group on the 70 pages of `dev`, default profile: invoices, bills and receipts 0.155 (20
+pages), letters, forms and notices 0.050 (27), books, newspapers and gazettes 0.019 (23).
+Business documents are where the work is.
+
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
 (`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and
