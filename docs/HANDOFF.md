@@ -39,22 +39,40 @@ reads as: the text of every `dev` and `test` page is byte for byte what it was, 
   `left()`, `top()`, `right()`, `bottom()` read the extent), `opDebug` is gone (use
   `-Docr.trace=true`) and `quantize` is package-private.
 
-Found in the review and left open:
+Done after the review, on the same day. Unlike the list above, the first three change what some
+pages read as:
+
+- **`CtcWords` mark factor** is paid once per letter, where the letter starts. It was paid on
+  every timestep, so a letter on two timesteps cost 6 nats and fell outside the 4-nat margin.
+  With the Polish profile two words changed in the 66 pages of `dev` and `test`: `lądu` became
+  `ładu` (right) and `rybacze` became `rybaczę` (wrong, the old adjective is in no list). The
+  pooled CER did not move.
+- **`CtcWords` lowercase** is letter by letter. `String.toLowerCase` turned the prefix `ΟΣ` of
+  `ΟΣΟΙ` into `ος`, which starts no word, and `İ` into two characters. A capital I is also tried
+  as the dotless ı. No bundled list has such words; the tests use small lists.
+- **Gray files** are read with their samples as stored, see "Reading an image" in internals.md
+  for the measurement that decided it. The four gray pages of `dev` and `test` moved by five
+  edits in all (`test` 0.0461 to 0.0462 plain, 0.0437 to 0.0438 with the Polish profile).
+  The same measurement says a contrast step may help faded newsprint. If it is tried, try it on
+  `dev`, for every image and not by file type.
+- **`OcrPoolTest`** holds the borrowed engine until `close()` is parked on the pool's condition;
+  with the wait in `close()` removed the test fails.
+
+**A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
+every gray file of `bench/data`, with the default profile. That scored three `test3` pages
+(`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and
+three `test2` pages (`en-memo-nsam-125-1962`, `en-receipt-tesco-finchley-1994`,
+`pl-przeglad-tygodniowy-1903-nr42`): their CER was printed, their text was not looked at. The
+gray decision was then made again on `dev` and `test` only, and nothing was tuned on those six
+pages. The three `test3` pages are no longer unseen; the owner decides whether they stay in
+`test3`.
+
+Found in the review and still open:
 
 - **CI** runs one OS and one JDK, always with the incubator module: the scalar path of the real
   models is tested nowhere. `-XX:ActiveProcessorCount=12` in the root POM forces twelve, it does
   not cap at twelve, so a four-core runner runs twelve threads per engine. Add a matrix (with and
   without `--add-modules`, a newer JDK, one non-Linux OS) and drop or correct the flag.
-- **`CtcWords` mark floor** is applied per timestep, so a letter on two timesteps pays 6 nats for
-  an unseen mark, not the 3 the docs promise, and falls outside the 4-nat margin (1.6 % of letters
-  span two timesteps). Changing it moves the word-list results: score `dev` and `test` after.
-- **`CtcWords` lowercases with `Locale.ROOT`**, which maps a final capital sigma to `ς` and `I` to
-  `i`: an all-caps Greek word with a medial Σ and a Turkish word with I never match a list.
-- **Gray scans** are read through `getRGB`, which treats the samples as linear light (128 reads
-  as 188). On the ten gray pages of `bench/data` the true samples were slightly worse (795 edits
-  against 774), so the raster path keeps the conversion on purpose. Decide it deliberately.
-- **`OcrPoolTest`** "close waits for running calls" releases the worker before `close()` can
-  block, so it would pass if `close()` stopped waiting.
 - **Build:** no enforcer plugin and no Maven wrapper; the release profile is never built in CI.
 
 ## Ground rules from the owner
