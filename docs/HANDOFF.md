@@ -82,13 +82,12 @@ pages read as:
 
 **Robustness round, same day.** No new documents: the 66 pages of `dev` and `test` read again
 after a change that should not matter, with a scratch program (`Probe`, not in the repository;
-`ro.sh jitter` is). Edits with the default profile, 5,315 as given:
+`ro.sh jitter` is). Edits with the default profile, 5,315 as given before the round and 5,279 after:
 
 | The page | Edits before the round | Now |
 | --- | --- | --- |
 | turned 90, 180 or 270 degrees | unreadable (four pages: 94 edits upright, over 2,200 turned) | 5,315 each way |
-| 3 degrees askew, the six pages that fell apart (372 as given) | 9,686 and 8,732 | 456 and 1,379 |
-| 3 degrees askew, the other 60 or 61 pages | 2 to 4 % fewer edits than level | not rerun yet |
+| 3 degrees askew, one way and the other | 14,501 and 20,842 | 5,618 and 6,476 |
 | JPEG at quality 0.3 | 6,582: one page falls apart, the rest +4 % | Bible page still falls apart |
 | at half the resolution | 16,163: six pages of small print fall apart | unchanged, see below |
 
@@ -127,18 +126,45 @@ after a change that should not matter, with a scratch program (`Probe`, not in t
   loss the 2017 diploma (+15). Both sets gain, unlike the level stretch. Not made the default:
   it changes every published number, 0.4 was picked on these sets, and dropping fragments loses
   real short text (an X in a check box). The place to confirm it is `test3`, once.
-- **Word boxes are within reach.** The recognizer's CTC frames place words well: on 115 words
-  of rendered lines (five texts, three sizes) the end of a word is off by 0.05 line heights in
-  the median and 0.25 at most, the start by 0.15 and 0.31 (the start has a bias of +0.14 that
-  half a frame would take out). Not built yet. It needs the frame of every character carried
-  through `Ctc.Result` and the second reads of the Polish profile, quads in the order of the
-  text for lines read turned, and a `words()` on `TextLine`; then the PDF layer can place every
-  word and an hOCR or ALTO export is short.
+- **Word boxes** (`TextLine.words()`, `TextWord`, JSON key `words`), see "Word boxes" in
+  internals.md. On 115 words of rendered lines (five texts, three sizes) both ends of a word are
+  right to 0.055 crop heights in the median, 0.2 to 0.25 at worst. The PDF layer sets every word
+  over its own box; `pdftotext -raw` still returns the page text unchanged. A line whose text a
+  second read of the Polish profile changed has no word boxes. Not done: an hOCR or ALTO export,
+  which is now short to write.
 - **CI** now tests JDK 21 and 25 with the Vector API, JDK 21 on the scalar kernels (the eleven
   kernel comparisons of `RuntimeTest` skip themselves there) and, without failing the run,
   Windows; the JDK 21 leg also builds the release artifacts unsigned. The test JVM flags are
   the properties `test.jvm.modules` and `test.jvm.cpus`; CI passes an empty `test.jvm.cpus`, so
-  a runner uses the processors it has. The Windows leg has not run yet.
+  a runner uses the processors it has. On its first run the three Linux legs passed and the
+  Windows leg failed on one test of 243 in the core, a fixture read with CRLF line ends, fixed
+  since; whether the other modules pass there is not known yet.
+
+**New `dev` documents, 2026-11-14.** A collector round on another machine (five agents, the
+prompt was a filled-in copy of the one in bench/COLLECTING.md) brought 34 business documents;
+a second batch is still to come. Checked here before use:
+
+- Files: every manifest row has twelve columns, `set` dev, an allowed license, and the SHA-256
+  of the stored original matches.
+- References: four fresh readers compared every line with zoomed crops of the image, without
+  OCR. Fifteen references changed, most by one to five characters; the collector had tidied
+  some typewritten spellings (`Środki` for `Srodki`) and joined or split a few rows.
+- Dropped three: `en-receipt-bep-currency-1915` (pen-lettered script), `en-form-usfs-visitor-
+  permit-1991` (a grid of eighty numbered boxes: no reading order to hold an engine to),
+  `pl-formularz-cybercomplex-zsk-2025` (a named person's phone number and an address that may be
+  a home). The last one is still in the history of the `ocr-pro-bench` repository.
+- `en-receipt-target-ala-moana-2018` came at 7176x13968 and ran out of a 1 GB heap; it is stored
+  scaled to 2569x5000 and its manifest row says so. The CLI ends with a bare
+  `OutOfMemoryError` on such a picture: it should be an `OcrException` that names the size.
+- Three pictures are under the 1,500 px the collecting rules ask for (the smallest 650x851); the
+  readers found every letter legible, so they stay.
+- The engine on the 31 that stay, default profile: pooled CER 0.082. The worst are what the
+  round was for: three blocks side by side read by rows (the 1859 nota, 0.71), a ticket
+  photographed 22 degrees askew (0.38; `PageSkew` stops at 20), an invoice half filled in by
+  hand (0.51; the reference leaves handwriting out).
+- Related to pages of other sets, by issuer or series, not the same document: a Biedronka
+  receipt (`test3` has one), a National Security Action Memorandum (`test2` has number 125), a
+  1948 bill from Słupsk (`test` has one from another firm there).
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
@@ -188,7 +214,7 @@ Sets and their status, see [benchmark.md](benchmark.md):
 
 | Set | Use |
 | --- | --- |
-| `dev` (39) | Look at it, debug on it, tune on it. |
+| `dev` (70) | Look at it, debug on it, tune on it. 31 of them are the business documents of 2026-11-14; the published tables are still those of the first 39. |
 | `test` (27) | Spent: its failures drove the last round. Use it as a regression check, like `dev`. |
 | `test2` (20) | Scored once. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
 | `test3` (97) | Held out, never scored, checked twice against the images (2026-10-15). Score it once at the end of the next round and report it next to `test2`, with `bench/report.py --manifest`: its headline number is the mean of the three document groups, because 77 of its pages are books, newspapers and gazettes and only 15 are invoices and receipts. |
