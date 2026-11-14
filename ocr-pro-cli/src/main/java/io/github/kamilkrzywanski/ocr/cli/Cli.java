@@ -7,6 +7,7 @@ import io.github.kamilkrzywanski.ocr.ModelFiles;
 import io.github.kamilkrzywanski.ocr.OcrConfig;
 import io.github.kamilkrzywanski.ocr.OcrEngine;
 import io.github.kamilkrzywanski.ocr.OcrException;
+import io.github.kamilkrzywanski.ocr.OcrHocr;
 import io.github.kamilkrzywanski.ocr.OcrJson;
 import io.github.kamilkrzywanski.ocr.OcrResult;
 import io.github.kamilkrzywanski.ocr.TextTable;
@@ -36,7 +37,7 @@ import java.util.Set;
 public final class Cli {
     private static final Set<String> SWITCHES = Set.of("no-cls", "no-det", "raw", "json", "drop-fragments", "keep-fragments");
     private static final Set<String> FLAGS = Set.of(
-            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json", "corrections", "layout", "alphabet", "words", "drop-fragments", "keep-fragments", "hyp", "out", "searchable");
+            "model", "limit", "threads", "dpi", "no-cls", "no-det", "raw", "json", "corrections", "layout", "alphabet", "words", "drop-fragments", "keep-fragments", "hyp", "out", "searchable", "hocr");
 
     private Cli() {
     }
@@ -131,13 +132,14 @@ public final class Cli {
     }
 
     private static int ocr(Parsed parsed) throws Exception {
-        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet", "words", "drop-fragments", "keep-fragments", "searchable", "dpi");
+        only(parsed, "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet", "words", "drop-fragments", "keep-fragments", "searchable", "dpi", "hocr");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det]"
                     + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--keep-fragments] [--json]"
-                    + " [--searchable out.pdf [--dpi N]]");
+                    + " [--searchable out.pdf [--dpi N]] [--hocr out.html]");
         }
         Path searchable = searchable(parsed);
+        Path hocr = outputFile(parsed, "hocr");
         if (searchable == null && parsed.flag("dpi") != null) {
             throw new OcrException("--dpi is not used by ocr without --searchable, where it sets the page size");
         }
@@ -158,6 +160,9 @@ public final class Cli {
             OcrResult result = engine.recognize(image);
             if (searchable != null) {
                 SearchablePdf.fromImage(source, image, result, dpi, searchable);
+            }
+            if (hocr != null) {
+                writeText(hocr, OcrHocr.page(result));
             }
             if (parsed.has("json")) {
                 System.out.print(OcrJson.page(result));
@@ -196,13 +201,14 @@ public final class Cli {
     }
 
     private static int pdf(Parsed parsed) throws Exception {
-        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet", "words", "drop-fragments", "keep-fragments", "searchable");
+        only(parsed, "dpi", "model", "limit", "threads", "no-cls", "no-det", "json", "corrections", "layout", "alphabet", "words", "drop-fragments", "keep-fragments", "searchable", "hocr");
         if (parsed.positionals.size() < 2) {
             throw new OcrException("usage: ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det]"
                     + " [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--keep-fragments] [--json]"
-                    + " [--searchable out.pdf]");
+                    + " [--searchable out.pdf] [--hocr out.html]");
         }
         Path searchable = searchable(parsed);
+        Path hocr = outputFile(parsed, "hocr");
         corrections(parsed);
         layout(parsed);
         alphabet(parsed);
@@ -223,6 +229,7 @@ public final class Cli {
                         timing(result);
                     }
                     : (index, count, result) -> {
+                        pages.add(result);
                         if (count > 1) {
                             System.out.println("--- page " + (index + 1) + " ---");
                         }
@@ -235,6 +242,9 @@ public final class Cli {
             }
             if (parsed.has("json")) {
                 System.out.print(OcrJson.document(pages));
+            }
+            if (hocr != null) {
+                writeText(hocr, OcrHocr.document(pages));
             }
         }
         return 0;
@@ -432,22 +442,35 @@ public final class Cli {
 
     /** The file of {@code --searchable}, or null. Its directory must be there: the PDF is written after the last page. */
     private static Path searchable(Parsed parsed) {
-        String value = parsed.flag("searchable");
+        return outputFile(parsed, "searchable");
+    }
+
+    /** The file an output flag names, or null. Its directory must be there: the file is written after the last page. */
+    private static Path outputFile(Parsed parsed, String flag) {
+        String value = parsed.flag(flag);
         if (value == null) {
             return null;
         }
         if (value.isBlank()) {
-            throw new OcrException("--searchable needs the PDF file to write");
+            throw new OcrException("--" + flag + " needs the file to write");
         }
         Path file = Path.of(value);
         if (Files.isDirectory(file)) {
-            throw new OcrException("--searchable " + file + " is a directory");
+            throw new OcrException("--" + flag + " " + file + " is a directory");
         }
         Path directory = file.toAbsolutePath().getParent();
         if (directory == null || !Files.isDirectory(directory)) {
-            throw new OcrException("--searchable: no directory " + directory);
+            throw new OcrException("--" + flag + ": no directory " + directory);
         }
         return file;
+    }
+
+    private static void writeText(Path file, String text) {
+        try {
+            Files.writeString(file, text);
+        } catch (java.io.IOException e) {
+            throw new OcrException("cannot write " + file + ": " + e.getMessage(), e);
+        }
     }
 
     private static float floatFlag(Parsed parsed, String name, float fallback) {
@@ -529,9 +552,9 @@ public final class Cli {
                 ocr-pro — pure Java PP-OCR
 
                 ocr download [dir]
-                ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json] [--searchable out.pdf [--dpi N]]
+                ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json] [--searchable out.pdf [--dpi N]] [--hocr out.html]
                 ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N]
-                ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json] [--searchable out.pdf]
+                ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--json] [--searchable out.pdf] [--hocr out.html]
                 ocr convert <in.onnx> <out.jir>
                 ocr ops <model> [--raw]
                 ocr selfcheck
@@ -559,6 +582,7 @@ public final class Cli {
                 A multi-page PDF prints "--- page N ---" before each page. Timings stay on stderr.
                 A table is printed after the page text as "--- table N ---", with cells separated by tabs: a ruled grid, or rows set in three or more aligned columns. A page with neither prints no table.
                 --searchable out.pdf also writes a PDF that looks like the input and has the text under each line, to search, select and copy. From an image it is one page, as large as the image is at --dpi (300 when not given). The file may be the input PDF.
+                --hocr out.html also writes the page or the document as hOCR: XHTML with a box on every line and word.
                 With --json, ocr and pdf print one JSON document instead of the page text: a page object, or {"pages":[...]} for a PDF. Timings stay on stderr.
                 """);
     }

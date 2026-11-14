@@ -25,7 +25,7 @@ for arg in "$@"; do
     --model) has_model=1; skip=1 ;;
     --hyp=*) has_hyp=1 ;;
     --hyp) has_hyp=1; skip=1 ;;
-    --limit|--threads|--dpi|--corrections|--layout|--alphabet|--words|--out|--searchable) skip=1 ;;
+    --limit|--threads|--dpi|--corrections|--layout|--alphabet|--words|--out|--searchable|--hocr) skip=1 ;;
     --*) ;;
     *)
       if [ -z "$cmd" ]; then

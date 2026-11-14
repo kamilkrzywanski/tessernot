@@ -19,8 +19,8 @@ Tesseract still orders the text slightly better. See the [benchmark](#accuracy-a
   when it is not.
 - **It does more than return text.** You get line and word boxes with scores, reading order for
   multi-column pages, and tables as cells, ruled or set in columns. PDF input, in its own module, goes through Apache
-  PDFBox. Output is plain text, JSON, or a searchable PDF: the scan with its text under every
-  line, to search, select and copy.
+  PDFBox. Output is plain text, JSON, hOCR, or a searchable PDF: the scan with its text under
+  every word, to search, select and copy.
 
 Expect 2–8 s per page on a laptop CPU, depending on how much text the page has; a dense
 newspaper page with a hundred lines takes longest. Detection at 960 px instead of the default
@@ -37,6 +37,7 @@ You need Java 21 or newer. `./mvnw` downloads Maven 3.9; a Maven 3.9 of your own
 ./ocr.sh ocr scan.jpg
 ./ocr.sh pdf document.pdf --dpi 150 --json
 ./ocr.sh pdf scan.pdf --searchable scan-with-text.pdf
+./ocr.sh ocr scan.jpg --hocr scan.html
 ```
 
 The default models are in `models/`. `./ocr.sh download models` fetches them again from
@@ -156,7 +157,7 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 | `OcrEngine`, `OcrPool` | run OCR on images or on the pages of a document, one caller at a time or several in parallel |
 | `OcrConfig`, `Corrections`, `Layout`, `Alphabet`, `DetLimit` | models, thresholds, threads, the optional Polish rules, automatic or row-by-row reading order, the characters the recognizer may output, and which side of the page the detection size limits |
 | `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, tables |
-| `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
+| `OcrImages`, `OcrJson`, `OcrHocr` | read an image file (EXIF-aware), write the JSON and hOCR forms |
 | `ModelFiles`, `ModelSource`, `ModelBundle` | download and check the default models; where a model file comes from; the interface of a model JAR |
 | `OcrException` | the single exception type |
 

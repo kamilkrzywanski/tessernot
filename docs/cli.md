@@ -8,8 +8,8 @@ run on its own without `--model`, it uses those, and `download` writes to `./mod
 
 ```text
 ocr download [dir]
-ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json] [--searchable out.pdf [--dpi N]]
-ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json] [--searchable out.pdf]
+ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json] [--searchable out.pdf [--dpi N]] [--hocr out.html]
+ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json] [--searchable out.pdf] [--hocr out.html]
 ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...]
 ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--out dir] [--model dir] [--limit N] [--threads N]
 ocr score <ref-dir> --hyp <dir>
@@ -57,6 +57,9 @@ ocr eval [--model dir]
 - `--json`: one JSON document instead of text (see below).
 - `--dpi N`: PDF render resolution (150 when not given). On `ocr` it goes with `--searchable`
   only: the resolution of the image, which sets the size of the page (300 when not given).
+- `--hocr out.html`: besides the usual output, writes the page (`ocr`) or the document (`pdf`,
+  one `ocr_page` per page) as hOCR: XHTML with a `bbox` on every line and word, in pixels of the
+  picture, and `textangle` on a line that does not run level. Tables and scores are not in it.
 - `--searchable out.pdf`: besides the usual output, writes a PDF that looks like the input and
   can be searched. The text of every line lies under the line, invisible, so a viewer can find,
   select and copy it. A PDF keeps its pages and everything on them; a PDF that already has text
@@ -72,7 +75,7 @@ Flags accept `--flag value` and `--flag=value`. A switch (`--no-cls`, `--no-det`
 Bad input fails with exit code 1 and a message, before any model or file is opened. This covers:
 
 - an unknown flag, a repeated flag, a flag the command does not use, or a flag without a value
-- `--searchable` with a directory, or a file in a directory that does not exist
+- `--searchable` or `--hocr` with a directory, or a file in a directory that does not exist
 - a non-numeric, zero or negative number
 - an extra positional argument
 
@@ -97,7 +100,8 @@ Before the image is read, missing or empty model files are reported with a point
 {"text":"...","lines":[{"text":"...","score":0.98,"detScore":0.91,
   "quad":[x0,y0,x1,y1,x2,y2,x3,y3],"bounds":{"x":0,"y":0,"width":0,"height":0},
   "words":[{"text":"...","quad":[x0,y0,x1,y1,x2,y2,x3,y3]}]}],
-  "tables":[{"bounds":{...},"ruled":true,"cells":[["a","b"],["","c"]]}],"rotation":0}
+  "tables":[{"bounds":{...},"ruled":true,"cells":[["a","b"],["","c"]]}],
+  "rotation":0,"width":2480,"height":3508}
 ```
 
 - Keys always come in this order.
@@ -108,6 +112,7 @@ Before the image is read, missing or empty model files are reported with a point
   to some lines).
 - An empty cell is `""`.
 - `ruled` is true for a grid of printed rules and false for a table found from columns with no rules.
+- `width` and `height` are the size of the picture in pixels: what the quads are measured in.
 - `rotation` is 0, or 90, 180 or 270 when the page lay on its side or upside down and was read
   turned: the degrees clockwise that set the picture upright. Quads and bounds are in the pixels
   of the picture as given either way, with the corners of a quad in the order of the text.

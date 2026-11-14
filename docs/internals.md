@@ -377,6 +377,8 @@ For timings on real documents next to Tesseract and RapidOCR, see [benchmark.md]
 - A synthetic invoice rendered with DejaVu: CER below 0.25, and `Zażółć gęślą jaźń` is present.
 - Empty and 1×1 images, `null`, a vertical `FAKTURA`, EXIF orientations 1–8.
 - PDFs: one page, several pages in order, empty, encrypted (`ocr-pro-pdf`).
+- hOCR: parsed back as XML, with the page box, line and word boxes, the angle of a line that
+  runs down the page, and markup characters in the text.
 - Searchable PDFs: the layer read back with PDFBox (Polish letters, more characters than one
   font holds), its place checked against the rendered page on all four page rotations, a
   standing box, and that it draws nothing.

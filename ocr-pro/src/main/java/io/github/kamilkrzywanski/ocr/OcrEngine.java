@@ -542,7 +542,9 @@ public final class OcrEngine implements AutoCloseable {
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart,
-                PageTurn.rotation(turns + (flipped ? 2 : 0)));
+                PageTurn.rotation(turns + (flipped ? 2 : 0)),
+                image.getWidth(),
+                image.getHeight());
     }
 
     /**
