@@ -301,19 +301,19 @@ public final class InkGutters {
     }
 
     private static float left(TextLine line) {
-        return ReadingOrder.left(line);
+        return line.left();
     }
 
     private static float right(TextLine line) {
-        return ReadingOrder.right(line);
+        return line.right();
     }
 
     private static float top(TextLine line) {
-        return ReadingOrder.top(line);
+        return line.top();
     }
 
     private static float bottom(TextLine line) {
-        return ReadingOrder.bottom(line);
+        return line.bottom();
     }
 
     private record Gap(TextLine line, float x) {

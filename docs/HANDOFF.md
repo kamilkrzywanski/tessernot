@@ -82,12 +82,13 @@ The English dev agent listed spots worth a look in `en-newspaper-bristol-mercury
 - `bench/tools/tessline.py`: reads the `ro.sh` line cache with Tesseract, for comparing
   recognizers on identical lines (see "Tried and dropped").
 - **`bench/tools/ro.sh`: the reading-order workbench.** `dump` runs OCR once per page and caches
-  the lines with their boxes; `score` recompiles only `ReadingOrder.java` and scores every cached
+  the lines with their boxes; `score` recompiles only the reading-order sources and scores every cached
   page in seconds; `cuts` lists merged lines it would split; `show <name>` draws a page's boxes
   in reading order. Workflow for any layout change:
   1. `ro.sh dump bench/ref/dev bench/ref/test` (once, about 10 minutes; re-dump after changing
      detection or the engine's cutting);
-  2. edit `ReadingOrder.java`, then `ro.sh score bench/ref/dev bench/ref/test` and compare every
+  2. edit the reading-order sources (`ReadingOrder.java` and the classes it is split into, see
+     internals.md), then `ro.sh score bench/ref/dev bench/ref/test` and compare every
      document with the previous run, not just the pooled number;
   3. `ro.sh cuts` must not list new lines that are not merged pairs;
   4. confirm with real OCR (`ocr.sh score`) and `mvn -q test`.
@@ -123,7 +124,7 @@ failures come down to one share just under its threshold.
    the-columns case the transcription rules keep whole).
 2. **Dense historical newspapers.** Mostly done. `InkGutters` finds column gutters in the page
    ink (blank strips inside boxes that line up next to column margins) and the engine cuts
-   merged lines there, and `ReadingOrder.stacked` keeps lines of a curved photo out of one row.
+   merged lines there, and `LineRows.stacked` keeps lines of a curved photo out of one row.
    Built on `dev` (Wisła 1912 0.528 to 0.024, The Independent 1898 0.754 to 0.009, Bristol
    Mercury 0.290 to 0.075); `test2` then went from 0.122 to 0.079 pooled (Tesseract 0.070) with
    no page worse. Still open, all on spent `test2` pages, so reproduce on `dev` first: The Crisis

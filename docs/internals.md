@@ -109,6 +109,11 @@ by reflection.
 
 ## Reading order
 
+The code is `ReadingOrder` (entry points and the recursion over blocks, sections and columns) and
+the classes its steps live in: `PageSkew` (step 1), `LineRows` (step 2 and the blank-row blocks of
+step 6), `ColumnGutter` (step 3), `ColumnSection` (step 4), `ColumnTests` (steps 5 and 7) and
+`MergedLines`; `LineBoxes` has the extents and medians they share.
+
 1. **Level.** The median angle of the long lines is the page's skew. Between 0.3° and 20°,
    every box is rotated back by it before anything else, so a gutter that runs at a slant on a
    photo is vertical again. The output keeps the original boxes.
@@ -154,7 +159,7 @@ by reflection.
 to bottom. It is meant for streams of one-column documents.
 
 **Merged lines.** Where the gutter is narrow, the detector sometimes draws one box over a line of
-each column. `ReadingOrder.cuts` finds such boxes among the crossing rows of a text-column
+each column. `ReadingOrder.cuts` (through `MergedLines`) finds such boxes among the crossing rows of a text-column
 section: a line no taller than 1.5 median lines, starting on the left column's margin, with at
 least two median lines of text on each side of the gutter, and columns going on right above or
 below it. When so many lines are merged that the gutter does not show at all, it is looked for

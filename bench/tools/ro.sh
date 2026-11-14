@@ -5,18 +5,21 @@
 #                                         (RO_OPTS=-Drows=true reads row by row, as Layout.ROWS)
 #   bench/tools/ro.sh cuts                lines ReadingOrder.cuts would split on the cached pages
 #   bench/tools/ro.sh show <name>         picture of the current order in bench/out/ro/viz/<name>.png
-# The cache holds the engine's lines (text and quads). Only ReadingOrder.java is recompiled, so a change
-# to it is scored on every page in seconds. Merged-line cuts need the engine: re-dump after changing them.
+# The cache holds the engine's lines (text and quads). Only the reading-order sources are recompiled
+# (ReadingOrder and the classes it is split into), so a change to them is scored on every page in
+# seconds. Merged-line cuts need the engine: re-dump after changing them.
 set -eu
 T=bench/tools
 W=bench/out/ro
 JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}
 J=$JAVA_HOME/bin
-SRC=ocr-pro/src/main/java/io/github/kamilkrzywanski/ocr/internal/post/ReadingOrder.java
+P=ocr-pro/src/main/java/io/github/kamilkrzywanski/ocr/internal/post
+SRC="$P/ReadingOrder.java $P/PageSkew.java $P/LineBoxes.java $P/LineRows.java $P/ColumnGutter.java $P/ColumnTests.java $P/ColumnSection.java $P/MergedLines.java"
 mkdir -p "$W/json" "$W/tsv" "$W/classes" "$W/viz"
 compile() {
   rm -rf "$W/classes" && mkdir -p "$W/classes"
-  "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro/target/classes "$SRC" "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java"
+  # shellcheck disable=SC2086
+  "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro/target/classes $SRC "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java"
 }
 cmd=$1
 shift
