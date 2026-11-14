@@ -465,6 +465,17 @@ public final class OcrEngine implements AutoCloseable {
                 boxes = detect(bgr, lineParallel);
             }
         }
+        // The page turned level, when its lines run at an angle that moves a gutter by more
+        // than a line from top to bottom.
+        PageTurn.Level level = null;
+        if (detect && cfg.pageOrientation()) {
+            double skew = PageTurn.skew(boxes);
+            if (PageTurn.wanders(skew, bgr.height(), boxes)) {
+                level = PageTurn.Level.of(bgr.width(), bgr.height(), skew);
+                bgr = Images.turn(bgr, level.cos(), level.sin(), level.levelWidth(), level.levelHeight());
+                boxes = detect(bgr, lineParallel);
+            }
+        }
         long detectionNanos = System.nanoTime() - detStart;
         long recStart = System.nanoTime();
         List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
@@ -491,16 +502,23 @@ public final class OcrEngine implements AutoCloseable {
             tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
                     .thenComparingInt(table -> table.bounds().x));
         }
-        if (turns != 0) {
-            // Back into the pixels of the picture as it was given.
+        if (turns != 0 || level != null) {
+            // Back into the pixels of the picture as it was given: off the levelled canvas
+            // first, then out of the quarter turns.
+            int quarters = turns;
+            PageTurn.Level levelled = level;
+            PageTurn.Back back = (x, y) -> {
+                float[] p = levelled == null ? new float[] {x, y} : levelled.back(x, y);
+                return PageTurn.back(p[0], p[1], quarters, pageWidth, pageHeight);
+            };
             List<TextLine> lines = new ArrayList<>(flat.size());
             for (TextLine line : flat) {
-                lines.add(PageTurn.back(line, turns, pageWidth, pageHeight));
+                lines.add(PageTurn.back(line, back));
             }
             flat = lines;
             List<TextTable> turned = new ArrayList<>(tables.size());
             for (TextTable table : tables) {
-                turned.add(PageTurn.back(table, turns, pageWidth, pageHeight));
+                turned.add(PageTurn.back(table, back));
             }
             tables = turned;
         }

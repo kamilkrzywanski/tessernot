@@ -225,8 +225,8 @@ against 0.956, 0.930 and 0.951 for the plain pipeline. It is **off by default**.
   themselves are read in order)
 
 Vertical lines are rotated and read. A page that was scanned on its side or upside down is
-turned before it is read; the lines still come back in the pixels of the picture as given, and
-`OcrResult.rotation()` tells the turn.
+turned before it is read, and a page scanned askew is turned level; the lines still come back in
+the pixels of the picture as given, and `OcrResult.rotation()` tells the quarter turns.
 
 ## Documentation
 

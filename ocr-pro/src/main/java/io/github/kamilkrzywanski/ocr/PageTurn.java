@@ -16,9 +16,10 @@ import java.util.List;
  * where the lines lie, and only make sense on an upright page. So the page is turned first:
  * a quarter turn when most of its text stands in boxes on their short side, then half a turn
  * when most of its long lines read upside down to the line classifier, each judged by its
- * middle. After reading, every
- * quad goes back into the coordinates of the original picture, with its corners still in the
- * order of the text: top left of the line first.
+ * middle. A page that is then still askew by more than a line height from top to bottom is
+ * turned level, by the angle of its lines. After reading, every quad goes back into the
+ * coordinates of the original picture, with its corners still in the order of the text: top
+ * left of the line first.
  */
 final class PageTurn {
     /** A box this many times as long one way as the other lies or stands; anything squarer says nothing. */
@@ -103,15 +104,20 @@ final class PageTurn {
         };
     }
 
+    /** Where a point of the page as it was read lies in the picture as it was given. */
+    interface Back {
+        float[] at(float x, float y);
+    }
+
     /** The line with its quad in the original picture, corners still in the order of the text. */
-    static TextLine back(TextLine line, int turns, int width, int height) {
+    static TextLine back(TextLine line, Back back) {
         float[] quad = line.quad();
         float minX = Float.POSITIVE_INFINITY;
         float minY = Float.POSITIVE_INFINITY;
         float maxX = Float.NEGATIVE_INFINITY;
         float maxY = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < 4; i++) {
-            float[] p = back(quad[i * 2], quad[i * 2 + 1], turns, width, height);
+            float[] p = back.at(quad[i * 2], quad[i * 2 + 1]);
             quad[i * 2] = p[0];
             quad[i * 2 + 1] = p[1];
             minX = Math.min(minX, p[0]);
@@ -125,16 +131,103 @@ final class PageTurn {
                 new Rectangle(x, y, Math.max(1, (int) Math.ceil(maxX) - x), Math.max(1, (int) Math.ceil(maxY) - y)));
     }
 
-    /** The table with its rectangle in the original picture. */
-    static TextTable back(TextTable table, int turns, int width, int height) {
+    /** The table with the rectangle around its four corners in the original picture. */
+    static TextTable back(TextTable table, Back back) {
         Rectangle b = table.bounds();
-        float[] a = back(b.x, b.y, turns, width, height);
-        float[] c = back(b.x + b.width, b.y + b.height, turns, width, height);
-        int x = (int) Math.floor(Math.min(a[0], c[0]));
-        int y = (int) Math.floor(Math.min(a[1], c[1]));
-        int w = (int) Math.ceil(Math.max(a[0], c[0])) - x;
-        int h = (int) Math.ceil(Math.max(a[1], c[1])) - y;
-        return new TextTable(table.cells(), new Rectangle(x, y, w, h), table.ruled());
+        float minX = Float.POSITIVE_INFINITY;
+        float minY = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY;
+        float maxY = Float.NEGATIVE_INFINITY;
+        for (int corner = 0; corner < 4; corner++) {
+            float[] p = back.at(b.x + ((corner & 1) == 0 ? 0 : b.width), b.y + (corner < 2 ? 0 : b.height));
+            minX = Math.min(minX, p[0]);
+            minY = Math.min(minY, p[1]);
+            maxX = Math.max(maxX, p[0]);
+            maxY = Math.max(maxY, p[1]);
+        }
+        int x = (int) Math.floor(minX);
+        int y = (int) Math.floor(minY);
+        return new TextTable(table.cells(), new Rectangle(x, y, (int) Math.ceil(maxX) - x, (int) Math.ceil(maxY) - y),
+                table.ruled());
+    }
+
+    /** Median angle of the long boxes, in radians, as {@code PageSkew} takes it from lines; 0 without a long box. */
+    static double skew(List<DbPost.Box> boxes) {
+        double[] angles = new double[boxes.size()];
+        int count = 0;
+        for (DbPost.Box box : boxes) {
+            float[] q = box.quad();
+            float dx = (q[2] - q[0] + q[4] - q[6]) * 0.5f;
+            float dy = (q[3] - q[1] + q[5] - q[7]) * 0.5f;
+            if (dx > 0f && dx >= VOTER * height(q)) {
+                angles[count++] = Math.atan2(dy, dx);
+            }
+        }
+        if (count == 0) {
+            return 0.0;
+        }
+        java.util.Arrays.sort(angles, 0, count);
+        int mid = count / 2;
+        return (count & 1) == 1 ? angles[mid] : (angles[mid - 1] + angles[mid]) * 0.5;
+    }
+
+    /**
+     * Whether a page of this height, with its lines at {@code angle}, is levelled before it is
+     * read: when a vertical gutter wanders sideways by more than a line height from the top of
+     * the page to its bottom. Below that the boxes are levelled by {@code PageSkew} alone, as
+     * before; above it the steps that look at the pixels for a gutter or a rule, which they take
+     * to be upright, lose it. An angle beyond {@link #MAX_SKEW} is not skew.
+     */
+    static boolean wanders(double angle, int pageHeight, List<DbPost.Box> boxes) {
+        if (boxes.isEmpty() || Math.abs(angle) > MAX_SKEW) {
+            return false;
+        }
+        float[] heights = new float[boxes.size()];
+        for (int i = 0; i < heights.length; i++) {
+            float[] q = boxes.get(i).quad();
+            heights[i] = Math.min(width(q), height(q));
+        }
+        java.util.Arrays.sort(heights);
+        return pageHeight * Math.abs(Math.tan(angle)) > heights[heights.length / 2];
+    }
+
+    /** About 20 degrees, as in {@code PageSkew}: more is not a skewed page. */
+    static final double MAX_SKEW = 0.35;
+
+    /**
+     * A page turned level: its content turned by {@code -angle} about its centre onto a canvas
+     * large enough to hold all of it.
+     *
+     * @param cos cosine of the turn
+     * @param sin sine of the turn
+     * @param width width of the page before
+     * @param height height of the page before
+     * @param levelWidth width of the levelled canvas
+     * @param levelHeight height of the levelled canvas
+     */
+    record Level(double cos, double sin, int width, int height, int levelWidth, int levelHeight) {
+        /** For a page whose lines run at {@code angle}. */
+        static Level of(int width, int height, double angle) {
+            double cos = Math.cos(-angle);
+            double sin = Math.sin(-angle);
+            int levelWidth = (int) Math.ceil(Math.abs(width * cos) + Math.abs(height * sin));
+            int levelHeight = (int) Math.ceil(Math.abs(width * sin) + Math.abs(height * cos));
+            return new Level(cos, sin, width, height, levelWidth, levelHeight);
+        }
+
+        /** A point of the levelled canvas in the page before. */
+        float[] back(float x, float y) {
+            double dx = x - levelWidth * 0.5;
+            double dy = y - levelHeight * 0.5;
+            return new float[] {(float) (cos * dx + sin * dy + width * 0.5), (float) (-sin * dx + cos * dy + height * 0.5)};
+        }
+
+        /** A point of the page before on the levelled canvas. */
+        float[] forward(float x, float y) {
+            double dx = x - width * 0.5;
+            double dy = y - height * 0.5;
+            return new float[] {(float) (cos * dx - sin * dy + levelWidth * 0.5), (float) (sin * dx + cos * dy + levelHeight * 0.5)};
+        }
     }
 
     /** Degrees clockwise that set the original picture upright, for a page turned {@code turns} quarters counter-clockwise. */

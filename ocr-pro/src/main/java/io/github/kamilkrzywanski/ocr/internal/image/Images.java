@@ -766,6 +766,42 @@ public final class Images {
         return new Bgr(out, w, h);
     }
 
+    /**
+     * The page with its content turned about its centre by the angle of {@code cos} and
+     * {@code sin}, on a white canvas of {@code width} by {@code height}: the output pixel
+     * {@code (x, y)} shows the input at {@code (cos dx + sin dy, -sin dx + cos dy)} from the
+     * centre, {@code dx} and {@code dy} being its offsets from the centre of the canvas.
+     * Bilinear; what lies outside the input is white.
+     */
+    public static Bgr turn(Bgr image, double cos, double sin, int width, int height) {
+        int w = image.width();
+        int h = image.height();
+        byte[] in = image.data();
+        byte[] out = new byte[packedBytes(width, height)];
+        double cx = width * 0.5;
+        double cy = height * 0.5;
+        for (int y = 0; y < height; y++) {
+            double dy = y + 0.5 - cy;
+            for (int x = 0; x < width; x++) {
+                double dx = x + 0.5 - cx;
+                // Continuous input coordinates of this pixel's centre, then pixel indices.
+                float sx = (float) (cos * dx + sin * dy + w * 0.5 - 0.5);
+                float sy = (float) (-sin * dx + cos * dy + h * 0.5 - 0.5);
+                int o = (y * width + x) * 3;
+                if (sx < -0.5f || sy < -0.5f || sx > w - 0.5f || sy > h - 0.5f) {
+                    out[o] = (byte) 255;
+                    out[o + 1] = (byte) 255;
+                    out[o + 2] = (byte) 255;
+                } else {
+                    for (int c = 0; c < 3; c++) {
+                        out[o + c] = (byte) Math.round(sampleBilinear(in, w, h, sx, sy, c));
+                    }
+                }
+            }
+        }
+        return new Bgr(out, width, height);
+    }
+
     /** Projection-profile deskew over about -10..10 degrees. Off by default in the engine. */
     public static Bgr deskew(Bgr image) {
         if (image.width() <= 0 || image.height() <= 0) {

@@ -61,7 +61,8 @@ class PageTurnTest {
         // A line across the top of a page that was read after a quarter turn counter-clockwise;
         // the picture itself is 100 wide and 300 high.
         TextLine turned = new TextLine("abc", 0.9f, 0.8f, new float[] {10, 20, 210, 20, 210, 50, 10, 50}, null);
-        TextLine back = PageTurn.back(turned, 1, 100, 300);
+        PageTurn.Back quarter = (x, y) -> PageTurn.back(x, y, 1, 100, 300);
+        TextLine back = PageTurn.back(turned, quarter);
         // Top left of the text is now at the right edge, and the text runs downward.
         assertArrayEquals(new float[] {80, 10, 80, 210, 50, 210, 50, 10}, back.quad());
         assertEquals(new Rectangle(50, 10, 30, 200), back.bounds());
@@ -69,7 +70,7 @@ class PageTurnTest {
         assertEquals(0.8f, back.detScore());
 
         TextTable table = new TextTable(List.of(List.of("a", "b"), List.of("c", "d")), new Rectangle(10, 20, 200, 30), false);
-        TextTable tableBack = PageTurn.back(table, 1, 100, 300);
+        TextTable tableBack = PageTurn.back(table, quarter);
         assertEquals(new Rectangle(50, 10, 30, 200), tableBack.bounds());
         assertEquals(table.cells(), tableBack.cells());
         assertFalse(tableBack.ruled());
@@ -94,6 +95,51 @@ class PageTurnTest {
         assertTrue(PageTurn.sideways(lying));
         assertFalse(PageTurn.sideways(List.of()));
         assertFalse(PageTurn.sideways(List.of(box(0, 0, 50, 50))));
+    }
+
+    @Test
+    void aSkewedPageIsLevelledWhenAGutterWouldWanderByALine() {
+        // Lines 400 long and 30 high, falling 21 px over their length: 3 degrees.
+        List<DbPost.Box> skewed = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            float y = 40 * i;
+            skewed.add(new DbPost.Box(new float[] {50, y, 450, y + 21, 450, y + 51, 50, y + 30}, 0.9f));
+        }
+        double angle = PageTurn.skew(skewed);
+        assertEquals(Math.toDegrees(Math.atan2(21, 400)), Math.toDegrees(angle), 0.01);
+        // 3 degrees over 1000 px is 52 px, more than a line of 30; over 400 px it is 21, less.
+        assertTrue(PageTurn.wanders(angle, 1000, skewed));
+        assertFalse(PageTurn.wanders(angle, 400, skewed));
+        assertFalse(PageTurn.wanders(0.5, 1000, skewed), "30 degrees is not skew");
+        assertFalse(PageTurn.wanders(angle, 1000, List.of()));
+        assertEquals(0.0, PageTurn.skew(List.of(box(0, 0, 40, 30))));
+
+        // The levelled canvas holds the whole page, and a point goes there and back.
+        PageTurn.Level level = PageTurn.Level.of(600, 1000, angle);
+        assertTrue(level.levelWidth() > 600 && level.levelHeight() > 1000);
+        float[] there = level.forward(50, 0);
+        float[] end = level.forward(450, 21);
+        assertEquals(there[1], end[1], 0.01f, "the line is level");
+        assertArrayEquals(new float[] {50f, 0f}, level.back(there[0], there[1]), 0.01f);
+
+        // The picture follows the same map: a dark pixel of the page shows where forward() says.
+        byte[] data = new byte[60 * 100 * 3];
+        java.util.Arrays.fill(data, (byte) 255);
+        for (int c = 0; c < 3; c++) {
+            data[(70 * 60 + 20) * 3 + c] = 0;
+        }
+        PageTurn.Level small = PageTurn.Level.of(60, 100, Math.toRadians(10));
+        Bgr turned = Images.turn(new Bgr(data, 60, 100), small.cos(), small.sin(), small.levelWidth(), small.levelHeight());
+        int darkest = 0;
+        for (int i = 1; i < turned.width() * turned.height(); i++) {
+            if ((turned.data()[i * 3] & 255) < (turned.data()[darkest * 3] & 255)) {
+                darkest = i;
+            }
+        }
+        float[] expected = small.forward(20.5f, 70.5f);
+        assertEquals(expected[0], darkest % turned.width() + 0.5f, 1f);
+        assertEquals(expected[1], darkest / turned.width() + 0.5f, 1f);
+        assertEquals(255, turned.data()[0] & 255, "outside the page is white");
     }
 
     @Test

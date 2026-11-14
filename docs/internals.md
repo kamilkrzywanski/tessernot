@@ -6,7 +6,7 @@
 BufferedImage
   → BGR, half-pixel resize, normalize (x/255 - 0.5) / 0.5
   → detection (DB): thresholds, minimum-area rectangle, unclip
-  → [a page on its side or upside down: turned, and detected again]
+  → [a page on its side, upside down or askew: turned, and detected again]
   → crop (rotated 90° left when the line is vertical)
   → orientation classifier 80×160, rotate 180° when needed
   → recognition at height 48, greedy CTC
@@ -85,6 +85,26 @@ by reflection.
   through the JDK's conversion (CER 0.036 and 0.051). The conversion read 22 pages better and 33
   worse. It helps faded newsprint (Bristol Mercury 1832: 431 to 352) and costs most where the
   print is thin or light (an arXiv page: 91 to 2,104).
+- **Turning the page** (`PageTurn`, on by default, `OcrConfig.pageOrientation`): single lines
+  are read at any quarter turn, but rows, columns and tables come from where the lines lie, so
+  a page has to stand upright and level before they are looked for. After the first detection:
+  - **On its side:** most of the text, by box length, stands in boxes at least 1.5 times as high
+    as wide. The page is turned a quarter counter-clockwise.
+  - **Upside down:** most of the long lines (at least three, at most the fifteen longest) read
+    upside down to the line classifier. Each line votes with the classifier's more likely
+    answer, not with `clsThresh`, and shows it only its middle, eight heights long: the
+    classifier squeezes a crop to twice its height, and a whole line of forty heights is a smear
+    to it. On a telegram of such lines it called the page upright either way.
+  - **Askew:** the median angle of the long boxes moves a vertical gutter sideways by more than
+    a line height between the top and the bottom of the page. The picture is turned level
+    (bilinear, on a larger white canvas). Below that, `PageSkew` levels the boxes alone, as
+    before. The steps that look at the pixels for a gutter or a rule take it to be upright;
+    without this a two-column book page three degrees off level read as rows.
+  After each turn the page is detected again, and at the end every quad goes back into the
+  pixels of the picture as given, corners in the order of the text. `OcrResult.rotation()`
+  gives the quarter turns; the levelling angle is not reported.
+  Measured on the 66 pages of `dev` and `test`, default profile: upright 5,315 edits, and 5,315
+  after a turn of 90, 180 or 270 degrees, every turn found and no upright page turned.
 - **Preprocessing** follows PP-OCR / OpenCV:
   - BGR channels, mean and std 0.5.
   - Half-pixel bilinear resize: `src = (dst + 0.5) * scale - 0.5`.
