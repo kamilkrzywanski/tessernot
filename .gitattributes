@@ -4,3 +4,5 @@
 *.sh text eol=lf
 # Test fixtures are read line by line: the same bytes on every system.
 *.tsv text eol=lf
+# Model files are checked by SHA-256: no line-end conversion on any system.
+/models/** -text
