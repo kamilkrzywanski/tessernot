@@ -2,8 +2,7 @@ PŁATNIK WYPEŁNIA POLA W WYZNACZONYCH KRATKACH KOMPUTEROWO, NA MASZYNIE LUB RĘ
 DUŻYMI DRUKOWANYMI LITERAMI, CZARNYM LUB NIEBIESKIM KOLOREM.
 ZAKŁAD UBEZPIECZEŃ
 SPOŁECZNYCH
-ZUS
-ZUA
+ZUS ZUA
 strona: 1
 ZGŁOSZENIE DO UBEZPIECZEŃ /
 ZGŁOSZENIE ZMIANY DANYCH OSOBY UBEZPIECZONEJ
@@ -38,12 +37,12 @@ IV. DANE EWIDENCYJNE OSOBY ZGŁASZANEJ DO UBEZPIECZEŃ
 M - mężczyzna)
 V. TYTUŁ UBEZPIECZENIA
 01. Kod tytułu ubezpieczenia³)
-VI. DANE O OBOWIĄZKOWYCH UBEZPIECZENIACH SPOŁECZNYCH
-Osoba zgłaszana podlega ubezpieczeniom:
+VI. DANE O OBOWIĄZKOWYCH UBEZPIECZENIACH SPOŁECZNYCH Osoba zgłaszana podlega ubezpieczeniom:
 (wpisać X w odpowiednim polu)
-01. Data powstania 02. Emerytalnemu 04. Chorobowemu
-obowiązku ubezpieczeń
-(dd / mm / rrrr) 03. Rentowym 05. Wypadkowemu
+01. Data powstania
+obowiązku ubezpieczeń 02. Emerytalnemu 04. Chorobowemu
+(dd / mm / rrrr)
+03. Rentowym 05. Wypadkowemu
 VII. DANE O OBOWIĄZKOWYM UBEZPIECZENIU ZDROWOTNYM
 01. Data powstania
 obowiązku ubezpieczenia 02. Kod oddziału NFZ

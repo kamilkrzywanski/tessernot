@@ -1,6 +1,7 @@
 POLA JASNE WYPEŁNIA PODMIOT SKŁADAJĄCY ZAWIADOMIENIE, POLA CIEMNE WYPEŁNIA URZĄD. WYPEŁNIĆ DUŻYMI, DRUKOWANYMI LITERAMI, CZARNYM LUB NIEBIESKIM KOLOREM.
 1. Identyfikator podatkowy NIP podatnika lub podmiotu 2. Nr dokumentu 3. Status
-ZAW-FA ZAWIADOMIENIE O NADANIU LUB ODEBRANIU UPRAWNIEŃ DO KORZYSTANIA
+ZAW-FA
+ZAWIADOMIENIE O NADANIU LUB ODEBRANIU UPRAWNIEŃ DO KORZYSTANIA
 Z KRAJOWEGO SYSTEMU E-FAKTUR
 4. Kolejny nr egz. / ogółem liczba egzemplarzy¹)
 Podstawa prawna: § 5 ust. 1 rozporządzenia Ministra Finansów i Gospodarki z dnia 12 grudnia 2025 r. w sprawie korzystania z Krajowego

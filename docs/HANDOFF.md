@@ -348,6 +348,29 @@ newest pages were read by the engine here for the first time):
   - Not done: a page photographed from below (`keyy12`, 6,541 before and after). Its lines
     stay level; the point has to be found from the lean of margins and gutters.
 
+**Third batch of `dev` documents, 2026-11-15.** Twelve Polish documents: five blank forms
+(ZAW-FA, ZUS ZUA and ZCNA, the KOWR alcohol register, the Blue Card), two printed accounts of
+1855, two letters of 2026, a typed letter of 1936 and two posters of 1939 and 1941. Checked as
+before by four fresh readers from crops, without OCR and without the PDFs. All twelve stay,
+so `dev` has 105 pages.
+
+- Nine references changed, none by more than a few characters or line breaks: where a label
+  stands against a two-line neighbour (ZAW-FA, KOWR, section VI of ZUS ZUA, the heads of the
+  1855 account), two old spellings (`wszelkiéj`, `znaleść`), spaces a typewriter did not make.
+- In the 1855 expenditure account a period stood where a dotted leader begins right after a
+  word, on four of seven such rows; print cannot tell that dot from the leader, so it is left
+  out with the leader on all of them.
+- The two ZUS forms have rows where no order is the one right order: a label printed half a
+  line above or below its neighbours. The references read those in the order of the field
+  numbers. The rotated labels in their left margins repeat the headings beside them (4 % and
+  9 % of the characters); an engine that does not read rotated text loses those.
+- The Ombudsman's letter names the director of the foundation it is addressed to, in that
+  role; the police letter names its signer inside the signature graphic, which the reference
+  leaves out. Both files come from Wikimedia Commons. No address, phone number or identifier
+  of a private person.
+- The German half of the 1941 poster is in a `pl` document: the Polish profile will meet
+  German words there.
+
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
 (`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and
