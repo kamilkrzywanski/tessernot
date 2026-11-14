@@ -535,6 +535,38 @@ final class VectorKernels {
         }
     }
 
+    /**
+     * {@code out[i] = e^(in[i] - max)} for {@code count} elements from {@code base}: the same
+     * operations in the same order as {@link ElementOps#expNeg(float)}, and so the same bits.
+     * No fused multiply-add and no library exponential, which round differently.
+     */
+    static void expNeg(float[] in, float[] out, int base, int count, float max) {
+        int lanes = SPECIES.length();
+        var zero = FloatVector.zero(SPECIES);
+        int i = 0;
+        for (; i + lanes <= count; i += lanes) {
+            var d = FloatVector.fromArray(SPECIES, in, base + i).sub(max);
+            var n = d.mul(ElementOps.LOG2E).sub(0.5f).convert(VectorOperators.F2I, 0).reinterpretAsInts();
+            var fn = n.convert(VectorOperators.I2F, 0).reinterpretAsFloats();
+            var r = d.sub(fn.mul(ElementOps.EXP_C1)).sub(fn.mul(ElementOps.EXP_C2));
+            var p = FloatVector.broadcast(SPECIES, ElementOps.EXP_P0);
+            p = p.mul(r).add(ElementOps.EXP_P1);
+            p = p.mul(r).add(ElementOps.EXP_P2);
+            p = p.mul(r).add(ElementOps.EXP_P3);
+            p = p.mul(r).add(ElementOps.EXP_P4);
+            p = p.mul(r).add(ElementOps.EXP_P5);
+            p = p.mul(r.mul(r)).add(r).add(1f);
+            var half = n.lanewise(VectorOperators.ASHR, 1);
+            var low = half.add(127).lanewise(VectorOperators.LSHL, 23).reinterpretAsFloats();
+            var high = n.sub(half).add(127).lanewise(VectorOperators.LSHL, 23).reinterpretAsFloats();
+            var value = p.mul(low).mul(high);
+            zero.blend(value, d.compare(VectorOperators.GT, ElementOps.EXP_FLOOR)).intoArray(out, base + i);
+        }
+        for (; i < count; i++) {
+            out[base + i] = ElementOps.expNeg(in[base + i] - max);
+        }
+    }
+
     private static FloatVector sigmoid(FloatVector x) {
         var lo = FloatVector.broadcast(SPECIES, -80f);
         var hi = FloatVector.broadcast(SPECIES, 80f);

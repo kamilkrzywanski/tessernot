@@ -199,7 +199,7 @@ final class ElementOps {
             int inner = product(a.dims, axis, rank);
             for (int o = 0; o < outer; o++) {
                 int base = o * inner;
-                softmaxContiguous(a.f, out, base, inner, 1);
+                softmaxContiguous(a.f, out, base, inner, 1, run.vector);
             }
         } else {
             int before = product(a.dims, 0, axis);
@@ -208,28 +208,77 @@ final class ElementOps {
             for (int b = 0; b < before; b++) {
                 for (int t = 0; t < after; t++) {
                     int base = (b * mid) * after + t;
-                    softmaxContiguous(a.f, out, base, mid, after);
+                    softmaxContiguous(a.f, out, base, mid, after, run.vector);
                 }
             }
         }
         return Tensor.pooledF32(a.dims, out);
     }
 
-    private static void softmaxContiguous(float[] in, float[] out, int base, int count, int stride) {
+    /**
+     * One softmax over {@code count} elements {@code stride} apart. The exponentials are
+     * {@link #expNeg}, so the scalar and the vector path give the same bits, and the sum is taken
+     * one element after the other in double, whatever the vector width.
+     */
+    private static void softmaxContiguous(float[] in, float[] out, int base, int count, int stride, boolean vector) {
         float max = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < count; i++) {
             max = Math.max(max, in[base + i * stride]);
         }
+        if (vector && stride == 1) {
+            VectorKernels.expNeg(in, out, base, count, max);
+        } else {
+            for (int i = 0; i < count; i++) {
+                out[base + i * stride] = expNeg(in[base + i * stride] - max);
+            }
+        }
         double sum = 0;
         for (int i = 0; i < count; i++) {
-            double e = Math.exp(in[base + i * stride] - max);
-            out[base + i * stride] = (float) e;
-            sum += e;
+            sum += out[base + i * stride];
         }
         float inv = (float) (1.0 / sum);
         for (int i = 0; i < count; i++) {
             out[base + i * stride] *= inv;
         }
+    }
+
+    static final float EXP_FLOOR = -104f;
+    static final float LOG2E = 1.44269504088896341f;
+    /** ln 2 in two parts: the first has few bits, so {@code n * EXP_C1} is exact. */
+    static final float EXP_C1 = 0.693359375f;
+    static final float EXP_C2 = -2.12194440e-4f;
+    static final float EXP_P0 = 1.9875691500e-4f;
+    static final float EXP_P1 = 1.3981999507e-3f;
+    static final float EXP_P2 = 8.3334519073e-3f;
+    static final float EXP_P3 = 4.1665795894e-2f;
+    static final float EXP_P4 = 1.6666665459e-1f;
+    static final float EXP_P5 = 5.0000001201e-1f;
+
+    /**
+     * {@code e^d} for {@code d <= 0}, within about one float step of the exact value: the Cephes
+     * {@code expf} reduction ({@code d = n ln 2 + r}) and polynomial. It uses multiplications,
+     * additions and one truncation only, in a fixed order, so {@link VectorKernels#expNeg}
+     * computes the same bits lane by lane, on any vector width, interpreted or compiled. Below
+     * -104, where the float result is zero, and for NaN it returns 0.
+     */
+    static float expNeg(float d) {
+        if (!(d > EXP_FLOOR)) {
+            return 0f;
+        }
+        // Nearest integer of d / ln 2; the truncation rounds toward zero and d is not positive.
+        int n = (int) (d * LOG2E - 0.5f);
+        float fn = n;
+        float r = d - fn * EXP_C1 - fn * EXP_C2;
+        float p = EXP_P0;
+        p = p * r + EXP_P1;
+        p = p * r + EXP_P2;
+        p = p * r + EXP_P3;
+        p = p * r + EXP_P4;
+        p = p * r + EXP_P5;
+        p = p * (r * r) + r + 1f;
+        // 2^n in two factors, each a normal float, so a result below the normal range rounds once.
+        int half = n >> 1;
+        return p * Float.intBitsToFloat((half + 127) << 23) * Float.intBitsToFloat((n - half + 127) << 23);
     }
 
     static Tensor reduceMean(Tensor a, int[] axes, boolean keepdims, boolean noop, Run run) {

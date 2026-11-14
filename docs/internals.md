@@ -57,7 +57,16 @@ by reflection.
   columns of that panel are packed into a contiguous buffer first.
 - **3×3 stride 1** accumulates the whole window in one pass per output row.
 - **3×3 stride 2** splits the row into even and odd pixels first.
-- **5×5 and other kernels** are computed directly, without im2col.
+- **Dense kernels on one thread** (the recognizer, the classifier, the detection of a page
+  worker) run as im2col + GEMM: the windows of a band of output rows are laid out as columns, at
+  most 2 MB of them at a time, and the weights multiply them through the same GEMM as a 1×1
+  convolution. The four dense 2×2 and 3×3 convolutions at the start of the recognizer took a
+  third of a line with per-tap loops and take half of that now.
+- **Dense kernels with a thread pool** (the detection of a single page), **5×5 and depthwise
+  kernels** are computed directly, with the output rows split over the threads.
+- **Softmax** computes its exponentials with its own float `exp` (the Cephes reduction and
+  polynomial, from multiplications and additions only), so the scalar and the vector path give
+  the same bits for the output layer, whatever the vector width; the sum is taken in order.
 - **Nearest resize** by an integer scale (2, 4, 8) copies blocks.
 - **ConvTranspose 2×2 stride 2** writes both outputs of a pair in one pass.
 - **Element-wise maps** of a million elements or more are split across threads.

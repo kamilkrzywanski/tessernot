@@ -216,7 +216,49 @@ class RuntimeTest {
         try {
             Session session = Session.create(graph(14, node, init),
                     new Session.Options(true, 4, pool, false, false, false));
-            assertArrayEquals(one, session.run(inputs).get("y").f, 0f);
+            // One thread computes a dense kernel as a matrix product, the pool splits the per-tap
+            // loops over the rows: the same sums in another order, so equal to the last bits only.
+            assertArrayEquals(one, session.run(inputs).get("y").f, 1e-5f);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    /** Dense kernels on one thread go through the column buffer; a band of rows must end where the next begins. */
+    @Test
+    void denseConvolutionInBandsMatchesTheSplitLoops() {
+        int ic = 24;
+        int m = 5;
+        int h = 150;
+        int w = 300;
+        float[] x = sequence(ic * h * w, 0.02f);
+        ExecutorService pool = Executors.newFixedThreadPool(3);
+        try {
+            long[][] cases = {{2, 2, 1, 1, 0, 0, 1, 1}, {3, 3, 2, 2, 1, 1, 1, 1}, {3, 5, 1, 2, 2, 0, 0, 3}, {1, 4, 3, 1, 0, 2, 0, 1}};
+            for (long[] c : cases) {
+                int kh = (int) c[0];
+                int kw = (int) c[1];
+                Node node = node("Conv", "c", attrs(
+                        Attr.ints("strides", c[2], c[3]),
+                        Attr.ints("pads", c[4], c[5], c[6], c[7])), "x", "w", "b", "y");
+                Map<String, Tensor> init = Map.of(
+                        "w", Tensor.f32(new int[]{m, ic, kh, kw}, sequence(m * ic * kh * kw, 0.03f)),
+                        "b", Tensor.f32(new int[]{m}, sequence(m, 0.01f)));
+                Map<String, Tensor> inputs = Map.of("x", Tensor.f32(new int[]{1, ic, h, w}, x));
+                for (boolean vector : new boolean[]{false, true}) {
+                    if (vector && !VectorSupport.available()) {
+                        continue;
+                    }
+                    // 24 channels by 300 columns leave room for a few rows per band, so this page takes many bands.
+                    Tensor one = Session.poisoned(graph(14, node, init), new Session.Options(vector, 1, null, false, false, false))
+                            .run(inputs).get("y");
+                    Tensor split = Session.create(graph(14, node, init), new Session.Options(vector, 3, pool, false, false, false))
+                            .run(inputs).get("y");
+                    assertArrayEquals(split.dims, one.dims);
+                    assertArrayEquals(java.util.Arrays.copyOf(split.f, split.numel()), java.util.Arrays.copyOf(one.f, one.numel()),
+                            2e-4f, kh + "x" + kw + " vector=" + vector);
+                }
+            }
         } finally {
             pool.shutdownNow();
         }
@@ -239,7 +281,9 @@ class RuntimeTest {
         try {
             Session session = Session.create(graph(14, node, init),
                     new Session.Options(true, 4, pool, false, false, false));
-            assertArrayEquals(one, session.run(inputs).get("y").f, 0f);
+            // One thread computes a dense kernel as a matrix product, the pool splits the per-tap
+            // loops over the rows: the same sums in another order, so equal to the last bits only.
+            assertArrayEquals(one, session.run(inputs).get("y").f, 1e-5f);
         } finally {
             pool.shutdownNow();
         }
@@ -1121,6 +1165,78 @@ class RuntimeTest {
         assertSame(used, again);
         assertTrue(Float.isNaN(again[0]));
         assertEquals(0f, new Arena().allocF(300)[0], 0f);
+    }
+
+    @Test
+    void expNegIsWithinAFloatStepOfTheExactValue() {
+        assertEquals(1f, ElementOps.expNeg(0f), 0f);
+        assertEquals(1f, ElementOps.expNeg(-0f), 0f);
+        assertEquals(0f, ElementOps.expNeg(-104f), 0f);
+        assertEquals(0f, ElementOps.expNeg(Float.NEGATIVE_INFINITY), 0f);
+        assertEquals(0f, ElementOps.expNeg(Float.NaN), 0f);
+        java.util.Random random = new java.util.Random(7);
+        float previous = 1f;
+        for (int i = 0; i < 200_000; i++) {
+            float d = i < 100_000 ? -i * 0.0008f : -random.nextFloat() * 87f;
+            float got = ElementOps.expNeg(d);
+            double exact = Math.exp(d);
+            assertTrue(Math.abs(got - exact) <= 2.5e-7 * exact, "exp(" + d + ") = " + got + ", exact " + exact);
+            if (i < 100_000) {
+                assertTrue(got <= previous, "not falling at " + d);
+                previous = got;
+            }
+        }
+        // Below the normal float range the result is a multiple of the smallest float.
+        for (float d = -87.5f; d > -104f; d -= 0.37f) {
+            assertEquals(Math.exp(d), ElementOps.expNeg(d), 2 * Float.MIN_VALUE + 3e-7 * Math.exp(d), "exp(" + d + ")");
+        }
+    }
+
+    /** The output layer feeds thresholds, so both paths must agree to the bit, not to a tolerance. */
+    @Test
+    void softmaxIsTheSameBitsOnTheScalarAndTheVectorPath() {
+        assumeTrue(VectorSupport.available());
+        java.util.Random random = new java.util.Random(11);
+        for (int count : new int[]{1, 3, 7, 8, 9, 16, 31, 64, 1000, 2440}) {
+            float[] in = new float[count + 5];
+            for (int i = 0; i < in.length; i++) {
+                in[i] = switch (random.nextInt(12)) {
+                    case 0 -> -200f * random.nextFloat();
+                    case 1 -> 30f * random.nextFloat();
+                    case 2 -> Float.NEGATIVE_INFINITY;
+                    default -> (float) (random.nextGaussian() * 6);
+                };
+            }
+            float max = Float.NEGATIVE_INFINITY;
+            for (int i = 2; i < 2 + count; i++) {
+                max = Math.max(max, in[i]);
+            }
+            float[] vector = new float[in.length];
+            VectorKernels.expNeg(in, vector, 2, count, max);
+            for (int i = 0; i < count; i++) {
+                assertEquals(Float.floatToRawIntBits(ElementOps.expNeg(in[2 + i] - max)),
+                        Float.floatToRawIntBits(vector[2 + i]), "element " + i + " of " + count + ": " + in[2 + i]);
+            }
+            assertEquals(0f, vector[0], 0f);
+            assertEquals(0f, vector[2 + count], 0f);
+        }
+        float[] logits = new float[4 * 1000];
+        for (int i = 0; i < logits.length; i++) {
+            logits[i] = (float) (random.nextGaussian() * 8);
+        }
+        Tensor x = Tensor.f32(new int[]{1, 4, 1000}, logits);
+        Node softmax = node("Softmax", "s", attrs(Attr.of("axis", 2L)), "x", "y");
+        float[] scalar = exec(13, softmax, Map.of(), Map.of("x", x), false).f;
+        float[] vector = exec(13, softmax, Map.of(), Map.of("x", x), true).f;
+        for (int row = 0; row < 4; row++) {
+            double sum = 0;
+            for (int i = 0; i < 1000; i++) {
+                int at = row * 1000 + i;
+                assertEquals(Float.floatToRawIntBits(scalar[at]), Float.floatToRawIntBits(vector[at]), "row " + row + " class " + i);
+                sum += scalar[at];
+            }
+            assertEquals(1.0, sum, 1e-5);
+        }
     }
 
     @Test

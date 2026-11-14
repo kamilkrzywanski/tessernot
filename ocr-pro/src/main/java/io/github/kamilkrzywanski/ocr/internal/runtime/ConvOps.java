@@ -325,11 +325,105 @@ final class ConvOps {
         }
     }
 
+    /** Floats of one column buffer: about 2 MB, so the columns and the weights they meet stay in the cache. */
+    private static final int COLUMN_FLOATS = 1 << 19;
+
+    /**
+     * A dense convolution as a matrix product. The window of every output pixel is laid out as one
+     * column ({@code channels * kH * kW} values), a band of output rows at a time, and the weights
+     * multiply those columns through the same GEMM as a 1×1 convolution. The per-tap loops of
+     * {@link #directRange} reach a fifth of that speed on a kernel with many input channels: the
+     * four dense 2×2 and 3×3 convolutions at the start of the recognizer took a third of a line.
+     */
+    private static void im2col(
+            float[] in, float[] w, float[] bias, float[] out,
+            int batch, int channels, int inH, int inW, int m,
+            int kH, int kW, int sH, int sW, int dH, int dW, int padT, int padL, int outH, int outW, Run run
+    ) {
+        int k = channels * kH * kW;
+        int outPlane = outH * outW;
+        int bandRows = Math.max(1, Math.min(outH, COLUMN_FLOATS / Math.max(1, k * outW)));
+        int bandCols = bandRows * outW;
+        float[] columns = run.arena.allocF(k * bandCols);
+        try {
+            for (int n = 0; n < batch; n++) {
+                int inBase = n * channels * inH * inW;
+                int outBase = n * m * outPlane;
+                for (int oc = 0; oc < m; oc++) {
+                    int off = outBase + oc * outPlane;
+                    Arrays.fill(out, off, off + outPlane, bias == null ? 0f : bias[oc]);
+                }
+                for (int row0 = 0; row0 < outH; row0 += bandRows) {
+                    int rows = Math.min(bandRows, outH - row0);
+                    int cols = rows * outW;
+                    for (int c = 0; c < channels; c++) {
+                        int plane = inBase + c * inH * inW;
+                        for (int kh = 0; kh < kH; kh++) {
+                            for (int kw = 0; kw < kW; kw++) {
+                                int line = ((c * kH + kh) * kW + kw) * bandCols;
+                                column(in, plane, inH, inW, columns, line, row0, rows, outW,
+                                        sH, sW, kh * dH - padT, kw * dW - padL);
+                            }
+                        }
+                    }
+                    Blas.gemm(w, 0, k,
+                            columns, 0, bandCols,
+                            out, outBase + row0 * outW, outPlane,
+                            m, cols, k,
+                            run.vector, run.pool, run.threads);
+                }
+            }
+        } finally {
+            run.arena.freeF(columns);
+        }
+    }
+
+    /**
+     * One row of the column buffer: for {@code rows} output rows from {@code row0}, the input value
+     * under one kernel tap, which sits {@code dy} rows and {@code dx} columns from the window's
+     * corner. Outside the input the value is the zero of the padding.
+     */
+    private static void column(
+            float[] in, int plane, int inH, int inW, float[] columns, int line,
+            int row0, int rows, int outW, int sH, int sW, int dy, int dx
+    ) {
+        // Output columns whose tap lies inside the input: 0 <= ow * sW + dx < inW.
+        int first = dx >= 0 ? 0 : (-dx + sW - 1) / sW;
+        int last = Math.min(outW, inW - dx <= 0 ? 0 : (inW - dx - 1) / sW + 1);
+        if (first > last) {
+            first = last;
+        }
+        for (int r = 0; r < rows; r++) {
+            int to = line + r * outW;
+            int ih = (row0 + r) * sH + dy;
+            if (ih < 0 || ih >= inH || first == last) {
+                Arrays.fill(columns, to, to + outW, 0f);
+                continue;
+            }
+            Arrays.fill(columns, to, to + first, 0f);
+            int from = plane + ih * inW + dx;
+            if (sW == 1) {
+                System.arraycopy(in, from + first, columns, to + first, last - first);
+            } else {
+                for (int ow = first; ow < last; ow++) {
+                    columns[to + ow] = in[from + ow * sW];
+                }
+            }
+            Arrays.fill(columns, to + last, to + outW, 0f);
+        }
+    }
+
     private static void direct(
             float[] in, float[] w, float[] bias, float[] out,
             int batch, int channels, int inH, int inW, int m, int group, int icpg,
             int kH, int kW, int sH, int sW, int dH, int dW, int padT, int padL, int outH, int outW, Run run
     ) {
+        // On one thread a dense kernel is fastest as a matrix product. With a pool, the loops below
+        // split the output rows over the threads, and that measured faster than a product per band.
+        if (group == 1 && (run.pool == null || run.threads == 1)) {
+            im2col(in, w, bias, out, batch, channels, inH, inW, m, kH, kW, sH, sW, dH, dW, padT, padL, outH, outW, run);
+            return;
+        }
         if (run.vector && packableStride2(kH, kW, sH, sW, dH, dW, padT, padL, inH, inW, outH, outW)) {
             directPackedStride2(in, w, bias, out, batch, channels, inH, inW, m, group, icpg, outH, outW, run);
             return;
