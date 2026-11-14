@@ -198,7 +198,112 @@ public final class Images {
                 || type == BufferedImage.TYPE_INT_BGR)) {
             return fromPackedInts(ints, packed, w, h, type, sx, sy);
         }
+        if (raster.getDataBuffer() instanceof DataBufferByte bytes
+                && raster.getSampleModel() instanceof ComponentSampleModel cm
+                && type == BufferedImage.TYPE_BYTE_GRAY) {
+            return fromGrayBytes(bytes, cm, w, h, sx, sy);
+        }
+        if (raster.getDataBuffer() instanceof DataBufferByte bytes
+                && raster.getSampleModel() instanceof ComponentSampleModel cm
+                && type == BufferedImage.TYPE_4BYTE_ABGR) {
+            return fromAbgrBytes(bytes, cm, w, h, sx, sy);
+        }
         return null;
+    }
+
+    /**
+     * What {@code getRGB} returns for each sample of a TYPE_BYTE_GRAY image. That is not the
+     * sample itself: the JDK treats the gray as linear light and converts it to sRGB (128 reads
+     * as 188). The scans of the benchmark were read this way, so the table keeps it.
+     */
+    private static final class GrayTable {
+        static final byte[] VALUES = build();
+
+        private static byte[] build() {
+            BufferedImage ramp = new BufferedImage(256, 1, BufferedImage.TYPE_BYTE_GRAY);
+            byte[] samples = ((DataBufferByte) ramp.getRaster().getDataBuffer()).getData();
+            for (int i = 0; i < 256; i++) {
+                samples[i] = (byte) i;
+            }
+            int[] rgb = ramp.getRGB(0, 0, 256, 1, null, 0, 256);
+            byte[] values = new byte[256];
+            for (int i = 0; i < 256; i++) {
+                values[i] = (byte) rgb[i];
+            }
+            return values;
+        }
+    }
+
+    /** One gray sample per pixel, the usual form of a gray scan. The values are those of {@code getRGB}. */
+    private static Bgr fromGrayBytes(DataBufferByte bytes, ComponentSampleModel cm, int w, int h, int sx, int sy) {
+        if (w == 0 || h == 0) {
+            return new Bgr(new byte[0], w, h);
+        }
+        if (cm.getNumBands() != 1 || cm.getPixelStride() != 1) {
+            return null;
+        }
+        byte[] src = bytes.getData();
+        int scan = cm.getScanlineStride();
+        int start = bytes.getOffset() + cm.getOffset(sx, sy);
+        if (scan < w || start < 0 || start + (h - 1) * scan + w > src.length) {
+            return null;
+        }
+        byte[] table = GrayTable.VALUES;
+        byte[] dst = new byte[packedBytes(w, h)];
+        for (int y = 0; y < h; y++) {
+            int row = start + y * scan;
+            int o = y * w * 3;
+            for (int x = 0; x < w; x++) {
+                byte v = table[src[row + x] & 255];
+                dst[o] = v;
+                dst[o + 1] = v;
+                dst[o + 2] = v;
+                o += 3;
+            }
+        }
+        return new Bgr(dst, w, h);
+    }
+
+    /** TYPE_4BYTE_ABGR, what ImageIO returns for a PNG with alpha: alpha, blue, green, red, laid over white. */
+    private static Bgr fromAbgrBytes(DataBufferByte bytes, ComponentSampleModel cm, int w, int h, int sx, int sy) {
+        if (w == 0 || h == 0) {
+            return new Bgr(new byte[0], w, h);
+        }
+        if (cm.getNumBands() != 4 || cm.getPixelStride() != 4) {
+            return null;
+        }
+        int[] bands = cm.getBandOffsets();
+        if (bands.length != 4 || bands[0] != 3 || bands[1] != 2 || bands[2] != 1 || bands[3] != 0) {
+            return null;
+        }
+        byte[] src = bytes.getData();
+        int scan = cm.getScanlineStride();
+        // getOffset addresses band 0 (red). The pixel itself starts three bytes earlier, at its alpha.
+        int start = bytes.getOffset() + cm.getOffset(sx, sy) - bands[0];
+        if (scan < w * 4 || start < 0 || start + (h - 1) * scan + w * 4 > src.length) {
+            return null;
+        }
+        byte[] dst = new byte[packedBytes(w, h)];
+        for (int y = 0; y < h; y++) {
+            int i = start + y * scan;
+            int o = y * w * 3;
+            for (int x = 0; x < w; x++) {
+                int a = src[i] & 255;
+                if (a == 255) {
+                    // Most pixels of a page are opaque: no blend.
+                    dst[o] = src[i + 1];
+                    dst[o + 1] = src[i + 2];
+                    dst[o + 2] = src[i + 3];
+                } else {
+                    dst[o] = (byte) coverWhite(src[i + 1] & 255, a);
+                    dst[o + 1] = (byte) coverWhite(src[i + 2] & 255, a);
+                    dst[o + 2] = (byte) coverWhite(src[i + 3] & 255, a);
+                }
+                i += 4;
+                o += 3;
+            }
+        }
+        return new Bgr(dst, w, h);
     }
 
     /** TYPE_3BYTE_BGR stores blue, green, red at offsets 0, 1, 2. */

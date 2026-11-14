@@ -49,6 +49,39 @@ class ExifTest {
         assertPixels(src, Exif.upright(Exif.upright(src, 8), 6));
     }
 
+    /** A color JPEG is TYPE_3BYTE_BGR and is turned byte by byte; the pixels are those of the general path. */
+    @Test
+    void aByteImageTurnsLikeAnyOtherAndKeepsItsType() {
+        int w = 7;
+        int h = 4;
+        BufferedImage ints = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        BufferedImage whole = new BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage bytes = new BufferedImage(w + 3, h + 2, BufferedImage.TYPE_3BYTE_BGR);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int rgb = 0xff000000 | (x * 31 + 7) << 16 | (y * 53 + 11) << 8 | (x * 13 + y * 17 + 3);
+                ints.setRGB(x, y, rgb);
+                whole.setRGB(x, y, rgb);
+                bytes.setRGB(x + 2, y + 1, rgb);
+            }
+        }
+        BufferedImage part = bytes.getSubimage(2, 1, w, h);
+        for (int orientation = 2; orientation <= 8; orientation++) {
+            BufferedImage expected = Exif.upright(ints, orientation);
+            for (BufferedImage source : new BufferedImage[]{whole, part}) {
+                BufferedImage turned = Exif.upright(source, orientation);
+                assertEquals(BufferedImage.TYPE_3BYTE_BGR, turned.getType(), "orientation " + orientation);
+                assertPixels(expected, turned);
+            }
+        }
+        BufferedImage column = new BufferedImage(1, 3, BufferedImage.TYPE_3BYTE_BGR);
+        column.setRGB(0, 0, A);
+        column.setRGB(0, 1, B);
+        column.setRGB(0, 2, C);
+        assertPixels(Exif.upright(column, 6), 3, 1, C, B, A);
+        assertPixels(Exif.upright(column, 3), 1, 3, C, B, A);
+    }
+
     @Test
     void readsOrientationFromExifApp1() {
         assertEquals(6, Exif.orientation(jpeg(exif(6, true))));

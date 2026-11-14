@@ -29,6 +29,33 @@ class ImagePrepTest {
         assertRgb(argb.getSubimage(3, 2, 11, 5), true);
         BufferedImage gray = new BufferedImage(8, 3, BufferedImage.TYPE_BYTE_GRAY);
         assertRgb(gray, false);
+        // Every gray sample, and a part of a larger scan: the same values as getRGB gives.
+        BufferedImage ramp = new BufferedImage(64, 9, BufferedImage.TYPE_BYTE_GRAY);
+        assertRgb(ramp, false);
+        assertRgb(ramp.getSubimage(5, 2, 40, 6), false);
+        BufferedImage abgr = new BufferedImage(17, 9, BufferedImage.TYPE_4BYTE_ABGR);
+        assertRgb(abgr, true);
+        assertRgb(abgr.getSubimage(3, 2, 11, 5), true);
+        // Layouts without a raster path still go through getRGB.
+        assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_USHORT_GRAY), false);
+        assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_BYTE_INDEXED), false);
+        assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_INT_ARGB_PRE), true);
+    }
+
+    /** A gray sample is read as linear light, as getRGB reads it: 128 comes out as 188. */
+    @Test
+    void graySamplesKeepTheValuesOfGetRgb() {
+        BufferedImage gray = new BufferedImage(3, 1, BufferedImage.TYPE_BYTE_GRAY);
+        gray.getRaster().setSample(0, 0, 0, 0);
+        gray.getRaster().setSample(1, 0, 0, 128);
+        gray.getRaster().setSample(2, 0, 0, 255);
+        byte[] data = Images.toBgr(gray).data();
+        assertEquals(0, data[0] & 255);
+        assertEquals(gray.getRGB(1, 0) & 255, data[3] & 255);
+        assertEquals(188, data[3] & 255);
+        assertEquals(data[3], data[4]);
+        assertEquals(data[3], data[5]);
+        assertEquals(255, data[6] & 255);
     }
 
     private static void assertRgb(BufferedImage image, boolean alpha) {
