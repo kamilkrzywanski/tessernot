@@ -50,6 +50,12 @@
         <pdfbox.version>3.0.5</pdfbox.version>
         <!-- Every module is one level below this POM: the repository root holds models/ and the tests read it. -->
         <repository.root>${project.basedir}/..</repository.root>
+        <!-- The test JVM runs the Vector API kernels. Empty, it runs the scalar ones. -->
+        <test.jvm.modules>--add-modules jdk.incubator.vector</test.jvm.modules>
+        <!-- 12 CPUs for the tests: every engine sizes its pool from availableProcessors(), and a
+             24-thread machine became unresponsive during a full test run. The flag sets the count,
+             it does not cap it: a smaller machine should run the tests with -Dtest.jvm.cpus= -->
+        <test.jvm.cpus>-XX:ActiveProcessorCount=12</test.jvm.cpus>
     </properties>
 
     <dependencyManagement>
@@ -121,9 +127,9 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.2</version>
                     <configuration>
-                        <!-- At most 12 CPUs for the tests: every engine sizes its pool from availableProcessors(),
-                             and a 24-thread machine became unresponsive during a full test run. -->
-                        <argLine>--add-modules jdk.incubator.vector -XX:ActiveProcessorCount=12</argLine>
+                        <!-- Two properties, so a run can change them: -Dtest.jvm.modules= tests the scalar
+                             kernels, -Dtest.jvm.cpus= uses the processors the machine has. -->
+                        <argLine>${test.jvm.modules} ${test.jvm.cpus}</argLine>
                         <!-- Tests read models/ from the repository root and skip when it is missing. -->
                         <workingDirectory>${repository.root}</workingDirectory>
                     </configuration>

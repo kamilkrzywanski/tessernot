@@ -7,23 +7,69 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    # The Windows leg tells whether the build works there; it does not fail the run yet.
+    continue-on-error: ${{ matrix.experimental }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: JDK 21, Vector API
+            os: ubuntu-latest
+            java: '21'
+            modules: --add-modules jdk.incubator.vector
+            experimental: false
+          - name: JDK 25, Vector API
+            os: ubuntu-latest
+            java: '25'
+            modules: --add-modules jdk.incubator.vector
+            experimental: false
+          - name: JDK 21, scalar kernels
+            os: ubuntu-latest
+            java: '21'
+            modules: ''
+            experimental: false
+          - name: JDK 21, Windows
+            os: windows-latest
+            java: '21'
+            modules: --add-modules jdk.incubator.vector
+            experimental: true
     steps:
       # No submodules: the tests read models/ and do not need the benchmark documents in bench/data.
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ matrix.java }}
           cache: maven
       - name: Install DejaVu, the font of the rendered test pages
-        run: sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
+          else
+            choco install dejavufonts -y --no-progress
+          fi
       - name: Build and test
-        run: ./mvnw -B verify
+        # The runner's own processor count: the default of the POM sets twelve.
+        run: ./mvnw -B verify "-Dtest.jvm.modules=${{ matrix.modules }}" -Dtest.jvm.cpus=
       - name: Fail when a test was skipped
         # A test that needs models/ skips itself when they are missing; on CI that is an error.
+        # Without the Vector API the tests that compare its kernels with the scalar ones skip
+        # themselves, all of them in RuntimeTest.
         run: |
-          if grep -l 'skipped="[1-9]' */target/surefire-reports/TEST-*.xml; then
+          reports=$(ls */target/surefire-reports/TEST-*.xml)
+          if [ -z "${{ matrix.modules }}" ]; then
+            reports=$(echo "$reports" | grep -v 'RuntimeTest\.xml$')
+          fi
+          if grep -l 'skipped="[1-9]' $reports; then
             echo "tests were skipped"
             exit 1
           fi
+      - name: Build the release artifacts without signing
+        # Sources and javadoc JARs: what a release deploys, so a broken javadoc shows here first.
+        if: matrix.java == '21' && matrix.modules != '' && runner.os == 'Linux'
+        run: ./mvnw -B -Prelease -Dgpg.skip -DskipTests package
