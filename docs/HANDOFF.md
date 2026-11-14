@@ -123,9 +123,15 @@ after a change that should not matter, with a scratch program (`Probe`, not in t
   | box threshold 0.4, fragments dropped | 2,423 | 2,479 | 4,902 |
 
   Better on 20 pages and worse on 7; the largest gain is the 1981 notice (−186), the largest
-  loss the 2017 diploma (+15). Both sets gain, unlike the level stretch. Not made the default:
-  it changes every published number, 0.4 was picked on these sets, and dropping fragments loses
-  real short text (an X in a check box). The place to confirm it is `test3`, once.
+  loss the 2017 diploma (+15). Both sets gain, unlike the level stretch. `test3` was then scored
+  once with both settings: the mean of its three groups falls from 0.1329 to 0.1276 (invoices
+  and receipts 0.1945 to 0.1798, the other two groups level), and with the Polish profile from
+  0.1294 to 0.1241. **Both are the defaults now** (`boxThresh` 0.4, `dropFragments` on;
+  `--keep-fragments` turns the second off). Dropping fragments now applies only to lines that
+  were read: with recognition off it would have dropped every box.
+  Not rebuilt: the tables and charts of `dev`, `test` and `test2` in benchmark.md and the README
+  are from before this day. A full refresh is dev (70 pages now), `test`, `test2` and `test3`
+  in the five engine variants, and Tesseract and RapidOCR on `test3` and the 31 new `dev` pages.
 - **Word boxes** (`TextLine.words()`, `TextWord`, JSON key `words`), see "Word boxes" in
   internals.md. On 115 words of rendered lines (five texts, three sizes) both ends of a word are
   right to 0.055 crop heights in the median, 0.2 to 0.25 at worst. The PDF layer sets every word
@@ -217,7 +223,7 @@ Sets and their status, see [benchmark.md](benchmark.md):
 | `dev` (70) | Look at it, debug on it, tune on it. 31 of them are the business documents of 2026-11-14; the published tables are still those of the first 39. |
 | `test` (27) | Spent: its failures drove the last round. Use it as a regression check, like `dev`. |
 | `test2` (20) | Scored once. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
-| `test3` (97) | Held out, never scored, checked twice against the images (2026-10-15). Score it once at the end of the next round and report it next to `test2`, with `bench/report.py --manifest`: its headline number is the mean of the three document groups, because 77 of its pages are books, newspapers and gazettes and only 15 are invoices and receipts. |
+| `test3` (97) | Scored once, on 2026-11-14, for the box threshold and the dropping of fragments (benchmark.md, "Results on `test3`"). Spent for tuning, like `test2`: its pages have not been looked at and must not be. Tesseract and RapidOCR have not been run on it. |
 
 Business documents are thin in every set. More invoices, receipts, letters and forms can still go
 into `test3` before it is scored for the first time, never after.

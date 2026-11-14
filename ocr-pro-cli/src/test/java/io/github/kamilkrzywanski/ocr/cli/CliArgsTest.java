@@ -484,6 +484,16 @@ class CliArgsTest {
         assertEquals(1, searchableOnBench.code);
         assertTrue(searchableOnBench.err.contains("--searchable is not used by bench"), searchableOnBench.err);
 
+        Run bothFragments = run(() -> Cli.execute(
+                new String[]{"ocr", "missing.png", "--drop-fragments", "--keep-fragments"}));
+        assertEquals(1, bothFragments.code);
+        assertTrue(bothFragments.err.contains("contradict each other"), bothFragments.err);
+        assertFalse(bothFragments.err.contains("cannot read"), bothFragments.err);
+
+        Run keepOnConvert = run(() -> Cli.execute(new String[]{"convert", "a.onnx", "b.jir", "--keep-fragments"}));
+        assertEquals(1, keepOnConvert.code);
+        assertTrue(keepOnConvert.err.contains("--keep-fragments is not used by convert"), keepOnConvert.err);
+
         Run rawOnPdf = run(() -> Cli.execute(new String[]{"pdf", "missing.pdf", "--raw"}));
         assertEquals(1, rawOnPdf.code);
         assertTrue(rawOnPdf.err.contains("--raw is not used by pdf"), rawOnPdf.err);

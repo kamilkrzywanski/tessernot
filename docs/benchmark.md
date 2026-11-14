@@ -9,7 +9,7 @@ them. This benchmark uses public documents with references transcribed by hand, 
 | `dev` | 70 (37 PL, 33 EN), 148,127 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, 3 Official Journal pages moved from `test3` on 2026-10-15, and 31 business documents (receipts, invoices, letters, memos, forms) added on 2026-11-14. The tables below are still those of the first 39 documents (110,882 characters). Its numbers are **not independent**. |
 | `test` | 27 (18 PL, 9 EN), 59,772 characters | Scored once, before the reading-order work. Its failures then pointed at what to fix, so it is **no longer independent** either. |
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below). **The honest number.** Do not tune on it. |
-| `test3` | 97 (47 PL, 50 EN), 245,601 characters | Held out for a later round. Collected without looking at any engine output, checked a second time against the images, and not scored. `test2` stays the scored set. Do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups (see below). |
+| `test3` | 97 (47 PL, 50 EN), 245,601 characters | Collected without looking at any engine output and checked a second time against the images. Scored once, on 2026-11-14, to decide the box threshold and the dropping of fragments (see "Results on `test3`"); three of its pages had been scored by mistake the same day. It is spent for tuning: do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups. |
 
 ## Rules for using the sets
 
@@ -111,7 +111,36 @@ documents of the set; what each engine's time includes is under [Reproduce](#rep
 Each set has two tables: one for the whole set, and one with the pooled CER of each document
 group and the mean of the groups (`report.py --manifest`).
 
+## Results on `test3`
+
+Scored once, on 2026-11-14, with the engine as it was that day and two settings of it: the
+defaults until then (box threshold 0.5, fragments kept) and the defaults since (box threshold
+0.4, fragments dropped). The second pair was chosen on `dev` and `test`, where it took 7.8 % of
+the edits; `test3` was to say whether that holds. CER, lower is better:
+
+| | Invoices, bills, receipts (15) | Letters, forms, notices (5) | Books, newspapers, gazettes (77) | Mean of the groups | Pooled |
+| --- | --- | --- | --- | --- | --- |
+| ocr-pro, defaults until 2026-11-14 | 0.1945 | 0.0807 | 0.1234 | 0.1329 | 0.1251 |
+| ocr-pro, defaults since | 0.1798 | 0.0798 | 0.1232 | 0.1276 | 0.1244 |
+| ocr-pro + polish, defaults until 2026-11-14 | 0.1915 | 0.0783 | 0.1185 | 0.1294 | 0.1203 |
+| ocr-pro + polish, defaults since | 0.1765 | 0.0775 | 0.1182 | 0.1241 | 0.1196 |
+
+It holds, and smaller than on the sets it was chosen on: business documents lose 7.6 % of their
+errors, books and newspapers stay where they were, no group is worse. Of the 97 pages 20 read
+better and 19 worse; the largest loss is 20 edits on a page that has 9,123.
+
+`test3` is much harder than `test2` (0.079 pooled there): one newspaper page alone, the Gazeta
+Polska of Chicago 1877, has 9,123 of the 30,547 edits, and other old newspapers follow. These
+pages have not been looked at, and must not be used to tune. Tesseract and RapidOCR have not
+been run on `test3`, and the engine variants of the other tables (960 px, rows, Latin alphabet)
+neither.
+
 ## Results on `test2`
+
+The tables of `test2`, `test` and `dev` below are from before 2026-11-14: box threshold 0.5,
+fragments kept, and none of that day's changes (gray files read as stored, pages turned and
+levelled, the reading-order fixes). On `test` and the first 39 pages of `dev` the new defaults
+alone took the default profile from 5,315 edits to 4,902; the tables have not been rebuilt.
 
 ![Character accuracy on test2 by document kind](benchmark-test2.png)
 

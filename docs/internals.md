@@ -112,16 +112,18 @@ by reflection.
     normalized space, which is gray 127.5.
   - Deskew and Sauvola thresholding exist but are off. On a neural model they often hurt.
 - **Detection**:
-  - Thresholds: 0.35, box threshold 0.5, unclip 1.6, 2×2 dilation with the OpenCV `(0, 0)`
-    anchor, up to 1000 candidates.
+  - Thresholds: 0.35, box threshold 0.4 (PP-OCR has 0.5; changed on 2026-11-14 together with
+    the dropping of fragments, see benchmark.md, "Results on `test3`"), unclip 1.6, 2×2 dilation
+    with the OpenCV `(0, 0)` anchor, up to 1000 candidates.
   - Size: the longer side is limited to 2048 (`detLimitSideLen`), then rounded to a multiple of 32 with
     `Math.round` (half up). Python's half-to-even `round` can differ by 32 px.
   - The output gets a sigmoid when its values leave about `[0, 1.2]`.
 - **Classifier**: input size comes from the model signature (80×160 for the default model).
 - **CTC**: greedy, blank at 0, repeats collapsed. The score is the mean probability of the kept
   steps: for each character, the winner on the first timestep of its run. A second softmax is not applied when the output already sums to 1.
-- **Fragments** (`dropFragments`, off by default): after the reading order is found, a line of
-  at most 10 characters with mean character probability below 0.8 is left out. Removing it
+- **Fragments** (`dropFragments`, on by default): after the reading order is found, a line of
+  at most 10 characters with mean character probability below 0.8 is left out, among lines that
+  were read (with recognition off every box has an empty text and stays). Removing it
   earlier changed column and row bounds on the test set, since the fragment is still ink on the
   page. The results barely moved between thresholds 0.7 and 0.9.
 - **Word boxes** (`Words`, `TextLine.words()`): the decoder keeps, for every character, the

@@ -135,14 +135,17 @@ on load.
 `test2` and `test3` have not been scored with lists yet. `Corrections.POLISH` adds these two lists
 on its own.
 
-### Dropping fragments
+### Fragments and the box threshold
 
-`.dropFragments(true)` (`--drop-fragments`) leaves out lines of at most 10 characters whose mean
-character confidence is below 0.8, after the reading order is found. These are mostly stamps,
-ornaments read as CJK characters and stray marks. On `dev` and `test` pooled CER went from 0.0230
-to 0.0224 and from 0.0461 to 0.0455, with no extra time. It is off by default because it also
-drops real short text the recognizer is unsure of: on 7 of the 66 pages the result got slightly
-worse (check boxes read as an unsure `X`, a misread page number).
+A line of at most 10 characters whose mean character confidence is below 0.8 is left out, after
+the reading order is found. These are mostly stamps, ornaments read as CJK characters and stray
+marks. It goes with the detector's box threshold, 0.4 here where PP-OCR has 0.5: the lower
+threshold finds lines of clean print the detector is only a little unsure of, and lets in more
+of those marks. Together they took 7.8 % of the edits on `dev` and `test`, where they were
+chosen, and 4 % of the group mean on the held-out `test3` (invoices and receipts 0.195 to 0.180,
+books and newspapers unchanged). Dropping fragments also drops real short text the recognizer is
+unsure of, such as an `X` in a check box or a misread page number: `.dropFragments(false)`
+(`--keep-fragments`) keeps every line, and `.boxThresh(0.5f)` is the PP-OCR value.
 
 ### Public API
 

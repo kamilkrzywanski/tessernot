@@ -6,7 +6,8 @@ import java.util.List;
 
 /**
  * Inference settings. Thresholds follow RapidOCR mobile:
- * DB thresh 0.35 / box 0.5 / unclip 1.6, REC height 48, BGR normalize 0.5/0.5. Detection runs on a
+ * DB thresh 0.35 / unclip 1.6, REC height 48, BGR normalize 0.5/0.5, except the box threshold,
+ * 0.4 here and 0.5 there, see {@link #boxThresh()}. Detection runs on a
  * page scaled to at most 2048 px on the longer side: small print, dense columns and thin receipt
  * type need it. 960 is about twice as fast on a large page and needs less heap.
  */
@@ -130,7 +131,9 @@ public final class OcrConfig {
 
     /**
      * {@return the mean probability inside a box below which the box is dropped}
-     * Default: 0.5.
+     * Default: 0.4. PP-OCR and RapidOCR use 0.5; at that value whole lines of clean print are
+     * lost where the detector is only a little unsure. The lower threshold also lets in more
+     * stamps and ornaments, which is why {@link #dropFragments()} is on with it.
      */
     public float boxThresh() { return boxThresh; }
 
@@ -338,7 +341,7 @@ public final class OcrConfig {
         private int detLimitSideLen = 2048;
         private DetLimit detLimitType = DetLimit.MAX;
         private float detThresh = 0.35f;
-        private float boxThresh = 0.5f;
+        private float boxThresh = 0.4f;
         private float unclipRatio = 1.6f;
         private boolean useDilation = true;
         private int maxCandidates = 1000;
@@ -361,7 +364,7 @@ public final class OcrConfig {
         private Layout layout = Layout.AUTO;
         private Alphabet alphabet = Alphabet.ALL;
         private final List<ModelSource> wordLists = new ArrayList<>();
-        private boolean dropFragments = false;
+        private boolean dropFragments = true;
         private boolean pageOrientation = true;
 
         /** A builder with the default settings and no models, as {@link OcrConfig#builder()} returns. */
@@ -716,10 +719,11 @@ public final class OcrConfig {
         /**
          * Leaves out a line of at most 10 characters whose mean character probability is below
          * 0.8. Such lines are mostly stamps, bleed-through, ornaments and stray marks read as
-         * text. Off by default, because it also drops real short text the recognizer is unsure
-         * of, such as an {@code X} in a check box or a misread page number.
+         * text. On by default. It also drops real short text the recognizer is unsure of, such
+         * as an {@code X} in a check box or a misread page number: turn it off when every mark
+         * on the page matters.
          *
-         * @param v true to leave such lines out
+         * @param v false to keep such lines
          * @return this builder
          */
         public Builder dropFragments(boolean v) { dropFragments = v; return this; }

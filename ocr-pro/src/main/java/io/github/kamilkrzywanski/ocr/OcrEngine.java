@@ -488,9 +488,10 @@ public final class OcrEngine implements AutoCloseable {
         }
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized, columns);
-        if (cfg.dropFragments()) {
+        if (cfg.dropFragments() && cfg.useRec() && rec != null) {
             // After the order is found: a fragment is still ink on the page, and leaving it out
-            // of the layout moved column and row bounds on the test set.
+            // of the layout moved column and row bounds on the test set. Only lines that were
+            // read can be fragments: without recognition every box has an empty text.
             rows = withoutFragments(rows);
         }
         List<TextLine> flat = ReadingOrder.flatten(rows);

@@ -143,8 +143,10 @@ class OcrEndToEndTest {
     @Test
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void droppingFragmentsKeepsSureShortLines() {
-        assertFalse(OcrConfig.defaults(Path.of("models")).dropFragments());
-        OcrConfig config = OcrConfig.defaults(Path.of("models")).toBuilder().dropFragments(true).build();
+        OcrConfig config = OcrConfig.defaults(Path.of("models"));
+        assertTrue(config.dropFragments(), "on by default");
+        assertEquals(0.4f, config.boxThresh());
+        assertFalse(config.toBuilder().dropFragments(false).build().dropFragments());
         assertTrue(config.toBuilder().build().dropFragments());
         BufferedImage image = new BufferedImage(900, 260, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = Images.prepare(image);
