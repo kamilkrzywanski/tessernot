@@ -138,6 +138,11 @@ final class ColumnTests {
         List<TextLine> leftBoxes = new ArrayList<>();
         List<TextLine> rightBoxes = new ArrayList<>();
         for (TextLine line : boxes) {
+            if (gutter.crossing(line, medianH)) {
+                // A line over the gutter, a heading or two lines the detector merged, is of
+                // neither side: on the side of its centre it would pass for that column's width.
+                continue;
+            }
             if ((line.left() + line.right()) * 0.5f < mid) {
                 leftBoxes.add(line);
             } else {

@@ -425,6 +425,48 @@ class PostProcessTest {
         assertEquals(upper + "7\n" + lower.toString().strip(), ReadingOrder.join(ReadingOrder.group(numbered)));
     }
 
+    /**
+     * The boxes of a three-column magazine page scanned 3 degrees off level (The Independent,
+     * 1898, from the benchmark). A few lines of the first two columns are merged over their
+     * gutter. The side that holds those two columns has to split again, so a merged line must
+     * not count for the width of the column its centre falls in. Each row of the file is a quad
+     * and the number of characters read in it; the text here is that many letters.
+     */
+    @Test
+    void aSkewedThreeColumnPageIsReadByColumns() throws java.io.IOException {
+        List<TextLine> lines = new ArrayList<>();
+        try (java.io.InputStream in = PostProcessTest.class.getResourceAsStream("/layout/three-columns-skewed.tsv")) {
+            String[] rows = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\n");
+            for (int i = 0; i < rows.length; i++) {
+                String[] p = rows[i].split("\t");
+                float[] quad = new float[8];
+                for (int k = 0; k < 8; k++) {
+                    quad[k] = Float.parseFloat(p[k]);
+                }
+                lines.add(new TextLine("w".repeat(Integer.parseInt(p[8])), 1f, 1f, quad, null));
+            }
+        }
+        // Which column a box is in, on the levelled page: the gutters are at x = 731 and 1263.
+        Map<TextLine, TextLine> original = new java.util.IdentityHashMap<>();
+        Map<TextLine, Integer> column = new java.util.IdentityHashMap<>();
+        for (TextLine level : PageSkew.level(lines, original)) {
+            float centre = (level.left() + level.right()) * 0.5f;
+            column.put(original.get(level), centre < 731f ? 0 : centre < 1263f ? 1 : 2);
+        }
+        // Below the title lines the page is about 70 rows of three columns. Read by columns the
+        // order changes column a few times; read by rows, twice in every row.
+        int changes = 0;
+        int previous = -1;
+        for (TextLine line : ReadingOrder.flatten(ReadingOrder.group(lines))) {
+            int now = column.get(line);
+            if (previous >= 0 && now != previous) {
+                changes++;
+            }
+            previous = now;
+        }
+        assertTrue(changes < 40, "the order changes column " + changes + " times");
+    }
+
     @Test
     void titleAcrossColumnsEndsASection() {
         List<TextLine> lines = List.of(
