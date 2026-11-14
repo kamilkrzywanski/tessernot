@@ -371,6 +371,30 @@ so `dev` has 105 pages.
 - The German half of the 1941 poster is in a `pl` document: the Polish profile will meet
   German words there.
 
+**Where `dev` stands with all 105 pages, 2026-11-15** (`ocr.sh score`, CER, after the false
+gutter fix and the flattening):
+
+| | default profile | Polish profile |
+| --- | --- | --- |
+| `dev`, all 105 pages | 0.0556 | 0.0541 |
+| the first 39 pages | 0.0189 | 0.0179 |
+| the 54 business documents of batches one and two | 0.0945 | 0.0923 |
+| the 12 Polish documents of batch three | 0.1215 | 0.1191 |
+
+- Batch three, edits with the default profile and with `--layout rows`: ZUS ZCNA 509 and 500
+  of 2,042 characters, the 1855 institution account 417 and 417 of 967, ZUS ZUA 374 and 366,
+  the 1936 typed letter 226 and 158, ZAW-FA 180 and 35, the Ombudsman's letter 172 and 0, the
+  police letter 111 and 111. The rest are under 60.
+- **The layout analysis is still the largest single loss on business documents.** On the 66
+  of them it reads worse than row by row on fourteen pages; the eight worst hold 1,179 edits of
+  9,214: PIT-11 (446 against 33), the Ivey Steel memo (238, 41), the Ombudsman's letter (172,
+  0: a clean letter read without one error row by row), ZAW-FA (180, 35), the President's
+  office letter (148, 32), the 1936 letter (226, 158). None of these is a cut any more; they
+  are orders: header blocks, field rows and footer columns that stand side by side and are
+  read one block after the other. It still wins on seven pages, the W-4 and W-9 forms first.
+- Not looked into: the two ZUS forms (pink print, rotated margin labels, boxes) and the 1855
+  institution account, which lose as much row by row; the police letter (111 either way).
+
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
 (`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and
