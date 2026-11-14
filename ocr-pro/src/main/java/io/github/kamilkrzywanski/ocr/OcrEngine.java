@@ -440,7 +440,9 @@ public final class OcrEngine implements AutoCloseable {
             throw new OcrException("image is null");
         }
         long totalStart = System.nanoTime();
-        Bgr bgr = Images.toBgr(image);
+        // 1 for almost every picture; more for one too large for this heap, see MemoryBudget.shrink.
+        int shrink = MemoryBudget.shrink(image.getWidth(), image.getHeight(), Runtime.getRuntime().maxMemory());
+        Bgr bgr = Images.toBgr(image, shrink);
         if (cfg.deskew()) {
             bgr = Images.deskew(bgr);
         }
@@ -503,14 +505,17 @@ public final class OcrEngine implements AutoCloseable {
             tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
                     .thenComparingInt(table -> table.bounds().x));
         }
-        if (turns != 0 || level != null) {
+        if (turns != 0 || level != null || shrink != 1) {
             // Back into the pixels of the picture as it was given: off the levelled canvas
-            // first, then out of the quarter turns.
+            // first, then out of the quarter turns, then up to the full size.
             int quarters = turns;
             PageTurn.Level levelled = level;
             PageTurn.Back back = (x, y) -> {
                 float[] p = levelled == null ? new float[] {x, y} : levelled.back(x, y);
-                return PageTurn.back(p[0], p[1], quarters, pageWidth, pageHeight);
+                p = PageTurn.back(p[0], p[1], quarters, pageWidth, pageHeight);
+                p[0] *= shrink;
+                p[1] *= shrink;
+                return p;
             };
             List<TextLine> lines = new ArrayList<>(flat.size());
             for (TextLine line : flat) {

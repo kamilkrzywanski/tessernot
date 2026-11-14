@@ -29,6 +29,23 @@ final class MemoryBudget {
      * recognizers that read them. With {@link #DETECTION} that leaves three tenths for the
      * weights, the word lists, the results and the collector.
      */
+    /**
+     * By how much a picture is shrunk, each way, before it is read: 1 for almost every picture.
+     * A page in flight takes about 8 bytes a pixel (the caller's bitmap and the engine's copy),
+     * and the pages of a document may take three tenths of the heap; a single picture that would
+     * take more than that share on its own is read at half its size, or a third, until it fits.
+     * A receipt photographed at 100 megapixels then reads in a 1 GB heap, where it ran out of
+     * memory, and still has lines many times higher than the recognizer needs.
+     */
+    static int shrink(long width, long height, long heapBytes) {
+        long budget = heapBytes / 10 * 3;
+        int factor = 1;
+        while (8L * (width / factor) * (height / factor) > budget && factor < 64) {
+            factor++;
+        }
+        return factor;
+    }
+
     static MemoryBudget pages() {
         return new MemoryBudget(Runtime.getRuntime().maxMemory() / 10 * 3);
     }

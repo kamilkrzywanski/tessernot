@@ -66,6 +66,45 @@ class ImagePrepTest {
     }
 
     @Test
+    void aPictureReadAtAFractionOfItsSizeIsTheMeanOfItsBlocks() {
+        // 5 by 4, shrunk by two: the fifth column fills no block and is dropped.
+        BufferedImage image = new BufferedImage(5, 4, BufferedImage.TYPE_3BYTE_BGR);
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 5; x++) {
+                int v = 10 * x + 40 * y;
+                image.setRGB(x, y, 0xff000000 | v << 16 | (v + 1) << 8 | (v + 2));
+            }
+        }
+        Bgr half = Images.toBgr(image, 2);
+        assertEquals(2, half.width());
+        assertEquals(2, half.height());
+        // Top left block: red 0, 10, 40, 50, mean 25; green one more, blue two more. Stored blue, green, red.
+        assertArrayEquals(new byte[] {27, 26, 25}, java.util.Arrays.copyOfRange(half.data(), 0, 3));
+        // Lower right block: red 20, 30 on the third row (80) and the fourth (120): 100, 110, 140, 150.
+        assertArrayEquals(new byte[] {127, 126, 125}, java.util.Arrays.copyOfRange(half.data(), 9, 12));
+        assertArrayEquals(Images.toBgr(image).data(), Images.toBgr(image, 1).data());
+
+        // A gray picture keeps its samples through the shrink as it does without it.
+        BufferedImage gray = new BufferedImage(4, 2, BufferedImage.TYPE_BYTE_GRAY);
+        int[] samples = {100, 120, 0, 0, 140, 160, 0, 255};
+        gray.getRaster().setSamples(0, 0, 4, 2, 0, samples);
+        assertArrayEquals(new byte[] {(byte) 130, (byte) 130, (byte) 130, 64, 64, 64}, Images.toBgr(gray, 2).data());
+
+        // More rows than one band of the reader.
+        BufferedImage tall = new BufferedImage(6, 300, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < 300; y++) {
+            for (int x = 0; x < 6; x++) {
+                tall.setRGB(x, y, 0x010101 * (y / 3 % 250));
+            }
+        }
+        Bgr third = Images.toBgr(tall, 3);
+        assertEquals(100, third.height());
+        for (int y = 0; y < 100; y++) {
+            assertEquals(y % 250, third.data()[y * 2 * 3] & 255, "row " + y);
+        }
+    }
+
+    @Test
     void sixteenBitGrayAndGrayWithAlphaKeepTheirSamplesToo() {
         BufferedImage deep = new BufferedImage(4, 1, BufferedImage.TYPE_USHORT_GRAY);
         int[] samples = {0, 0x8080, 0xffff, 0x0100};

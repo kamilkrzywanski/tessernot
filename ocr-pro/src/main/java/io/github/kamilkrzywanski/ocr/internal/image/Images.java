@@ -85,7 +85,15 @@ public final class Images {
                         throw new OcrException(path + " has " + images + " images; ocr reads one image");
                     }
                 }
-                BufferedImage image = reader.read(0);
+                BufferedImage image;
+                try {
+                    image = reader.read(0);
+                } catch (OutOfMemoryError e) {
+                    // One array as large as the picture could not be had; the heap itself is fine.
+                    throw new OcrException("image " + path + " is " + reader.getWidth(0) + "x" + reader.getHeight(0)
+                            + " pixels and does not fit the heap of " + (Runtime.getRuntime().maxMemory() >> 20)
+                            + " MB; give the JVM more with -Xmx or make the picture smaller", e);
+                }
                 if (image == null) {
                     throw new OcrException("cannot read image " + path);
                 }
@@ -185,6 +193,52 @@ public final class Images {
             bgr[o + 2] = (byte) r;
         }
         return new Bgr(bgr, w, h);
+    }
+
+    /**
+     * The picture at one {@code factor}-th of its size each way: every pixel the mean of a block
+     * of {@code factor} by {@code factor}, read band by band so that no full-size copy is made.
+     * Columns and rows that do not fill a block at the right and lower edge are dropped.
+     */
+    public static Bgr toBgr(BufferedImage image, int factor) {
+        if (factor <= 1) {
+            return toBgr(image);
+        }
+        int w = image.getWidth() / factor;
+        int h = image.getHeight() / factor;
+        if (w < 1 || h < 1) {
+            return toBgr(image);
+        }
+        byte[] out = new byte[packedBytes(w, h)];
+        int bandRows = 32;
+        int[] sums = new int[w * 3];
+        int area = factor * factor;
+        for (int top = 0; top < h; top += bandRows) {
+            int rows = Math.min(bandRows, h - top);
+            Bgr band = toBgr(image.getSubimage(0, top * factor, w * factor, rows * factor));
+            byte[] in = band.data();
+            int stride = w * factor * 3;
+            for (int y = 0; y < rows; y++) {
+                java.util.Arrays.fill(sums, 0);
+                for (int dy = 0; dy < factor; dy++) {
+                    int row = (y * factor + dy) * stride;
+                    for (int x = 0; x < w; x++) {
+                        int at = row + x * factor * 3;
+                        for (int dx = 0; dx < factor; dx++) {
+                            sums[x * 3] += in[at] & 255;
+                            sums[x * 3 + 1] += in[at + 1] & 255;
+                            sums[x * 3 + 2] += in[at + 2] & 255;
+                            at += 3;
+                        }
+                    }
+                }
+                int o = (top + y) * w * 3;
+                for (int i = 0; i < sums.length; i++) {
+                    out[o + i] = (byte) ((sums[i] + area / 2) / area);
+                }
+            }
+        }
+        return new Bgr(out, w, h);
     }
 
     /**
@@ -678,13 +732,13 @@ public final class Images {
         return (int) bytes;
     }
 
-    /** Resize to {@code height} and pad on the right with normalized zeros up to at least {@code minWidth}. */
     /** The width a line crop has in the recognizer's input once it is {@code height} high: what {@link #recTensor} fills before the padding. */
     public static int recWidth(Bgr image, int height, int maxWidth) {
         int resizedW = (int) Math.ceil(height * (image.width() / (double) Math.max(1, image.height())));
         return Math.max(1, Math.min(maxWidth, resizedW));
     }
 
+    /** Resize to {@code height} and pad on the right with normalized zeros up to at least {@code minWidth}. */
     public static float[] recTensor(Bgr image, int height, int minWidth, int maxWidth, float mean, float std) {
         int resizedW = recWidth(image, height, maxWidth);
         int tensorW = Math.min(maxWidth, Math.max(resizedW, minWidth));

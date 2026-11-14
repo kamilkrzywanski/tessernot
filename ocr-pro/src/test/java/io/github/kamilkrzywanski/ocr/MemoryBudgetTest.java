@@ -135,4 +135,17 @@ class MemoryBudgetTest {
             assertTrue(engine.idleBytes() <= ceiling, "after a failed call: " + engine.idleBytes());
         }
     }
+
+    @Test
+    void aPictureTooLargeForTheHeapIsShrunkUntilItsPageFits() {
+        long gigabyte = 1L << 30;
+        // A4 at 300 dpi, 8.7 megapixels: about 70 MB of a page share of 307 MB.
+        assertEquals(1, MemoryBudget.shrink(2472, 3508, gigabyte));
+        // A receipt at 100 megapixels: 800 MB as it is, 200 MB at half its size.
+        assertEquals(2, MemoryBudget.shrink(7176, 13968, gigabyte));
+        assertEquals(1, MemoryBudget.shrink(7176, 13968, 4 * gigabyte));
+        // A third when a half is still too much.
+        assertEquals(3, MemoryBudget.shrink(7176, 13968, gigabyte / 2));
+        assertEquals(1, MemoryBudget.shrink(0, 0, gigabyte));
+    }
 }
