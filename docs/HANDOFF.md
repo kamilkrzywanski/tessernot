@@ -232,8 +232,7 @@ profile, edits:
   `detLimitSideLen` for such pages, or enlarging by more than two.
 - **A picture too large for the heap is read at a fraction of its size** (`MemoryBudget.shrink`),
   and one the decoder cannot hold fails with an `OcrException` that names its size and the
-  heap. The 100-megapixel receipt reads in a 1 GB heap. Still open: at 512 MB the detector
-  itself runs out of memory on it, with a bare `OutOfMemoryError`.
+  heap. The 100-megapixel receipt reads in a 1 GB heap; for 512 MB see the next round.
 - **Pages askew up to 45 degrees are levelled** (it was 20), and upside down is judged after
   the levelling. The ticket photographed 22 degrees askew went from 44 edits to 24; pages
   turned by 25 or 40 degrees read as they do level.
@@ -244,7 +243,80 @@ profile, edits:
 The 4,975 is not the 4,902 of the table above: that run was made before `PageTurn`. With the
 new defaults three pages read worse with it than without (the 1981 notice 510 to 572, the
 Aparri News 71 to 80, the Arct dictionary 64 to 66), most likely through the levelling, which
-with the old defaults gained 43 on the 1981 notice. Not looked into.
+with the old defaults gained 43 on the 1981 notice. Looked into in the next round.
+
+**Levelling and small heaps, night of 2026-11-14.**
+
+- **A line of a levelled page is cut from the page before the levelling** (`OcrEngine.Page`,
+  `PageTurn.Level.before`), so the recognizer sees the picture resampled once. This is what was
+  behind the three pages that read worse with `PageTurn` than without. On the 66 established
+  pages: 4,607 to 4,570 as given (the 1981 notice 572 to 546, the Aparri News 80 to 69; no
+  other page is levelled), 5,119 to 5,037 at +3 degrees, 5,699 to 5,608 at −3. The 1981 notice
+  is still 36 edits behind its reading without `PageTurn` (510): what is left comes from the
+  boxes of the second detection, not from the pixels.
+- **A detection takes at most three quarters of the heap** (`MemoryBudget.detectionSize`): with
+  less, the page is detected on a smaller copy. Heaps of 384 MB to 1 GB against limits of 960
+  to 2048 on an A4 and a square page: a detection of 224 bytes a pixel read through with up to
+  three quarters of the heap and ran out from 107 %. With the cap both pages read at the default
+  limit in 512 MB, twice out of twice; before, the A4 page needed 768 MB and the square one
+  1 GB. At 384 MB the engine runs out about every other time, whatever the detection takes.
+- **A page that runs out of memory fails with an `OcrException`** that names the picture's size
+  and the heap, from the main thread or from a line worker. The 100-megapixel receipt at 512 MB
+  ends this way: its decoded picture alone is 300 MB.
+- The test of the enlarged page failed on the Windows leg of CI (print drawn at 8 px depends on
+  the platform's font hinting); it now draws the page four times as large and scales it down.
+
+**Pages as a phone photographs them, night of 2026-11-14.** The 66 established pages again,
+each changed the way a hand-held photo changes a page (`Probe`, variants `keyy12`, `keyx12`,
+`blur15`, `shade55`; scratch, not in the repository). Edits, default profile, 4,607 as given:
+
+| The page | Edits | Pages more than twice as bad | Where it goes |
+| --- | --- | --- | --- |
+| lit unevenly: 55 % of the light at one corner, a shadow edge across the lower third | 4,917 | 1 | nowhere in particular |
+| photographed from below: top edge 12 % shorter, lines level, margins leaning in | 6,541 | 3 | two pages in columns: the 1923 Bible 27 to 1,058, Wisła 1912 62 to 778 |
+| photographed from the side: one edge 12 % shorter, lines fanning out by about ±5 degrees | 12,870 | 17 | pages in columns first (Wisła 62 to 2,731, the Bible 1,434), then most pages |
+| out of focus: a Gaussian of 1.5 px | 15,298 | 5 | small print: Monthly Weather Review 51 to 8,559, the Białystok notice 37 to 1,193 |
+
+- Uneven light costs 7 %: nothing to do.
+- **A page photographed from the side is the hole.** `PageTurn` levels a page by one angle; here
+  the angle runs from +5 to −5 degrees down the page, so the levelling takes the middle and the
+  top and bottom stay askew. What would close it: the point the lines run to, found from the
+  angle of the long boxes against their height on the page, and the page turned back through
+  the map that sends that point to infinity, before the levelling. The crop of a line would
+  still be cut from the picture as given, through its quad, which a warp already handles.
+- From below, the lines stay level and only gutters and margins lean, so single columns read as
+  before and pages in columns lose their gutter. The same map would close it, but its point
+  has to come from the lean of the margins, which lines of ragged text do not show well.
+- Blur loses small print the way half the resolution does; nothing was tried.
+
+**Where `dev` stands with all 93 pages, night of 2026-11-14** (`ocr.sh score`, CER; the 23
+newest pages were read by the engine here for the first time):
+
+| | default profile | Polish profile |
+| --- | --- | --- |
+| `dev`, all 93 pages | 0.0519 | 0.0505 |
+| the first 39 pages (0.0219 and 0.0209 at the end of the day) | 0.0189 | 0.0179 |
+| the 31 business documents of the first batch (0.0799 and 0.0784) | 0.0850 | 0.0835 |
+| the 23 business documents added last | 0.1171 | 0.1143 |
+
+- The first batch is worse than in the afternoon through one page: the letter
+  `pl-pismo-mc-zsk-2022`, 336 edits to 548. It is a clean one-column letter that the layout
+  analysis cuts down the middle, through words (`uprze` / `jmą`): the header blocks and the
+  signature block on the right make a gutter at their left edge, and every full-width line is
+  then taken for two lines merged across it. Three of its lines escaped the cut by chance
+  before the line classifier was changed.
+- **This is the largest known loss on business documents, and now it can be reproduced on
+  `dev`.** The 54 business documents with `--layout rows` against the default: the layout
+  analysis is worse on ten pages and loses 1,315 edits on seven of them, of 7,540 in all (the
+  ZSK letter 548 against 55, PIT-11 446 against 33, the 1987 Ivey Steel memo 238 against 41,
+  the 2025 letter of the President's office 148 against 32). It wins on seven (the W-4 form
+  343 against 2,777, W-9 784 against 1,878, the 1920 Działdowo order 18 against 1,035). On the
+  first 39 pages it wins on eighteen and loses on none. So item 1 of "What to improve next" has
+  its material: a gutter that most lines of the block cross, with ink at the cut, is not a
+  gutter.
+- Hardest of the newest pages: the receipts whose pen writing the reference leaves out
+  (Goodyear 0.53, Lafayette 0.47, Potts 0.36, Maritime Electric 0.31), the purple duplicator
+  memo of 1945 (0.22), the 1818 account table (0.22).
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
@@ -472,6 +544,20 @@ failures come down to one share just under its threshold.
    in `ModelFiles`, so a bundle from another release fails at load time.
 
 ## Tried and dropped
+
+- **Detecting a tall page in bands** (2026-11-14). A portrait page larger than the detector's
+  limit is scaled down by its height; detected again in bands across its full width, each as
+  high as the page is wide, it is scaled by its width, about one and a half times larger for an
+  A4 page. The bands overlapped by twice the height of a tall line and a box was taken from the
+  band whose core held its centre, so no line was cut or taken twice. On the 66 established
+  pages, 48 of them tall enough: 4,570 edits to 9,078. Two pages gain much (Bristol Mercury 1832
+  387 to 196, OJ L91 176 to 60), three fall apart (Volumina Legum 36 to 3,639, the 1923 Bible
+  page 27 to 955, the Arct dictionary of 1916 29 to 170) and the rest move by a few edits either
+  way. The stitching is not the cause: on Volumina Legum the detector, given the larger page,
+  draws eight lines across the gutter as one box each, and the rows then end both columns. The
+  height of the lines as the detector sees them does not tell the pages apart (Bristol Mercury
+  27 px, Volumina Legum 31, OJ L91 30). A larger detector input is not better by itself; what
+  Bristol Mercury needs is still open.
 
 - **Stretching the levels of a page** (2026-11-14). The median luma of the ink (the dark class
   of Otsu's split) to black and the median luma of the paper to white, the same line for the
