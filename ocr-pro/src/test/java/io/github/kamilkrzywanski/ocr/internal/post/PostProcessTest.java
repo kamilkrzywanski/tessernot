@@ -446,7 +446,7 @@ class PostProcessTest {
     void aSkewedThreeColumnPageIsReadByColumns() throws java.io.IOException {
         List<TextLine> lines = new ArrayList<>();
         try (java.io.InputStream in = PostProcessTest.class.getResourceAsStream("/layout/three-columns-skewed.tsv")) {
-            String[] rows = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\n");
+            String[] rows = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\\R");
             for (int i = 0; i < rows.length; i++) {
                 String[] p = rows[i].split("\t");
                 float[] quad = new float[8];

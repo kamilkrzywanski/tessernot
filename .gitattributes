@@ -2,3 +2,5 @@
 *.cmd text eol=crlf
 /mvnw text eol=lf
 *.sh text eol=lf
+# Test fixtures are read line by line: the same bytes on every system.
+*.tsv text eol=lf
