@@ -57,6 +57,13 @@ pages read as:
   `dev`, for every image and not by file type.
 - **`OcrPoolTest`** holds the borrowed engine until `close()` is parked on the pool's condition;
   with the wait in `close()` removed the test fails.
+- **Before the first release:** the version is `0.1.0-SNAPSHOT`; every public class, method and
+  record component has Javadoc (`javadoc -Xdoclint:all` is silent on the public packages of all
+  five modules); `TextTable.bounds()` hands out a copy, as `TextLine.bounds()` does; `./mvnw`
+  brings Maven 3.9.15 and the enforcer plugin stops a build on a JDK below 21 or a Maven below
+  3.9 with a sentence. Run on this day by hand, not in CI: the whole suite on JDK 25 (265 tests
+  pass) and on JDK 21 without `--add-modules jdk.incubator.vector` (all pass, 11 of `RuntimeTest`
+  skip themselves), and `mvn -Prelease -Dgpg.skip package`.
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
@@ -73,7 +80,7 @@ Found in the review and still open:
   models is tested nowhere. `-XX:ActiveProcessorCount=12` in the root POM forces twelve, it does
   not cap at twelve, so a four-core runner runs twelve threads per engine. Add a matrix (with and
   without `--add-modules`, a newer JDK, one non-Linux OS) and drop or correct the flag.
-- **Build:** no enforcer plugin and no Maven wrapper; the release profile is never built in CI.
+- **Build:** the release profile is never built in CI.
 
 ## Ground rules from the owner
 
@@ -278,7 +285,7 @@ failures come down to one share just under its threshold.
    a portal user token); the deployment then waits in the portal to be published by hand.
    `ocr-pro-cli` is not uploaded: attach `ocr-pro-cli/target/ocr-pro-cli.jar` to a GitHub
    release. CI (`.github/workflows/build.yml`) runs `mvn verify` and fails on a skipped test.
-   Left to the owner: the version (`mvn versions:set -DnewVersion=0.1.0`), making the
+   Left to the owner: the version (now `0.1.0-SNAPSHOT`; `./mvnw versions:set -DnewVersion=0.1.0`), making the
    repository public, the `io.github.kamilkrzywanski` namespace on central.sonatype.com, the
    portal token, and a GPG key on a public key server. The models ship as `ocr-pro-models`
    (27 MB) and `ocr-pro-models-pl` (12 MB), so no separate hosting is needed;
