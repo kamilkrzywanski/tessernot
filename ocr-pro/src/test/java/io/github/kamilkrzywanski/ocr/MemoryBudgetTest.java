@@ -14,8 +14,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -147,5 +149,25 @@ class MemoryBudgetTest {
         // A third when a half is still too much.
         assertEquals(3, MemoryBudget.shrink(7176, 13968, gigabyte / 2));
         assertEquals(1, MemoryBudget.shrink(0, 0, gigabyte));
+    }
+
+    @Test
+    void aDetectionTooLargeForTheHeapRunsOnASmallerCopy() {
+        long gigabyte = 1L << 30;
+        long perPixel = OcrEngine.DET_BYTES_PER_PIXEL;
+        int[] a4 = {1280, 2048};
+        // An A4 page at the default limit is left alone from 768 MB up, also when the collector
+        // keeps a survivor space out of what the JVM reports (954 MB of -Xmx1g).
+        assertSame(a4, MemoryBudget.detectionSize(a4, gigabyte, perPixel));
+        assertSame(a4, MemoryBudget.detectionSize(a4, 954L << 20, perPixel));
+        assertSame(a4, MemoryBudget.detectionSize(a4, 768L << 20, perPixel));
+        // In 512 MB it is detected smaller, in the same shape, on multiples of 32.
+        int[] half = MemoryBudget.detectionSize(a4, gigabyte / 2, perPixel);
+        assertArrayEquals(new int[] {1056, 1664}, half);
+        assertTrue(perPixel * half[0] * half[1] <= gigabyte / 2 / 4 * 3);
+        // A square page at the limit takes three quarters of 1 GB, not seven eighths.
+        assertArrayEquals(new int[] {1888, 1888}, MemoryBudget.detectionSize(new int[] {2048, 2048}, gigabyte, perPixel));
+        // Never under one block of 32 a side.
+        assertArrayEquals(new int[] {320, 32}, MemoryBudget.detectionSize(new int[] {2048, 64}, 1L << 20, perPixel));
     }
 }

@@ -26,7 +26,9 @@ Expect 2–8 s per page on a laptop CPU, depending on how much text the page has
 newspaper page with a hundred lines takes longest. Detection at 960 px instead of the default
 2048 px (`--limit 960`) is about a quarter faster. It needs Java 21 and about 1 GB of heap at
 the default, about 512 MB at 960 px; a multi-page PDF fits in the same heap, with fewer pages read
-side by side when the heap is small. Without the incubator module, the scalar path is slower.
+side by side when the heap is small. With less heap than the limit needs, the page is detected
+at the largest size that fits, down to a heap of about 512 MB; below that the call fails with
+a message that names the heap. Without the incubator module, the scalar path is slower.
 
 ## Quick start
 

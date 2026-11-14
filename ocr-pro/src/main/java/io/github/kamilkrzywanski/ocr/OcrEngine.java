@@ -439,6 +439,27 @@ public final class OcrEngine implements AutoCloseable {
         if (image == null) {
             throw new OcrException("image is null");
         }
+        try {
+            return read(image, lineParallel, detect);
+        } catch (OutOfMemoryError e) {
+            throw outOfMemory(image, e);
+        } catch (OcrException e) {
+            // A line worker that ran out of memory comes back wrapped.
+            if (e.getCause() instanceof OutOfMemoryError) {
+                throw outOfMemory(image, e.getCause());
+            }
+            throw e;
+        }
+    }
+
+    /** The heap is too small for this page: said with the two numbers that decide it. */
+    private static OcrException outOfMemory(BufferedImage image, Throwable cause) {
+        return new OcrException("out of memory on a picture of " + image.getWidth() + "x" + image.getHeight()
+                + " with a heap of " + (Runtime.getRuntime().maxMemory() >> 20)
+                + " MB; give the JVM more with -Xmx", cause);
+    }
+
+    private OcrResult read(BufferedImage image, boolean lineParallel, boolean detect) {
         long totalStart = System.nanoTime();
         // 1 for almost every picture; more for one too large for this heap, see MemoryBudget.shrink.
         int shrink = MemoryBudget.shrink(image.getWidth(), image.getHeight(), Runtime.getRuntime().maxMemory());
@@ -766,7 +787,10 @@ public final class OcrEngine implements AutoCloseable {
      * the heap allows; the rest wait here.
      */
     private List<DbPost.Box> detect(Bgr bgr, boolean lineParallel) {
-        int[] size = Images.detSize(bgr.width(), bgr.height(), cfg.detLimitSideLen(), cfg.detLimitType());
+        // Smaller than the limit asks for when the heap cannot hold a detection of that size.
+        int[] size = MemoryBudget.detectionSize(
+                Images.detSize(bgr.width(), bgr.height(), cfg.detLimitSideLen(), cfg.detLimitType()),
+                Runtime.getRuntime().maxMemory(), DET_BYTES_PER_PIXEL);
         int held = MemoryBudget.DETECTION.acquire(DET_BYTES_PER_PIXEL * size[0] * size[1]);
         try {
             return detect(bgr, size, lineParallel);

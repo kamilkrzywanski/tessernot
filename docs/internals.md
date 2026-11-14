@@ -319,6 +319,16 @@ of threads:
   a budget of three tenths of the heap; the next page waits, already rendered, until an earlier
   one is done.
 - A piece larger than its whole budget takes all of it, so the largest page still runs, alone.
+- One detection never takes more than three quarters of the heap (`MemoryBudget.detectionSize`):
+  the page is detected on a smaller copy, sides still multiples of 32. An A4 page at the
+  default limit (1280×2048, 560 MiB at 224 bytes a pixel) is left alone from 768 MB up and
+  detected at 1056×1664 in 512 MB. Measured on an A4 and a square page with heaps of 512 MB to
+  1 GB and limits of 960 to 2048: a detection read through with three quarters of the heap,
+  twice out of twice, and ran out of memory from 107 %. With the cap both pages read at the
+  default limit in 512 MB; before, the A4 page needed 768 MB and the square one 1 GB. At
+  384 MB the engine runs out as often as not whatever the detection takes.
+- A page that still runs out of memory fails with an `OcrException` that names the size of the
+  picture and the heap, whether the main thread or a line worker ran out.
 - Sessions are lent last in, first out, so with few pages in flight only that many recognizers
   hold buffers.
 

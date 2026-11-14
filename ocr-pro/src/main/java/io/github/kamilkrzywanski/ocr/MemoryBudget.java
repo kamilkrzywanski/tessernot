@@ -42,6 +42,31 @@ final class MemoryBudget {
     }
 
     /**
+     * The size one detection runs at in this heap: {@code size} itself for almost every page.
+     * A detection that would take more than three quarters of the heap, at {@code bytesPerPixel}
+     * of the scaled page, is run on a smaller copy of the page that takes no more, both sides
+     * still multiples of 32. With the default limit of 2048 px an A4 page (1280 by 2048) is left
+     * alone from 768 MB up and detected at 1056 by 1664 in 512 MB, where it ran out of memory.
+     * <p>
+     * Measured on an A4 and a square page with heaps of 512 MB to 1 GB and limits of 960 to
+     * 2048: a detection read through with three quarters of the heap, twice out of twice, and
+     * ran out of memory from 107 %. At 384 MB the engine runs out as often as not, whatever the
+     * detection takes: that heap is too small for the rest.
+     *
+     * @param size width and height the detector would be given, multiples of 32
+     * @return {@code size}, or a smaller width and height
+     */
+    static int[] detectionSize(int[] size, long heapBytes, long bytesPerPixel) {
+        long most = Math.max(32 * 32, heapBytes / 4 * 3 / bytesPerPixel);
+        long pixels = (long) size[0] * size[1];
+        if (pixels <= most) {
+            return size;
+        }
+        double scale = Math.sqrt(most / (double) pixels);
+        return new int[] {Math.max(32, (int) (size[0] * scale) / 32 * 32), Math.max(32, (int) (size[1] * scale) / 32 * 32)};
+    }
+
+    /**
      * Three tenths of the heap for the pages one document has in flight: their bitmaps and the
      * recognizers that read them. With {@link #DETECTION} that leaves three tenths for the
      * weights, the word lists, the results and the collector.
