@@ -151,26 +151,26 @@ class TextLayerTest {
     }
 
     @Test
-    void aStandingBoxHoldsItsLineFromTheBottomUp() throws IOException {
+    void aStandingBoxHoldsItsLineFromTheTopDown() throws IOException {
         byte[] bytes;
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(new PDRectangle(400, 600));
             document.addPage(page);
             TextLayer layer = new TextLayer(document);
             // 20 px wide, 300 px high, at 72 dpi: one pixel a point.
-            layer.add(page, page(line("upward", 100, 100, 20, 300)), 72f);
+            layer.add(page, page(line("downward", 100, 100, 20, 300)), 72f);
             layer.finish();
             bytes = saved(document);
         }
         try (PDDocument document = Loader.loadPDF(bytes)) {
             List<float[]> glyphs = layerGlyphs(document);
-            assertEquals(6, glyphs.size());
-            // In page coordinates, y up: the first glyph at the bottom of the box (y = 600 - 400),
-            // the last near its top, all on the baseline a quarter in from the right edge.
-            assertEquals(200f, glyphs.get(0)[4], 0.5f);
-            assertTrue(glyphs.get(5)[4] > 400f && glyphs.get(5)[4] < 500f, "last glyph at y " + glyphs.get(5)[4]);
+            assertEquals(8, glyphs.size());
+            // In page coordinates, y up: the first glyph at the top of the box (y = 600 - 100),
+            // the last near its bottom, all on the baseline a quarter in from the left edge.
+            assertEquals(500f, glyphs.get(0)[4], 0.5f);
+            assertTrue(glyphs.get(7)[4] > 200f && glyphs.get(7)[4] < 300f, "last glyph at y " + glyphs.get(7)[4]);
             for (float[] glyph : glyphs) {
-                assertEquals(115f, glyph[3], 0.5f);
+                assertEquals(105f, glyph[3], 0.5f);
             }
         }
     }

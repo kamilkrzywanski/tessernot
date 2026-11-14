@@ -30,7 +30,7 @@ import java.util.Map;
  * The text of a page written under its picture, so a viewer can search, select and copy it.
  * Every line is one string in text rendering mode 3 (neither filled nor stroked), stretched over
  * the box of the line: along its lower edge, as high as the box. A skewed line keeps its slant,
- * and a box that stands on its short side holds its text from the bottom up.
+ * and a box that stands on its short side holds its text from the top down.
  * <p>
  * The text needs a font, and no standard PDF font has Polish letters. The layer brings its own:
  * Type 3 fonts whose glyphs draw nothing. A Type 3 font is a dictionary of drawing procedures, so
@@ -47,7 +47,7 @@ import java.util.Map;
 public final class TextLayer {
     /** Share of the line box below the baseline, and of the font box: room for descenders. */
     private static final float DESCENT = 0.25f;
-    /** A box this many times as high as it is wide holds a line that runs upward, as {@code OcrConfig.rotateVertical} takes it. */
+    /** A box this many times as high as it is wide holds a line that runs downward, as {@code OcrConfig.rotateVertical} takes it. */
     private static final float UPRIGHT = 1.5f;
     private static final int FIRST_CODE = 33;
     private static final int LAST_CODE = 255;
@@ -135,11 +135,12 @@ public final class TextLayer {
         float[] bottomRight = placement.toPage(quad[4], quad[5]);
         float[] topLeft = placement.toPage(quad[0], quad[1]);
         if (distance(bottomLeft, topLeft) >= UPRIGHT * distance(bottomLeft, bottomRight)) {
-            // A box that stands: the engine reads it turned a quarter, from the bottom up.
+            // A box that stands: the engine reads it as text turned a quarter clockwise, from the
+            // top down, with the feet of the letters on the left.
             float[] topRight = placement.toPage(quad[2], quad[3]);
-            topLeft = bottomLeft;
-            bottomLeft = bottomRight;
-            bottomRight = topRight;
+            bottomRight = bottomLeft;
+            bottomLeft = topLeft;
+            topLeft = topRight;
         }
         float dx = bottomRight[0] - bottomLeft[0];
         float dy = bottomRight[1] - bottomLeft[1];

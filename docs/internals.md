@@ -284,7 +284,7 @@ the second reads of `Corrections.POLISH` are `PolishRules`.
 - A searchable PDF (`OcrPdf.searchable`, `TextLayer`) is the source with a text layer added:
   each line is one string in text rendering mode 3, stretched over the line's box, along its
   lower edge and as high as the box. A box that stands on its short side holds its text from
-  the bottom up, as `rotateVertical` reads it. Line pixels become page points through the crop
+  the top down, as `rotateVertical` reads it. Line pixels become page points through the crop
   box and the page rotation. The layer needs a font with Polish letters and has no font file:
   it writes Type 3 fonts whose glyph procedures draw nothing, 223 codes each, handed to the
   characters of the document as they turn up, with a `ToUnicode` map; a document with more
