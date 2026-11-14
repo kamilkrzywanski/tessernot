@@ -377,6 +377,41 @@ class OcrEndToEndTest {
 
     @Test
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void aSmallPageWithSmallPrintIsReadEnlargedAndPlacedInItsOwnPixels() {
+        String[] texts = {"Faktura za dostawę towarów zgodnie z umową numer 2024/10",
+                "Termin płatności wynosi czternaście dni od daty wystawienia",
+                "Prosimy o przelew na rachunek bankowy podany poniżej w stopce",
+                "Dziękujemy za współpracę i zapraszamy ponownie do naszego sklepu"};
+        BufferedImage page = new BufferedImage(400, 150, BufferedImage.TYPE_INT_RGB);
+        Graphics2D draw = Images.prepare(page);
+        try {
+            draw.setFont(Samples.font(8f));
+            for (int i = 0; i < texts.length; i++) {
+                draw.drawString(texts[i], 20, 30 + 28 * i);
+            }
+        } finally {
+            draw.dispose();
+        }
+        OcrResult result = engine.recognize(page);
+        // Print this small is not read letter for letter; the test is that the page was
+        // enlarged and that every line still lies where it was drawn, in pixels of the picture.
+        assertEquals(texts.length, result.lines().size(), result.text());
+        assertEquals(400, result.width());
+        assertEquals(150, result.height());
+        for (int i = 0; i < texts.length; i++) {
+            TextLine line = result.lines().get(i);
+            assertTrue(Math.abs(line.text().length() - texts[i].length()) <= 6, line.text());
+            java.awt.Rectangle bounds = line.bounds();
+            int baseline = 30 + 28 * i;
+            assertTrue(bounds.x > 8 && bounds.x < 24 && bounds.x + bounds.width < 400, "line " + i + " at " + bounds);
+            assertTrue(bounds.y < baseline - 4 && bounds.y > baseline - 16
+                    && bounds.y + bounds.height > baseline && bounds.y + bounds.height < baseline + 9,
+                    "line " + i + " at " + bounds);
+        }
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void wordsLieWhereTheyArePrinted() {
         String[] texts = {"Zażółć gęślą jaźń i wróć do domu", "FAKTURA VAT nr 2024/10/0042 z dnia 12.10.2024",
                 "il li ill Illinois minimum www MMM WWW"};

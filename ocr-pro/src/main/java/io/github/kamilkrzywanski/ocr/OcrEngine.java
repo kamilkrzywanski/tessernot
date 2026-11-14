@@ -450,9 +450,16 @@ public final class OcrEngine implements AutoCloseable {
             bgr = Images.sauvola(bgr);
         }
         long detStart = totalStart;
+        List<DbPost.Box> boxes = detect ? detect(bgr, lineParallel) : fullPage(bgr);
+        // 1 for almost every page; more for a small page with small print, see PageTurn.enlarge.
+        float enlarge = detect && shrink == 1
+                ? PageTurn.enlarge(boxes, bgr.width(), bgr.height(), cfg.detLimitSideLen(), cfg.recHeight()) : 1f;
+        if (enlarge > 1f) {
+            bgr = Images.enlarge(bgr, enlarge);
+            boxes = detect(bgr, lineParallel);
+        }
         int pageWidth = bgr.width();
         int pageHeight = bgr.height();
-        List<DbPost.Box> boxes = detect ? detect(bgr, lineParallel) : fullPage(bgr);
         // Quarter turns counter-clockwise given to the page before it is read, and the page
         // turned level when its lines run at an angle that moves a gutter by more than a line
         // from top to bottom. The order is the order of the back-mapping at the end: a quarter
@@ -508,9 +515,9 @@ public final class OcrEngine implements AutoCloseable {
             tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
                     .thenComparingInt(table -> table.bounds().x));
         }
-        if (turns != 0 || level != null || flipped || shrink != 1) {
+        if (turns != 0 || level != null || flipped || shrink != 1 || enlarge > 1f) {
             // Back into the pixels of the picture as it was given: out of the half turn, off
-            // the levelled canvas, out of the quarter turn, then up to the full size.
+            // the levelled canvas, out of the quarter turn, then to the size it came in.
             int quarters = turns;
             PageTurn.Level levelled = level;
             boolean half = flipped;
@@ -520,8 +527,8 @@ public final class OcrEngine implements AutoCloseable {
                     p = levelled.back(p[0], p[1]);
                 }
                 p = PageTurn.back(p[0], p[1], quarters, pageWidth, pageHeight);
-                p[0] *= shrink;
-                p[1] *= shrink;
+                p[0] *= shrink / enlarge;
+                p[1] *= shrink / enlarge;
                 return p;
             };
             List<TextLine> lines = new ArrayList<>(flat.size());

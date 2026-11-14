@@ -144,6 +144,35 @@ class PageTurnTest {
     }
 
     @Test
+    void aSmallPageWithSmallPrintIsEnlargedUpToTheDetectorsLimit() {
+        List<DbPost.Box> small = new ArrayList<>();
+        List<DbPost.Box> normal = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            small.add(box(10, 14 * i, 300, 12));
+            normal.add(box(10, 30 * i, 300, 24));
+        }
+        // Lines 12 px high where the recognizer reads at 48: under a third, so the page doubles.
+        assertEquals(2f, PageTurn.enlarge(small, 800, 1000, 2048, 48));
+        // No further than the detector's limit.
+        assertEquals(2048f / 1500f, PageTurn.enlarge(small, 1000, 1500, 2048, 48), 1e-6f);
+        // Already near the limit: a second detection would see almost the same picture.
+        assertEquals(1f, PageTurn.enlarge(small, 1200, 1800, 2048, 48));
+        assertEquals(1f, PageTurn.enlarge(small, 3000, 4000, 2048, 48));
+        // Lines of 24 px are large enough, and so are those of exactly a third.
+        assertEquals(1f, PageTurn.enlarge(normal, 800, 1000, 2048, 48));
+        assertEquals(1f, PageTurn.enlarge(List.of(box(0, 0, 300, 16)), 800, 1000, 2048, 48));
+        assertEquals(1f, PageTurn.enlarge(List.of(), 800, 1000, 2048, 48));
+
+        // The picture grows by the factor and keeps its content.
+        byte[] data = new byte[4 * 2 * 3];
+        java.util.Arrays.fill(data, (byte) 200);
+        Bgr larger = Images.enlarge(new Bgr(data, 4, 2), 2f);
+        assertEquals(8, larger.width());
+        assertEquals(4, larger.height());
+        assertEquals(200, larger.data()[(2 * 8 + 3) * 3] & 255);
+    }
+
+    @Test
     void aLongLineVotesWithItsMiddle() {
         // 100 by 4: the window is the 32 columns in the middle. Each pixel holds its column.
         byte[] data = new byte[100 * 4 * 3];

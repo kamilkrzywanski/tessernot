@@ -820,6 +820,23 @@ public final class Images {
         return new Bgr(out, w, h);
     }
 
+    /** The page enlarged by {@code scale}, bicubic. */
+    public static Bgr enlarge(Bgr page, float scale) {
+        int w = Math.round(page.width() * scale);
+        int h = Math.round(page.height() * scale);
+        BufferedImage from = new BufferedImage(page.width(), page.height(), BufferedImage.TYPE_3BYTE_BGR);
+        System.arraycopy(page.data(), 0, ((DataBufferByte) from.getRaster().getDataBuffer()).getData(), 0, page.data().length);
+        BufferedImage to = new BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR);
+        Graphics2D g = to.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.drawImage(from, 0, 0, w, h, null);
+        } finally {
+            g.dispose();
+        }
+        return toBgr(to);
+    }
+
     /**
      * The page with its content turned about its centre by the angle of {@code cos} and
      * {@code sin}, on a white canvas of {@code width} by {@code height}: the output pixel

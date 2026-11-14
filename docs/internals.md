@@ -85,6 +85,25 @@ by reflection.
   through the JDK's conversion (CER 0.036 and 0.051). The conversion read 22 pages better and 33
   worse. It helps faded newsprint (Bristol Mercury 1832: 431 to 352) and costs most where the
   print is thin or light (an arXiv page: 91 to 2,104).
+- **The size a page is read at**: almost every picture is read as it is given. Two kinds are
+  not, and their quads still come out in the pixels of the picture as given:
+  - **Too large for the heap** (`MemoryBudget.shrink`): a picture that would take more than
+    three tenths of the heap on its own, at 8 bytes a pixel, is read at half its size each way,
+    or a third, until it fits. The smaller copy is a block mean taken 32 rows at a time, so the
+    full BGR copy is never made. A receipt photographed at 7176×13968 ran out of a 1 GB heap; it
+    reads there now, with lines still many times higher than the recognizer needs. A picture
+    the decoder itself cannot hold fails with an `OcrException` that names its size and the heap.
+  - **Small, with small print** (`PageTurn.enlarge`): after the first detection, when the median
+    line box is lower than a third of the height the recognizer reads at (16 px of 48) and the
+    page is smaller than the detector's limit, the page is enlarged (bicubic) up to that limit,
+    at most twice, and detected again; an enlargement under 1.25 is not made. The detector then
+    finds lines it had joined or missed. On the 66 pages of `dev` and `test` at half their
+    resolution the edits go from 15,473 to 8,167, six pages better and none worse; as given no
+    page changes. That is still far from the 4,607 of the full size: the Monthly Weather Review
+    page reads with 51 edits as given and 1,862 at half (6,838 before). A page that is still
+    near the limit at half its size (A4 at 150 dpi is 1240×1754 against 2048) is not enlarged,
+    since the detector would scale it down again; a higher `detLimitSideLen` is the answer
+    there.
 - **Turning the page** (`PageTurn`, on by default, `OcrConfig.pageOrientation`): single lines
   are read at any quarter turn, but rows, columns and tables come from where the lines lie, so
   a page has to stand upright and level before they are looked for. After the first detection:

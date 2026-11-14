@@ -90,6 +90,10 @@ Before the image is read, missing or empty model files are reported with a point
 - Images are decoded in memory; no temporary file is written.
 - A file with `%PDF-` in its first kilobyte is sent to `ocr pdf`, unless it starts as PNG, JPEG, GIF, BMP or TIFF.
 - A PDF with a user password is rejected before the model loads. A PDF with an empty user password and an owner password opens.
+- A picture that would take more than three tenths of the heap on its own is read at half its
+  size, or a third, until it fits; a small page with small print is enlarged before it is read.
+  Quads are in the pixels of the picture as given either way. A picture the decoder cannot hold
+  fails with a message that names its size and the heap.
 - An image whose packed BGR would not fit one Java array fails with `image is too large`.
 
 ## JSON
