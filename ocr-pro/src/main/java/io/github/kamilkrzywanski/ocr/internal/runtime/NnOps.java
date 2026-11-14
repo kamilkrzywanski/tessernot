@@ -50,10 +50,10 @@ final class NnOps {
         int batch = x.dims[0];
         int channels = x.dims[1];
         int spatial = ElementOps.product(x.dims, 2, x.rank());
-        float[] out = run.arena.allocF(Tensor.numel(outDims));
         if (spatial == 0) {
-            return Tensor.pooledF32(outDims, out);
+            throw new OcrException("GlobalAveragePool over an empty map " + x.shapeString());
         }
+        float[] out = run.arena.allocF(Tensor.numel(outDims));
         float inv = 1f / spatial;
         for (int n = 0; n < batch; n++) {
             for (int c = 0; c < channels; c++) {
@@ -101,7 +101,9 @@ final class NnOps {
                                 if (inside) {
                                     sum += x.f[inBase + ih * inW + iw];
                                     valid++;
-                                } else if (countIncludePad) {
+                                } else if (countIncludePad && ih >= -padT && ih < inH + padB
+                                        && iw >= -padL && iw < inW + padR) {
+                                    // The padding counts; cells a ceil_mode window reaches beyond it do not.
                                     valid++;
                                 }
                             }

@@ -74,6 +74,14 @@ final class ShapeOps {
         if (perm.length != rank) {
             throw new OcrException("transpose perm rank");
         }
+        // Each axis once: a repeated axis would leave output elements unwritten.
+        boolean[] seen = new boolean[rank];
+        for (int axis : perm) {
+            if (axis < 0 || axis >= rank || seen[axis]) {
+                throw new OcrException("transpose perm " + Arrays.toString(perm) + " is not a permutation of " + rank + " axes");
+            }
+            seen[axis] = true;
+        }
         int[] outDims = new int[rank];
         for (int i = 0; i < rank; i++) {
             outDims[i] = a.dims[perm[i]];
@@ -230,7 +238,8 @@ final class ShapeOps {
             int dim = data.dims[axis];
             int st = (int) clampIndex(starts[i], dim, false, steps[i]);
             int en = (int) clampIndex(ends[i], dim, true, steps[i]);
-            int sp = (int) steps[i];
+            // A step past the int range still walks at most one element, in its own direction.
+            int sp = (int) Math.max(-Integer.MAX_VALUE, Math.min(Integer.MAX_VALUE, steps[i]));
             if (sp == 0) {
                 throw new OcrException("slice step 0");
             }
@@ -292,8 +301,9 @@ final class ShapeOps {
         return v;
     }
 
+    /** {@code num / den} rounded up, for a positive {@code num} and {@code den}, without a sum that could pass the int range. */
     private static int divUp(int num, int den) {
-        return (num + den - 1) / den;
+        return (num - 1) / den + 1;
     }
 
     static Tensor flatten(Tensor a, int axis, Run run) {

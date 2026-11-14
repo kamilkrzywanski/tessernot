@@ -1,5 +1,7 @@
 package io.github.kamilkrzywanski.ocr.internal.runtime;
 
+import io.github.kamilkrzywanski.ocr.OcrException;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,8 +19,15 @@ public final class Graph {
     /** Set by {@link #optimize()}, and for a JIR file, whose graph was optimized when written. */
     public boolean optimized;
 
+    /** A node the optimizer cannot read, such as a Conv without weights, fails with an {@link OcrException}. */
     public void optimize() {
-        Optimizer.optimize(this);
+        try {
+            Optimizer.optimize(this);
+        } catch (OcrException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new OcrException("cannot optimize the graph: " + e, e);
+        }
         optimized = true;
     }
 }

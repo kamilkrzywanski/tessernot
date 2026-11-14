@@ -27,7 +27,7 @@ public final class Session {
     public static final long RETAIN_BYTES = 64L << 20;
 
     private final Graph graph;
-    private final Arena arena = new Arena();
+    private final Arena arena;
     private final boolean vector;
     private final int threads;
     private final ExecutorService pool;
@@ -35,7 +35,12 @@ public final class Session {
     private final boolean trace;
 
     private Session(Graph graph, Options options) {
+        this(graph, options, new Arena());
+    }
+
+    private Session(Graph graph, Options options, Arena arena) {
         this.graph = graph;
+        this.arena = arena;
         this.vector = options.vector && VectorSupport.available();
         this.threads = options.threads;
         this.pool = options.pool;
@@ -86,6 +91,17 @@ public final class Session {
             graph.optimize();
         }
         return new Session(graph, options);
+    }
+
+    /**
+     * A session whose arena hands every float buffer out full of NaN, for tests: an operator that
+     * leaves an output element unwritten, or relies on a fresh array being zero, returns NaN.
+     */
+    static Session poisoned(Graph graph, Options options) {
+        if (options.optimize && !graph.optimized) {
+            graph.optimize();
+        }
+        return new Session(graph, options, new Arena(true));
     }
 
     /** Own arena, no nested thread pool. Weights stay shared. */

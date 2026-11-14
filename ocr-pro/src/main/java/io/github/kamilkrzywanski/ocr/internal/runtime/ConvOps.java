@@ -75,6 +75,15 @@ final class ConvOps {
         if (bias != null && bias.numel() != m) {
             throw new OcrException("ConvTranspose bias mismatch");
         }
+        // SAME padding of a transposed convolution is defined by its output size, not by the
+        // forward formula pads() uses, and output_shape overrides the pads. Neither is implemented.
+        String auto = node.str("auto_pad", "NOTSET");
+        if ("SAME_UPPER".equals(auto) || "SAME_LOWER".equals(auto)) {
+            throw new OcrException("ConvTranspose auto_pad " + auto + " is not supported");
+        }
+        if (node.longs("output_shape", null) != null) {
+            throw new OcrException("ConvTranspose output_shape is not supported");
+        }
         int[] pads = pads(node, inH, inW, kH, kW);
         int sH = spatial(node, "strides", 0, 1);
         int sW = spatial(node, "strides", 1, 1);
@@ -763,8 +772,10 @@ final class ConvOps {
         }
     }
 
+    /** Zero when the kernel does not fit the padded input, whatever the stride; the caller rejects that. */
     private static int convOut(int in, int k, int stride, int dil, int pad0, int pad1) {
-        return (in + pad0 + pad1 - dil * (k - 1) - 1) / stride + 1;
+        int span = in + pad0 + pad1 - dil * (k - 1) - 1;
+        return span < 0 ? 0 : span / stride + 1;
     }
 
     private static int spatial(Node node, String key, int index, int def) {

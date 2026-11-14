@@ -235,7 +235,9 @@ final class ElementOps {
     static Tensor reduceMean(Tensor a, int[] axes, boolean keepdims, boolean noop, Run run) {
         int rank = a.rank();
         boolean[] reduced = new boolean[rank];
-        if (axes == null) {
+        // No axes, given as no attribute or as an empty input, means every axis.
+        if (axes == null || axes.length == 0) {
+            axes = null;
             if (noop) {
                 return copyFloat(a, run);
             }

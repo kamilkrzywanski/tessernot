@@ -267,6 +267,12 @@ For timings on real documents next to Tesseract and RapidOCR, see [benchmark.md]
 ## Tests
 
 - Operators against hand-computed values (about 1e-4).
+- `OperatorFuzzTest`: random Conv, ConvTranspose, pooling, Slice, broadcast arithmetic, MatMul,
+  Transpose, ReduceMean, Softmax and nearest Resize against plain references in double precision,
+  on the scalar and the vector path, alone and with a thread pool; and random convolution chains
+  (BatchNorm, bias, activations, scalar affine) raw against optimized. Every buffer of the arena
+  is handed out full of NaN (`Session.poisoned`), so an element a kernel leaves unwritten fails
+  the comparison. Fixed seeds, about ten seconds.
 - Official ONNX files: operator counts, CLS input 80×160, REC input height 48, REC output 18710.
 - Raw and fused detection graphs agree within 1e-3.
 - A synthetic invoice rendered with DejaVu: CER below 0.25, and `Zażółć gęślą jaźń` is present.

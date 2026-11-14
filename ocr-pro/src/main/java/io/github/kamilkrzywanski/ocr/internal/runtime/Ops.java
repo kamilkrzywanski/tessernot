@@ -81,14 +81,16 @@ final class Ops {
         if (k == null || k.length < 2) {
             throw new OcrException("AveragePool kernel_shape");
         }
-        long[] pads = node.longs("pads", new long[]{0, 0, 0, 0});
-        int padT = pads.length > 0 ? (int) pads[0] : 0;
-        int padL = pads.length > 1 ? (int) pads[1] : 0;
-        int padB = pads.length > 2 ? (int) pads[2] : padT;
-        int padR = pads.length > 3 ? (int) pads[3] : padL;
-        return NnOps.averagePool(x, (int) k[0], (int) k[1],
-                spatial(node, "strides", 0, 1), spatial(node, "strides", 1, 1),
-                padT, padL, padB, padR,
+        if (x.rank() != 4) {
+            throw new OcrException("AveragePool expects NCHW");
+        }
+        int kH = (int) k[0];
+        int kW = (int) k[1];
+        int sH = spatial(node, "strides", 0, 1);
+        int sW = spatial(node, "strides", 1, 1);
+        int[] pads = poolPads(node, x.dims[2], x.dims[3], kH, kW, sH, sW, 1, 1);
+        return NnOps.averagePool(x, kH, kW, sH, sW,
+                pads[0], pads[1], pads[2], pads[3],
                 node.lng("ceil_mode", 0) != 0,
                 node.lng("count_include_pad", 0) != 0,
                 run);
@@ -120,7 +122,7 @@ final class Ops {
             return new int[]{h[0], w[0], h[1], w[1]};
         }
         if (!"NOTSET".equals(auto) && !"VALID".equals(auto)) {
-            throw new OcrException("MaxPool auto_pad " + auto);
+            throw new OcrException(node.op + " auto_pad " + auto);
         }
         long[] pads = "VALID".equals(auto) ? new long[]{0, 0, 0, 0} : node.longs("pads", new long[]{0, 0, 0, 0});
         int padT = pads.length > 0 ? (int) pads[0] : 0;

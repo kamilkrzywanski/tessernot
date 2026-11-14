@@ -28,6 +28,17 @@ public final class Arena {
     private long idleBytes;
     /** Bytes of every array this arena has created. */
     private long allocatedBytes;
+    /** Every float buffer is handed out full of NaN: a kernel that leaves an element unwritten, or takes a fresh array for zero, shows. */
+    private final boolean poison;
+
+    public Arena() {
+        this(false);
+    }
+
+    /** {@code poison} is for tests, see {@link Session#poisoned}. */
+    Arena(boolean poison) {
+        this.poison = poison;
+    }
 
     /**
      * Bucket length for a float request. Small arrays stay exact; above that there are four sizes
@@ -46,6 +57,14 @@ public final class Arena {
     }
 
     public float[] allocF(int n) {
+        float[] data = take(n);
+        if (poison) {
+            java.util.Arrays.fill(data, Float.NaN);
+        }
+        return data;
+    }
+
+    private float[] take(int n) {
         if (n == 0) {
             return EMPTY_F;
         }

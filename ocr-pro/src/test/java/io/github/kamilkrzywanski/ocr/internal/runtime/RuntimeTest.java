@@ -1005,6 +1005,124 @@ class RuntimeTest {
         assertEquals(31f, y.f[0], 1e-5f);
     }
 
+    /** Inputs an operator cannot compute fail by name; none returns a buffer it did not fill. */
+    @Test
+    void operatorsRejectWhatTheyCannotCompute() {
+        Tensor map = Tensor.f32(new int[]{1, 1, 2, 2}, new float[]{1, 2, 3, 4});
+        Map<String, Tensor> x = Map.of("x", map);
+
+        OcrException perm = assertThrows(OcrException.class, () -> exec(14,
+                node("Transpose", "t", attrs(Attr.ints("perm", 0, 0, 2, 3)), "x", "y"), Map.of(), x, false));
+        assertTrue(perm.getMessage().contains("not a permutation"), perm.getMessage());
+
+        OcrException empty = assertThrows(OcrException.class, () -> exec(14,
+                node("GlobalAveragePool", "g", "x", "y"), Map.of(),
+                Map.of("x", Tensor.f32(new int[]{1, 2, 0, 3}, new float[0])), false));
+        assertTrue(empty.getMessage().contains("empty map"), empty.getMessage());
+
+        // A 3x3 kernel does not fit a 2x2 map, with a stride of 2 as with a stride of 1.
+        Map<String, Tensor> kernel = Map.of("w", Tensor.f32(new int[]{1, 1, 3, 3}, new float[9]));
+        for (long stride : new long[]{1, 2, 3}) {
+            OcrException small = assertThrows(OcrException.class, () -> exec(14,
+                    node("Conv", "c", attrs(Attr.ints("strides", stride, stride)), "x", "w", "y"), kernel, x, false));
+            assertTrue(small.getMessage().contains("non-positive output"), small.getMessage());
+        }
+
+        Map<String, Tensor> up = Map.of("w", Tensor.f32(new int[]{1, 1, 2, 2}, new float[]{1, 1, 1, 1}));
+        OcrException same = assertThrows(OcrException.class, () -> exec(14,
+                node("ConvTranspose", "t", attrs(Attr.of("auto_pad", "SAME_UPPER"), Attr.ints("strides", 2, 2)),
+                        "x", "w", "y"), up, x, false));
+        assertTrue(same.getMessage().contains("auto_pad SAME_UPPER is not supported"), same.getMessage());
+        OcrException shape = assertThrows(OcrException.class, () -> exec(14,
+                node("ConvTranspose", "t", attrs(Attr.ints("output_shape", 4, 4), Attr.ints("strides", 2, 2)),
+                        "x", "w", "y"), up, x, false));
+        assertTrue(shape.getMessage().contains("output_shape"), shape.getMessage());
+    }
+
+    @Test
+    void reduceMeanWithoutAxesIsTheMeanOfEverything() {
+        Tensor matrix = Tensor.f32(new int[]{2, 2}, new float[]{1, 2, 3, 4});
+        // Opset 18 passes the axes as an input; an empty one means all of them.
+        Graph graph = new Graph();
+        graph.opset = 18;
+        graph.inputs.add(new Sig("x", Tensor.F32, null));
+        graph.outputs.add(new Sig("y", Tensor.F32, null));
+        graph.initializers.put("axes", Tensor.i64(new int[]{0}, new long[0]));
+        graph.nodes.add(node("ReduceMean", "r", attrs(Attr.of("keepdims", 0L)), "x", "axes", "y"));
+        Tensor all = Session.create(graph, Session.Options.scalar()).run(Map.of("x", matrix)).get("y");
+        assertEquals(1, all.numel());
+        assertEquals(2.5f, all.f[0], 1e-6f);
+    }
+
+    @Test
+    void sliceStepBeyondTheIntRangeTakesOneElement() {
+        Tensor row = Tensor.f32(new int[]{4}, new float[]{10, 20, 30, 40});
+        Map<String, Tensor> forward = Map.of(
+                "starts", Tensor.i64(new int[]{1}, new long[]{0}),
+                "ends", Tensor.i64(new int[]{1}, new long[]{Long.MAX_VALUE}),
+                "axes", Tensor.i64(new int[]{1}, new long[]{0}),
+                "steps", Tensor.i64(new int[]{1}, new long[]{Long.MAX_VALUE}));
+        Tensor first = exec(14, node("Slice", "s", "x", "starts", "ends", "axes", "steps", "y"),
+                forward, Map.of("x", row), false);
+        assertArrayEquals(new int[]{1}, first.dims);
+        assertEquals(10f, first.f[0], 0f);
+        Map<String, Tensor> backward = Map.of(
+                "starts", Tensor.i64(new int[]{1}, new long[]{-1}),
+                "ends", Tensor.i64(new int[]{1}, new long[]{Long.MIN_VALUE}),
+                "axes", Tensor.i64(new int[]{1}, new long[]{0}),
+                "steps", Tensor.i64(new int[]{1}, new long[]{Long.MIN_VALUE}));
+        Tensor last = exec(14, node("Slice", "s", "x", "starts", "ends", "axes", "steps", "y"),
+                backward, Map.of("x", row), false);
+        assertArrayEquals(new int[]{1}, last.dims);
+        assertEquals(40f, last.f[0], 0f);
+    }
+
+    /** With count_include_pad the padding counts, and cells a ceil_mode window reaches beyond it do not. */
+    @Test
+    void averagePoolCountsThePaddingButNotWhatLiesBeyondIt() {
+        Tensor row = Tensor.f32(new int[]{1, 1, 1, 5}, new float[]{2, 4, 6, 8, 10});
+        Tensor out = exec(14, node("AveragePool", "p", attrs(
+                Attr.ints("kernel_shape", 1, 2), Attr.ints("strides", 1, 2),
+                Attr.of("ceil_mode", 1L), Attr.of("count_include_pad", 1L)), "x", "y"),
+                Map.of(), Map.of("x", row), false);
+        // Windows [2,4], [6,8] and [10, beyond]: the last one holds one cell.
+        assertArrayEquals(new int[]{1, 1, 1, 3}, out.dims);
+        assertArrayEquals(new float[]{3, 7, 10}, java.util.Arrays.copyOf(out.f, 3), 1e-6f);
+
+        Tensor same = exec(14, node("AveragePool", "p", attrs(
+                Attr.ints("kernel_shape", 1, 3), Attr.ints("strides", 1, 1), Attr.of("auto_pad", "SAME_UPPER")), "x", "y"),
+                Map.of(), Map.of("x", row), false);
+        assertArrayEquals(new int[]{1, 1, 1, 5}, same.dims);
+        assertArrayEquals(new float[]{3, 4, 6, 8, 9}, java.util.Arrays.copyOf(same.f, 5), 1e-6f);
+    }
+
+    @Test
+    void aNodeTheOptimizerCannotReadFailsWithOcrException() {
+        Graph graph = new Graph();
+        graph.opset = 14;
+        graph.inputs.add(new Sig("x", Tensor.F32, null));
+        graph.outputs.add(new Sig("y", Tensor.F32, null));
+        graph.initializers.put("k", Tensor.f32(new int[]{1, 1, 1, 1}, new float[]{1}));
+        graph.nodes.add(node("Conv", "c", "x", "c0"));
+        graph.nodes.add(node("Add", "a", "c0", "k", "y"));
+        assertThrows(OcrException.class, () -> Session.create(graph, new Session.Options(false, 1, null, false, false, true)));
+    }
+
+    @Test
+    void aPoisonedArenaHandsOutNaN() {
+        Arena arena = new Arena(true);
+        for (float v : arena.allocF(300)) {
+            assertTrue(Float.isNaN(v));
+        }
+        float[] used = arena.allocF(300);
+        java.util.Arrays.fill(used, 1f);
+        arena.freeF(used);
+        float[] again = arena.allocF(300);
+        assertSame(used, again);
+        assertTrue(Float.isNaN(again[0]));
+        assertEquals(0f, new Arena().allocF(300)[0], 0f);
+    }
+
     @Test
     void jirRoundTripAndTruncation() {
         Graph graph = new Graph();
