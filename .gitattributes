@@ -1,0 +1,4 @@
+# The Windows wrapper script needs CRLF line ends, the shell scripts LF, whatever core.autocrlf says.
+*.cmd text eol=crlf
+/mvnw text eol=lf
+*.sh text eol=lf
