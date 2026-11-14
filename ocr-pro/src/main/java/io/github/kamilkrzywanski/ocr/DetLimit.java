@@ -9,10 +9,18 @@ package io.github.kamilkrzywanski.ocr;
  * with it.
  */
 public enum DetLimit {
+    /** The longer side is at most the limit. */
     MAX,
+    /** The shorter side is at least the limit. */
     MIN;
 
-    /** {@code max} or {@code min}, any case. */
+    /**
+     * Reads a value from its name, in any case.
+     *
+     * @param value {@code max} or {@code min}
+     * @return the value
+     * @throws OcrException for any other text and for null
+     */
     public static DetLimit parse(String value) {
         if (value != null) {
             for (DetLimit l : values()) {

@@ -21,9 +21,13 @@ import java.util.HexFormat;
  * not match. {@code ocr-pro-models} ships the same files for {@link OcrConfig#defaults()}.
  */
 public final class ModelFiles {
+    /** File name of the default detection model. */
     public static final String DET = "ch_PP-OCRv5_det_mobile.onnx";
+    /** File name of the default recognition model. */
     public static final String REC = "PP-OCRv6_rec_small.onnx";
+    /** File name of the default line orientation classifier. */
     public static final String CLS = "ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
+    /** File name of the character dictionary of the default recognition model. */
     public static final String DICT = "ppocrv6_dict.txt";
 
     private static final String BASE =
@@ -43,6 +47,15 @@ public final class ModelFiles {
     private ModelFiles() {
     }
 
+    /**
+     * Downloads the four default files into {@code directory} over HTTPS, from the RapidOCR
+     * release on ModelScope. A file already there with the expected SHA-256 is kept; a download
+     * whose SHA-256 differs is rejected. The directory is created when it is missing.
+     *
+     * @param directory where the files go
+     * @return {@code directory}
+     * @throws OcrException when {@code directory} is null or a file, a download fails or a checksum differs
+     */
     public static Path ensure(Path directory) {
         if (directory == null) {
             throw new OcrException("model directory is null");
@@ -90,6 +103,9 @@ public final class ModelFiles {
      * Checks that the model files {@code config} uses are there and not empty, without loading them:
      * detection, recognition with its word lists and the classifier as far as the configuration turns them on. Lets a
      * caller fail before it decodes a document; {@link OcrEngine#create(OcrConfig)} checks the same.
+     *
+     * @param config the configuration whose files are checked
+     * @throws OcrException when {@code config} is null, or a file it needs is missing or empty
      */
     public static void require(OcrConfig config) {
         if (config == null) {

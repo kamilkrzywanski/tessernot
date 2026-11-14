@@ -29,6 +29,13 @@ public final class ModelSource {
         this.name = name;
     }
 
+    /**
+     * A file on disk, read when the engine loads.
+     *
+     * @param path the file
+     * @return the source
+     * @throws OcrException when {@code path} is null
+     */
     public static ModelSource of(Path path) {
         if (path == null) {
             throw new OcrException("model path is null");
@@ -37,7 +44,13 @@ public final class ModelSource {
         return new ModelSource(path, file == null ? path.toString() : file.toString());
     }
 
-    /** A file that some {@link ModelBundle} on the class path holds, looked up when the engine loads. */
+    /**
+     * A file that some {@link ModelBundle} on the class path holds, looked up when the engine loads.
+     *
+     * @param name the file name in the bundle, such as {@link ModelFiles#DET}
+     * @return the source
+     * @throws OcrException when {@code name} is null or blank
+     */
     public static ModelSource bundled(String name) {
         if (name == null || name.isBlank()) {
             throw new OcrException("bundled model name is empty");
@@ -45,16 +58,17 @@ public final class ModelSource {
         return new ModelSource(null, name);
     }
 
-    /** The path on disk, or null for a bundled file. */
+    /** {@return the path on disk, or null for a bundled file} */
     public Path path() {
         return path;
     }
 
-    /** The file name: the last element of the path, or the name in the bundle. */
+    /** {@return the file name: the last element of the path, or the name in the bundle} */
     public String name() {
         return name;
     }
 
+    /** {@return whether the file comes from a {@link ModelBundle} and not from a path} */
     public boolean isBundled() {
         return path == null;
     }

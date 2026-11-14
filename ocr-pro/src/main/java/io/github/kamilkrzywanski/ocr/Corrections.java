@@ -15,10 +15,18 @@ package io.github.kamilkrzywanski.ocr;
  * {@code docs/benchmark.md} before turning it on for other documents.
  */
 public enum Corrections {
+    /** The pipeline with no repairs. */
     NONE,
+    /** The rules and word lists for Polish print. */
     POLISH;
 
-    /** {@code none} or {@code polish}, any case. */
+    /**
+     * Reads a value from its name, in any case.
+     *
+     * @param value {@code none} or {@code polish}
+     * @return the value
+     * @throws OcrException for any other text and for null
+     */
     public static Corrections parse(String value) {
         if (value != null) {
             for (Corrections c : values()) {

@@ -10,6 +10,12 @@ import java.io.InputStream;
  * A bundle names its implementation in {@code META-INF/services/io.github.kamilkrzywanski.ocr.ModelBundle}.
  */
 public interface ModelBundle {
-    /** Opens the named file, such as {@link ModelFiles#DET}, or returns null when this bundle does not hold it. */
+    /**
+     * Opens a file of this bundle.
+     *
+     * @param name a file name, such as {@link ModelFiles#DET}
+     * @return the file, which the caller closes, or null when this bundle does not hold it
+     * @throws IOException when the file is there and cannot be opened
+     */
     InputStream open(String name) throws IOException;
 }

@@ -44,6 +44,11 @@ public final class Cli {
         return Parsed.of(args).has(name);
     }
 
+    /**
+     * Runs one command and ends the JVM with its exit code when that is not 0.
+     *
+     * @param args the command and its arguments, see {@code docs/cli.md}
+     */
     public static void main(String[] args) {
         int code = execute(args);
         if (code != 0) {
@@ -51,6 +56,12 @@ public final class Cli {
         }
     }
 
+    /**
+     * Runs one command without ending the JVM. Errors go to standard error.
+     *
+     * @param args the command and its arguments
+     * @return 0 when the command succeeded, 1 when it failed, 2 when no command was given
+     */
     public static int execute(String[] args) {
         try {
             return run(args);

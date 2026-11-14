@@ -15,6 +15,10 @@ import java.util.Set;
 public final class PolishWordLists implements ModelBundle {
     private static final Set<String> FILES = Set.of(Lexicon.POLISH_FILE, Lexicon.ENGLISH_FILE, PostalCities.FILE);
 
+    /** Called by {@link java.util.ServiceLoader}. */
+    public PolishWordLists() {
+    }
+
     @Override
     public InputStream open(String name) {
         return FILES.contains(name) ? PolishWordLists.class.getResourceAsStream(name) : null;

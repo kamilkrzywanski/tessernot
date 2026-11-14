@@ -81,43 +81,187 @@ public final class OcrConfig {
         this.dropFragments = b.dropFragments;
     }
 
+    /** {@return the text detection model, or null when none is set} */
     public ModelSource detModel() { return detModel; }
+
+    /** {@return the text recognition model, or null when none is set} */
     public ModelSource recModel() { return recModel; }
+
+    /** {@return the model that tells an upside-down line from an upright one, or null when none is set} */
     public ModelSource clsModel() { return clsModel; }
+
+    /** {@return the character dictionary of the recognition model, one character per line, or null when none is set} */
     public ModelSource dict() { return dict; }
+
+    /**
+     * {@return whether the kernels may use the Vector API}
+     * It is used only when the JVM runs with {@code --add-modules jdk.incubator.vector}; without the
+     * flag, or when this is false, the scalar kernels run. Default: true.
+     */
     public boolean useVector() { return useVector; }
+
+    /**
+     * {@return the worker threads of one engine}
+     * Detection of one page uses them all, and that many lines, or pages of a PDF, are read at a
+     * time. Default: the processors of the machine. An {@link OcrPool} divides this number between
+     * its engines.
+     */
     public int threads() { return threads; }
+
+    /**
+     * {@return the side length in pixels that {@link #detLimitType()} holds the page to before detection}
+     * Default: 2048. 960 is faster and needs less heap, and misses small print.
+     */
     public int detLimitSideLen() { return detLimitSideLen; }
+
+    /**
+     * {@return which side of the page {@link #detLimitSideLen()} limits}
+     * Default: {@link DetLimit#MAX}.
+     */
     public DetLimit detLimitType() { return detLimitType; }
+
+    /**
+     * {@return the probability above which a pixel of the detector's map counts as text}
+     * Default: 0.35.
+     */
     public float detThresh() { return detThresh; }
+
+    /**
+     * {@return the mean probability inside a box below which the box is dropped}
+     * Default: 0.5.
+     */
     public float boxThresh() { return boxThresh; }
+
+    /**
+     * {@return how far a detected box is grown outward, since the detector outlines the core of a line}
+     * Default: 1.6.
+     */
     public float unclipRatio() { return unclipRatio; }
+
+    /**
+     * {@return whether the text map is dilated by 2×2 before boxes are traced}
+     * Default: true.
+     */
     public boolean useDilation() { return useDilation; }
+
+    /**
+     * {@return the most outlines taken from the text map of one page}
+     * Default: 1000.
+     */
     public int maxCandidates() { return maxCandidates; }
+
+    /**
+     * {@return the probability above which the classifier's answer turns a line by 180 degrees}
+     * Default: 0.9.
+     */
     public float clsThresh() { return clsThresh; }
+
+    /**
+     * {@return whether the orientation classifier runs on every line}
+     * Default: true.
+     */
     public boolean useCls() { return useCls; }
+
+    /**
+     * {@return whether lines are detected}
+     * Without detection the whole image is read as one line. Default: true.
+     */
     public boolean useDet() { return useDet; }
+
+    /**
+     * {@return whether lines are recognized}
+     * Without recognition every line has its box and an empty text. Default: true.
+     */
     public boolean useRec() { return useRec; }
+
+    /**
+     * {@return the height in pixels a line is scaled to for the recognizer}
+     * It must be the input height of the model. Default: 48.
+     */
     public int recHeight() { return recHeight; }
+
+    /**
+     * {@return the width in pixels a shorter line is padded to on the right for the recognizer}
+     * Default: 320.
+     */
     public int recMinWidth() { return recMinWidth; }
+
+    /**
+     * {@return the widest recognizer input in pixels}
+     * A longer line is squeezed to it. Default: 4096.
+     */
     public int recMaxWidth() { return recMaxWidth; }
+
+    /**
+     * {@return the line score below which a line is dropped, see {@link TextLine#score()}}
+     * Default: 0.5.
+     */
     public float recThresh() { return recThresh; }
+
+    /**
+     * {@return whether a space is added to the end of the dictionary, as PP-OCR dictionaries expect}
+     * Default: true.
+     */
     public boolean useSpaceChar() { return useSpaceChar; }
+
+    /**
+     * {@return whether a box at least 1.5 times as tall as it is wide is turned by a quarter before reading}
+     * Default: true.
+     */
     public boolean rotateVertical() { return rotateVertical; }
+
+    /**
+     * {@return whether the page is turned level before detection}
+     * Default: false; with these models it often hurts.
+     */
     public boolean deskew() { return deskew; }
+
+    /**
+     * {@return whether the page is made black and white (Sauvola) before detection}
+     * Default: false; with these models it often hurts.
+     */
     public boolean adaptiveThreshold() { return adaptiveThreshold; }
+
     /** Experimental int8 path for 1×1 convolutions; slower and less exact in pure Java, so not part of the API. */
     boolean quantize() { return quantize; }
+
+    /**
+     * {@return the value subtracted from a channel scaled to 0..1 before the networks}
+     * Default: 0.5.
+     */
     public float mean() { return mean; }
+
+    /**
+     * {@return the value a channel is divided by after {@link #mean()} is subtracted}
+     * Default: 0.5.
+     */
     public float std() { return std; }
+
+    /**
+     * {@return the text repairs applied after a line is read}
+     * Default: {@link Corrections#NONE}.
+     */
     public Corrections corrections() { return corrections; }
+
+    /**
+     * {@return how the lines of a page are put in reading order}
+     * Default: {@link Layout#AUTO}.
+     */
     public Layout layout() { return layout; }
+
+    /**
+     * {@return which characters the recognition model may output}
+     * Default: {@link Alphabet#ALL}.
+     */
     public Alphabet alphabet() { return alphabet; }
-    /** Word lists for the CTC lexicon search, see {@link Builder#wordList(ModelSource)}. Unmodifiable. */
+
+    /** {@return the word lists of the word search, unmodifiable; see {@link Builder#wordList(ModelSource)}} */
     public List<ModelSource> wordLists() { return wordLists; }
-    /** Whether short, unsure lines are left out, see {@link Builder#dropFragments(boolean)}. */
+
+    /** {@return whether short, unsure lines are left out, see {@link Builder#dropFragments(boolean)}} */
     public boolean dropFragments() { return dropFragments; }
 
+    /** {@return a builder with the default settings and no models} */
     public static Builder builder() {
         return new Builder();
     }
@@ -126,6 +270,8 @@ public final class OcrConfig {
      * PP-OCRv5 detection and angle classifier, plus PP-OCRv6 small recognition, from
      * {@code ocr-pro-models} on the class path. With {@code ocr-pro-models-pl} there too,
      * {@link Corrections#POLISH} also finds its word lists. Settings as in {@link #defaults(Path)}.
+     *
+     * @return the default configuration
      */
     public static OcrConfig defaults() {
         return builder()
@@ -141,6 +287,10 @@ public final class OcrConfig {
      * No text corrections and automatic layout; see {@link Builder#corrections(Corrections)} and
      * {@link Builder#layout(Layout)}.
      * An existing file is rejected. A missing directory is left for the loader.
+     *
+     * @param modelDirectory the directory with the files named in {@link ModelFiles}
+     * @return the default configuration
+     * @throws OcrException when {@code modelDirectory} is null or a file
      */
     public static OcrConfig defaults(Path modelDirectory) {
         if (modelDirectory == null) {
@@ -155,10 +305,15 @@ public final class OcrConfig {
                 .build();
     }
 
+    /** {@return a builder that starts from these settings} */
     public Builder toBuilder() {
         return new Builder(this);
     }
 
+    /**
+     * Collects the settings of an {@link OcrConfig}. Every setter returns this builder; the
+     * getter of the same name on {@link OcrConfig} says what the setting does and gives its default.
+     */
     public static final class Builder {
         private ModelSource detModel;
         private ModelSource recModel;
@@ -194,6 +349,7 @@ public final class OcrConfig {
         private final List<ModelSource> wordLists = new ArrayList<>();
         private boolean dropFragments = false;
 
+        /** A builder with the default settings and no models, as {@link OcrConfig#builder()} returns. */
         public Builder() {
         }
 
@@ -233,40 +389,278 @@ public final class OcrConfig {
             this.dropFragments = c.dropFragments;
         }
 
+        /**
+         * Sets {@link OcrConfig#detModel()}. The file is read when the engine is created.
+         *
+         * @param v the model file, or null for none
+         * @return this builder
+         */
         public Builder detModel(Path v) { detModel = v == null ? null : ModelSource.of(v); return this; }
+
+        /**
+         * Sets {@link OcrConfig#recModel()}. The file is read when the engine is created.
+         *
+         * @param v the model file, or null for none
+         * @return this builder
+         */
         public Builder recModel(Path v) { recModel = v == null ? null : ModelSource.of(v); return this; }
+
+        /**
+         * Sets {@link OcrConfig#clsModel()}. The file is read when the engine is created.
+         *
+         * @param v the model file, or null for none
+         * @return this builder
+         */
         public Builder clsModel(Path v) { clsModel = v == null ? null : ModelSource.of(v); return this; }
+
+        /**
+         * Sets {@link OcrConfig#dict()}. The file is read when the engine is created.
+         *
+         * @param v the dictionary file, or null for none
+         * @return this builder
+         */
         public Builder dict(Path v) { dict = v == null ? null : ModelSource.of(v); return this; }
+
+        /**
+         * Sets {@link OcrConfig#detModel()}.
+         *
+         * @param v the model, or null for none
+         * @return this builder
+         */
         public Builder detModel(ModelSource v) { detModel = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#recModel()}.
+         *
+         * @param v the model, or null for none
+         * @return this builder
+         */
         public Builder recModel(ModelSource v) { recModel = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#clsModel()}.
+         *
+         * @param v the model, or null for none
+         * @return this builder
+         */
         public Builder clsModel(ModelSource v) { clsModel = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#dict()}.
+         *
+         * @param v the dictionary, or null for none
+         * @return this builder
+         */
         public Builder dict(ModelSource v) { dict = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#useVector()}.
+         *
+         * @param v false for the scalar kernels
+         * @return this builder
+         */
         public Builder useVector(boolean v) { useVector = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#threads()}.
+         *
+         * @param v the thread count, at least 1
+         * @return this builder
+         */
         public Builder threads(int v) { threads = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#detLimitSideLen()}.
+         *
+         * @param v the side length in pixels, at least 1
+         * @return this builder
+         */
         public Builder detLimitSideLen(int v) { detLimitSideLen = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#detLimitType()}.
+         *
+         * @param v the side to limit
+         * @return this builder
+         */
         public Builder detLimitType(DetLimit v) { detLimitType = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#detThresh()}.
+         *
+         * @param v the threshold, 0 to 1
+         * @return this builder
+         */
         public Builder detThresh(float v) { detThresh = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#boxThresh()}.
+         *
+         * @param v the threshold, 0 to 1
+         * @return this builder
+         */
         public Builder boxThresh(float v) { boxThresh = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#unclipRatio()}.
+         *
+         * @param v the ratio
+         * @return this builder
+         */
         public Builder unclipRatio(float v) { unclipRatio = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#useDilation()}.
+         *
+         * @param v true to dilate
+         * @return this builder
+         */
         public Builder useDilation(boolean v) { useDilation = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#maxCandidates()}.
+         *
+         * @param v the count, at least 1
+         * @return this builder
+         */
         public Builder maxCandidates(int v) { maxCandidates = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#clsThresh()}.
+         *
+         * @param v the threshold, 0 to 1
+         * @return this builder
+         */
         public Builder clsThresh(float v) { clsThresh = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#useCls()}.
+         *
+         * @param v false to skip the classifier
+         * @return this builder
+         */
         public Builder useCls(boolean v) { useCls = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#useDet()}.
+         *
+         * @param v false to skip detection
+         * @return this builder
+         */
         public Builder useDet(boolean v) { useDet = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#useRec()}.
+         *
+         * @param v false to skip recognition
+         * @return this builder
+         */
         public Builder useRec(boolean v) { useRec = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#recHeight()}.
+         *
+         * @param v the height in pixels
+         * @return this builder
+         */
         public Builder recHeight(int v) { recHeight = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#recMinWidth()}.
+         *
+         * @param v the width in pixels
+         * @return this builder
+         */
         public Builder recMinWidth(int v) { recMinWidth = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#recMaxWidth()}.
+         *
+         * @param v the width in pixels, at least 1
+         * @return this builder
+         */
         public Builder recMaxWidth(int v) { recMaxWidth = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#recThresh()}.
+         *
+         * @param v the threshold, 0 to 1
+         * @return this builder
+         */
         public Builder recThresh(float v) { recThresh = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#useSpaceChar()}.
+         *
+         * @param v false when the dictionary lists its own space
+         * @return this builder
+         */
         public Builder useSpaceChar(boolean v) { useSpaceChar = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#rotateVertical()}.
+         *
+         * @param v false to read tall boxes as they are
+         * @return this builder
+         */
         public Builder rotateVertical(boolean v) { rotateVertical = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#deskew()}.
+         *
+         * @param v true to level the page first
+         * @return this builder
+         */
         public Builder deskew(boolean v) { deskew = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#adaptiveThreshold()}.
+         *
+         * @param v true to binarize the page first
+         * @return this builder
+         */
         public Builder adaptiveThreshold(boolean v) { adaptiveThreshold = v; return this; }
+
         Builder quantize(boolean v) { quantize = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#mean()}.
+         *
+         * @param v the mean
+         * @return this builder
+         */
         public Builder mean(float v) { mean = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#std()}.
+         *
+         * @param v the divisor, above 0
+         * @return this builder
+         */
         public Builder std(float v) { std = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#corrections()}.
+         *
+         * @param v the repairs
+         * @return this builder
+         */
         public Builder corrections(Corrections v) { corrections = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#layout()}.
+         *
+         * @param v the layout analysis
+         * @return this builder
+         */
         public Builder layout(Layout v) { layout = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#alphabet()}.
+         *
+         * @param v the alphabet
+         * @return this builder
+         */
         public Builder alphabet(Alphabet v) { alphabet = v; return this; }
 
         /**
@@ -276,6 +670,10 @@ public final class OcrConfig {
          * that spelling almost as well. Words the lists hold, numbers and punctuation stay as read.
          * This runs with any {@link Corrections}; {@link Corrections#POLISH} adds its own Polish and
          * English lists to these.
+         *
+         * @param v the list
+         * @return this builder
+         * @throws OcrException when {@code v} is null
          */
         public Builder wordList(ModelSource v) {
             if (v == null) {
@@ -285,6 +683,13 @@ public final class OcrConfig {
             return this;
         }
 
+        /**
+         * Adds a word list from a file, see {@link #wordList(ModelSource)}.
+         *
+         * @param v the file, read when the engine is created
+         * @return this builder
+         * @throws OcrException when {@code v} is null
+         */
         public Builder wordList(Path v) {
             if (v == null) {
                 throw new OcrException("word list is null");
@@ -297,10 +702,19 @@ public final class OcrConfig {
          * 0.8. Such lines are mostly stamps, bleed-through, ornaments and stray marks read as
          * text. Off by default, because it also drops real short text the recognizer is unsure
          * of, such as an {@code X} in a check box or a misread page number.
+         *
+         * @param v true to leave such lines out
+         * @return this builder
          */
         public Builder dropFragments(boolean v) { dropFragments = v; return this; }
 
-        /** Replaces every word list added so far; an empty list turns the search off. */
+        /**
+         * Replaces every word list added so far; an empty list turns the search off.
+         *
+         * @param v the lists
+         * @return this builder
+         * @throws OcrException when the list or one of its entries is null
+         */
         public Builder wordLists(List<ModelSource> v) {
             if (v == null) {
                 throw new OcrException("word lists are null");
@@ -317,6 +731,12 @@ public final class OcrConfig {
             return this;
         }
 
+        /**
+         * Checks the settings and makes the configuration. The models are not opened here.
+         *
+         * @return the configuration
+         * @throws OcrException when a setting is null, not finite or out of its range
+         */
         public OcrConfig build() {
             if (threads < 1) {
                 throw new OcrException("threads must be >= 1");

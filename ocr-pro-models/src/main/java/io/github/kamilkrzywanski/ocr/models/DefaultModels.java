@@ -14,6 +14,10 @@ import java.util.Set;
 public final class DefaultModels implements ModelBundle {
     private static final Set<String> FILES = Set.of(ModelFiles.DET, ModelFiles.REC, ModelFiles.CLS, ModelFiles.DICT);
 
+    /** Called by {@link java.util.ServiceLoader}. */
+    public DefaultModels() {
+    }
+
     @Override
     public InputStream open(String name) {
         return FILES.contains(name) ? DefaultModels.class.getResourceAsStream(name) : null;

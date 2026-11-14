@@ -28,7 +28,13 @@ public final class OcrJson {
     private OcrJson() {
     }
 
-    /** One page object. */
+    /**
+     * One page object.
+     *
+     * @param result the page
+     * @return the JSON text, ending with a newline
+     * @throws OcrException when {@code result} is null
+     */
     public static String page(OcrResult result) {
         if (result == null) {
             throw new OcrException("result is null");
@@ -39,7 +45,13 @@ public final class OcrJson {
         return out.toString();
     }
 
-    /** Pages in the given order. An empty list is {@code \{"pages":[]\}}. */
+    /**
+     * Pages in the given order. An empty list is {@code \{"pages":[]\}}.
+     *
+     * @param pages the pages of the document
+     * @return the JSON text, ending with a newline
+     * @throws OcrException when {@code pages} or one of its entries is null
+     */
     public static String document(List<OcrResult> pages) {
         if (pages == null) {
             throw new OcrException("pages is null");

@@ -12,10 +12,18 @@ package io.github.kamilkrzywanski.ocr;
  * character. Use it for documents in Latin script.
  */
 public enum Alphabet {
+    /** The whole dictionary of the model. */
     ALL,
+    /** Latin and Greek letters, digits, punctuation and common symbols. */
     LATIN;
 
-    /** {@code all} or {@code latin}, any case. */
+    /**
+     * Reads a value from its name, in any case.
+     *
+     * @param value {@code all} or {@code latin}
+     * @return the value
+     * @throws OcrException for any other text and for null
+     */
     public static Alphabet parse(String value) {
         if (value != null) {
             for (Alphabet a : values()) {

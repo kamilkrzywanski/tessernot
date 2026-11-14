@@ -41,4 +41,18 @@ class TextLineTest {
         assertEquals(new Rectangle(), empty.bounds());
         assertThrows(OcrException.class, () -> new TextLine("x", 1f, 1f, new float[6], null));
     }
+
+    @Test
+    void aTableHandsOutACopyOfItsBounds() {
+        Rectangle given = new Rectangle(5, 6, 70, 80);
+        TextTable table = new TextTable(java.util.List.of(java.util.List.of("a", "b"), java.util.List.of("c", "d")), given);
+        given.x = 99;
+        assertEquals(new Rectangle(5, 6, 70, 80), table.bounds());
+        table.bounds().width = 1;
+        assertEquals(new Rectangle(5, 6, 70, 80), table.bounds());
+        assertNotSame(table.bounds(), table.bounds());
+        assertEquals("d", table.cell(1, 1));
+        assertEquals(2, table.rows());
+        assertEquals(2, table.columns());
+    }
 }

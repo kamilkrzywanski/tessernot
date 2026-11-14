@@ -158,11 +158,25 @@ public final class OcrEngine implements AutoCloseable {
         }
     }
 
-    /** Default models from {@code ocr-pro-models} on the class path. */
+    /**
+     * An engine with the default models from {@code ocr-pro-models} on the class path and the
+     * settings of {@link OcrConfig#defaults()}.
+     *
+     * @return the engine; close it when done
+     * @throws OcrException when the models are not on the class path or do not load
+     */
     public static OcrEngine load() {
         return create(OcrConfig.defaults());
     }
 
+    /**
+     * An engine with the default models from a directory and the settings of
+     * {@link OcrConfig#defaults(Path)}.
+     *
+     * @param modelDirectory the directory with the files named in {@link ModelFiles}
+     * @return the engine; close it when done
+     * @throws OcrException when the directory is null or a model is missing or does not load
+     */
     public static OcrEngine load(Path modelDirectory) {
         if (modelDirectory == null) {
             throw new OcrException("model directory is null");
@@ -170,6 +184,14 @@ public final class OcrEngine implements AutoCloseable {
         return create(OcrConfig.defaults(modelDirectory));
     }
 
+    /**
+     * Loads the models of {@code config} and starts the worker threads. This is the slow step:
+     * keep the engine and reuse it for every page.
+     *
+     * @param config the settings and the models
+     * @return the engine; close it when done
+     * @throws OcrException when {@code config} is null or a model is missing or does not load
+     */
     public static OcrEngine create(OcrConfig config) {
         if (config == null) {
             throw new OcrException("config is null");
@@ -182,10 +204,20 @@ public final class OcrEngine implements AutoCloseable {
         return new OcrEngine(config, models);
     }
 
+    /** {@return the configuration this engine was created with} */
     public OcrConfig config() {
         return cfg;
     }
 
+    /**
+     * Reads one page: detects its lines, reads each, and puts them in reading order with the
+     * ruled tables of the page. One call runs at a time on an engine; a second caller waits. For
+     * calls side by side use an {@link OcrPool}.
+     *
+     * @param image the page; it is not changed
+     * @return the text, the lines and the tables of the page
+     * @throws OcrException when {@code image} is null or the engine is closed
+     */
     public synchronized OcrResult recognize(BufferedImage image) {
         ensureOpen();
         try {
@@ -195,7 +227,13 @@ public final class OcrEngine implements AutoCloseable {
         }
     }
 
-    /** Skips detection and treats the whole bitmap as one text line. */
+    /**
+     * Skips detection and treats the whole bitmap as one text line.
+     *
+     * @param image a crop of one line; it is not changed
+     * @return a result with that line, or with no line when nothing was read
+     * @throws OcrException when {@code image} is null or the engine is closed
+     */
     public synchronized OcrResult recognizeLine(BufferedImage image) {
         ensureOpen();
         try {
@@ -215,6 +253,13 @@ public final class OcrEngine implements AutoCloseable {
      * At most {@code threads} pages are in flight, and fewer when their bitmaps and recognizers
      * would take more than three tenths of the heap; detection waits for its share of the heap
      * too. A small heap therefore reads a document more slowly instead of running out of memory.
+     *
+     * @param pageCount the number of pages, 0 or more
+     * @param pages renders the page of an index from 0; the bitmap is not changed
+     * @param handler told about each page as soon as it is read, or null
+     * @return the results in page order
+     * @throws OcrException when {@code pageCount} is negative, {@code pages} is null, a page is
+     *         null or the engine is closed
      */
     public synchronized List<OcrResult> recognizePages(int pageCount, IntFunction<BufferedImage> pages, PageHandler handler) {
         ensureOpen();
@@ -274,9 +319,20 @@ public final class OcrEngine implements AutoCloseable {
     /** Called in order while {@link #recognizePages(int, IntFunction, PageHandler)} is still running. */
     @FunctionalInterface
     public interface PageHandler {
+        /**
+         * One page is read. Runs on the thread that called {@code recognizePages}.
+         *
+         * @param index the page, from 0
+         * @param pageCount the number of pages of the document
+         * @param result the page
+         */
         void onPage(int index, int pageCount, OcrResult result);
     }
 
+    /**
+     * Stops the worker threads and drops the sessions. It waits for a call that is running; a
+     * second close does nothing, and every later call fails with {@link OcrException}.
+     */
     @Override
     public synchronized void close() {
         if (closed) {
@@ -368,7 +424,7 @@ public final class OcrEngine implements AutoCloseable {
         }
     }
 
-    /** True after {@link #close()}. The pool uses this to drop a slot the caller shut down. */
+    /** {@return true after {@link #close()}; the pool uses this to drop a slot the caller shut down} */
     public synchronized boolean isClosed() {
         return closed;
     }

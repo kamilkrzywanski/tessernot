@@ -12,10 +12,18 @@ package io.github.kamilkrzywanski.ocr;
  * where there is none. A skewed photo is still turned level first.
  */
 public enum Layout {
+    /** Columns, blocks side by side and titles across columns are found. */
     AUTO,
+    /** Row by row, top to bottom. */
     ROWS;
 
-    /** {@code auto} or {@code rows}, any case. */
+    /**
+     * Reads a value from its name, in any case.
+     *
+     * @param value {@code auto} or {@code rows}
+     * @return the value
+     * @throws OcrException for any other text and for null
+     */
     public static Layout parse(String value) {
         if (value != null) {
             for (Layout l : values()) {

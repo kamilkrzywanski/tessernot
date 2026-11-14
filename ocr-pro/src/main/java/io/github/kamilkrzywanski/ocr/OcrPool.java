@@ -58,8 +58,12 @@ public final class OcrPool implements AutoCloseable {
     }
 
     /**
+     * Loads the models once and creates {@code size} engines over them.
+     *
      * @param config its thread count is shared out between the engines, see {@link #config()}
      * @param size how many calls may run at once
+     * @return the pool; close it when done
+     * @throws OcrException when {@code config} is null, {@code size} is below 1 or a model does not load
      */
     public static OcrPool open(OcrConfig config, int size) {
         if (config == null) {
@@ -74,12 +78,23 @@ public final class OcrPool implements AutoCloseable {
     /**
      * Default models from {@code ocr-pro-models} on the class path, no corrections, one engine per
      * slot, and the processors of the machine shared out between them.
+     *
+     * @param size how many calls may run at once
+     * @return the pool; close it when done
+     * @throws OcrException when {@code size} is below 1 or the models are not on the class path
      */
     public static OcrPool open(int size) {
         return open(OcrConfig.defaults(), size);
     }
 
-    /** Default models from {@code modelDirectory}, no corrections, one engine per slot. */
+    /**
+     * Default models from {@code modelDirectory}, no corrections, one engine per slot.
+     *
+     * @param modelDirectory the directory with the files named in {@link ModelFiles}
+     * @param size how many calls may run at once
+     * @return the pool; close it when done
+     * @throws OcrException when the directory is null, {@code size} is below 1 or a model does not load
+     */
     public static OcrPool open(Path modelDirectory, int size) {
         if (modelDirectory == null) {
             throw new OcrException("model directory is null");
@@ -90,12 +105,14 @@ public final class OcrPool implements AutoCloseable {
     /**
      * The configuration every engine of this pool runs with: the one the pool was opened with,
      * with its thread count divided by the pool size.
+     *
+     * @return the configuration of the engines
      */
     public OcrConfig config() {
         return config;
     }
 
-    /** Engines that can still be borrowed. A slot whose engine the caller closed is gone. */
+    /** {@return the engines that can still be borrowed; a slot whose engine the caller closed is gone} */
     public int size() {
         lock.lock();
         try {
@@ -108,6 +125,12 @@ public final class OcrPool implements AutoCloseable {
     /**
      * Runs {@code task} on a borrowed engine. The engine is only for this call.
      * The slot returns to the pool afterwards unless the task closed it.
+     *
+     * @param <T> what the task returns
+     * @param task the work; it must not keep the engine after it returns
+     * @return the value of the task
+     * @throws OcrException when {@code task} is null, the pool is closed or has no engine left,
+     *         no engine comes free in ten minutes, or the task closed its engine
      */
     public <T> T call(Function<OcrEngine, T> task) {
         if (task == null) {
@@ -125,11 +148,24 @@ public final class OcrPool implements AutoCloseable {
         }
     }
 
+    /**
+     * Reads one page on a borrowed engine, see {@link OcrEngine#recognize(BufferedImage)}.
+     *
+     * @param image the page; it is not changed
+     * @return the text, the lines and the tables of the page
+     * @throws OcrException as {@link #call(Function)} and the engine do
+     */
     public OcrResult recognize(BufferedImage image) {
         return call(engine -> engine.recognize(image));
     }
 
-    /** Skips detection and treats the whole bitmap as one text line. */
+    /**
+     * Skips detection and treats the whole bitmap as one text line.
+     *
+     * @param image a crop of one line; it is not changed
+     * @return a result with that line, or with no line when nothing was read
+     * @throws OcrException as {@link #call(Function)} and the engine do
+     */
     public OcrResult recognizeLine(BufferedImage image) {
         return call(engine -> engine.recognizeLine(image));
     }
@@ -137,6 +173,12 @@ public final class OcrPool implements AutoCloseable {
     /**
      * Same as {@link OcrEngine#recognizePages(int, java.util.function.IntFunction, OcrEngine.PageHandler)}
      * on one borrowed engine. {@code handler} runs on the borrowing thread, in page order.
+     *
+     * @param pageCount the number of pages, 0 or more
+     * @param pages renders the page of an index from 0
+     * @param handler told about each page as soon as it is read, or null
+     * @return the results in page order
+     * @throws OcrException as {@link #call(Function)} and the engine do
      */
     public List<OcrResult> recognizePages(int pageCount, IntFunction<BufferedImage> pages, OcrEngine.PageHandler handler) {
         return call(engine -> engine.recognizePages(pageCount, pages, handler));
