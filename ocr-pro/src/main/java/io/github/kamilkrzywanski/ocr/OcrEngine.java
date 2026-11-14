@@ -453,31 +453,34 @@ public final class OcrEngine implements AutoCloseable {
         int pageWidth = bgr.width();
         int pageHeight = bgr.height();
         List<DbPost.Box> boxes = detect ? detect(bgr, lineParallel) : fullPage(bgr);
-        // Quarter turns counter-clockwise given to the page before it is read.
+        // Quarter turns counter-clockwise given to the page before it is read, and the page
+        // turned level when its lines run at an angle that moves a gutter by more than a line
+        // from top to bottom. The order is the order of the back-mapping at the end: a quarter
+        // turn, then levelling, then half a turn on the level page, where the classifier sees
+        // its lines straight.
         int turns = 0;
+        PageTurn.Level level = null;
+        boolean flipped = false;
         if (detect && cfg.pageOrientation()) {
             if (PageTurn.sideways(boxes)) {
                 bgr = Images.rot90ccw(bgr);
                 turns = 1;
                 boxes = detect(bgr, lineParallel);
             }
-            if (upsideDown(bgr, boxes)) {
-                bgr = Images.rot180(bgr);
-                turns += 2;
-                boxes = detect(bgr, lineParallel);
-            }
-        }
-        // The page turned level, when its lines run at an angle that moves a gutter by more
-        // than a line from top to bottom.
-        PageTurn.Level level = null;
-        if (detect && cfg.pageOrientation()) {
             double skew = PageTurn.skew(boxes);
             if (PageTurn.wanders(skew, bgr.height(), boxes)) {
                 level = PageTurn.Level.of(bgr.width(), bgr.height(), skew);
                 bgr = Images.turn(bgr, level.cos(), level.sin(), level.levelWidth(), level.levelHeight());
                 boxes = detect(bgr, lineParallel);
             }
+            if (upsideDown(bgr, boxes)) {
+                bgr = Images.rot180(bgr);
+                flipped = true;
+                boxes = detect(bgr, lineParallel);
+            }
         }
+        int upsideDownWidth = bgr.width();
+        int upsideDownHeight = bgr.height();
         long detectionNanos = System.nanoTime() - detStart;
         long recStart = System.nanoTime();
         List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
@@ -505,13 +508,17 @@ public final class OcrEngine implements AutoCloseable {
             tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
                     .thenComparingInt(table -> table.bounds().x));
         }
-        if (turns != 0 || level != null || shrink != 1) {
-            // Back into the pixels of the picture as it was given: off the levelled canvas
-            // first, then out of the quarter turns, then up to the full size.
+        if (turns != 0 || level != null || flipped || shrink != 1) {
+            // Back into the pixels of the picture as it was given: out of the half turn, off
+            // the levelled canvas, out of the quarter turn, then up to the full size.
             int quarters = turns;
             PageTurn.Level levelled = level;
+            boolean half = flipped;
             PageTurn.Back back = (x, y) -> {
-                float[] p = levelled == null ? new float[] {x, y} : levelled.back(x, y);
+                float[] p = half ? new float[] {upsideDownWidth - x, upsideDownHeight - y} : new float[] {x, y};
+                if (levelled != null) {
+                    p = levelled.back(p[0], p[1]);
+                }
                 p = PageTurn.back(p[0], p[1], quarters, pageWidth, pageHeight);
                 p[0] *= shrink;
                 p[1] *= shrink;
@@ -535,7 +542,7 @@ public final class OcrEngine implements AutoCloseable {
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart,
-                PageTurn.rotation(turns));
+                PageTurn.rotation(turns + (flipped ? 2 : 0)));
     }
 
     /**

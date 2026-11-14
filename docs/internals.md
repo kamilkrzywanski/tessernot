@@ -90,16 +90,19 @@ by reflection.
   a page has to stand upright and level before they are looked for. After the first detection:
   - **On its side:** most of the text, by box length, stands in boxes at least 1.5 times as high
     as wide. The page is turned a quarter counter-clockwise.
-  - **Upside down:** most of the long lines (at least three, at most the fifteen longest) read
+  - **Askew:** the median angle of the long boxes, up to 45 degrees, moves a vertical gutter
+    sideways by more than a line height between the top and the bottom of the page. The picture
+    is turned level (bilinear, on a larger white canvas). Below that, `PageSkew` levels the
+    boxes alone, as before. The steps that look at the pixels for a gutter or a rule take it to
+    be upright; without this a two-column book page three degrees off level read as rows.
+    Beyond 45 degrees the boxes stand rather than lie, so the quarter turn comes first and what
+    is left is under 45 again. A ticket photographed 22 degrees askew went from 44 edits to 24,
+    and pages turned by 25 or 40 degrees read as they do level.
+  - **Upside down:** judged last, on the level page: most of the long lines (at least three, at most the fifteen longest) read
     upside down to the line classifier. Each line votes with the classifier's more likely
     answer, not with `clsThresh`, and shows it only its middle, eight heights long: the
     classifier squeezes a crop to twice its height, and a whole line of forty heights is a smear
     to it. On a telegram of such lines it called the page upright either way.
-  - **Askew:** the median angle of the long boxes moves a vertical gutter sideways by more than
-    a line height between the top and the bottom of the page. The picture is turned level
-    (bilinear, on a larger white canvas). Below that, `PageSkew` levels the boxes alone, as
-    before. The steps that look at the pixels for a gutter or a rule take it to be upright;
-    without this a two-column book page three degrees off level read as rows.
   After each turn the page is detected again, and at the end every quad goes back into the
   pixels of the picture as given, corners in the order of the text. `OcrResult.rotation()`
   gives the quarter turns; the levelling angle is not reported.

@@ -201,8 +201,11 @@ final class PageTurn {
         return pageHeight * Math.abs(Math.tan(angle)) > heights[heights.length / 2];
     }
 
-    /** About 20 degrees, as in {@code PageSkew}: more is not a skewed page. */
-    static final double MAX_SKEW = 0.35;
+    /**
+     * 45 degrees. Further round, the boxes of the lines stand rather than lie, and the page is
+     * first turned a quarter; what is left is again under 45 degrees.
+     */
+    static final double MAX_SKEW = Math.PI / 4;
 
     /**
      * A page turned level: its content turned by {@code -angle} about its centre onto a canvas

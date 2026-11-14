@@ -110,7 +110,8 @@ class PageTurnTest {
         // 3 degrees over 1000 px is 52 px, more than a line of 30; over 400 px it is 21, less.
         assertTrue(PageTurn.wanders(angle, 1000, skewed));
         assertFalse(PageTurn.wanders(angle, 400, skewed));
-        assertFalse(PageTurn.wanders(0.5, 1000, skewed), "30 degrees is not skew");
+        assertTrue(PageTurn.wanders(0.5, 1000, skewed), "29 degrees is still skew");
+        assertFalse(PageTurn.wanders(1.0, 1000, skewed), "57 degrees is a page on its side");
         assertFalse(PageTurn.wanders(angle, 1000, List.of()));
         assertEquals(0.0, PageTurn.skew(List.of(box(0, 0, 40, 30))));
 
