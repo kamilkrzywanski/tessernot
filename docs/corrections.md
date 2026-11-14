@@ -78,8 +78,9 @@ Measure on your own documents before you turn this on.
 
 ## Rules
 
-The rules run in this order for each detected line. A "second read" means the line crop is
-changed and read by the recognizer again. Most second reads keep the new text only when it
+The rules run in this order for each detected line; the code is `PolishRules.reread` (rule 1 is
+`RunnerUps`, in the decoder), which asks the engine for each second read. A "second read" means
+the line crop is changed and read by the recognizer again. Most second reads keep the new text only when it
 differs from the first read in the one expected way. Any other difference keeps the first read.
 
 1. **CTC runner-ups.** In greedy decoding, some second-best characters replace the winner when

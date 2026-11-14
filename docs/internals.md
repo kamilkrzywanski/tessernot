@@ -233,6 +233,10 @@ budgets the same document ran out of memory with 9 GB.
 
 ## Modules and model files
 
+In `ocr-pro`, `OcrEngine` runs the pipeline and owns the sessions and worker threads. What it
+loads is a `ModelSet` (shared by the engines of a pool), the heap shares are `MemoryBudget`, and
+the second reads of `Corrections.POLISH` are `PolishRules`.
+
 - `ocr-pro` is the engine and has no runtime dependencies. A model file is a `ModelSource`: a path,
   or a name that a `ModelBundle` holds. Bundles are found with `ServiceLoader`, through the
   thread's context class loader and then the library's own. A bundled file is read with
