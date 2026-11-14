@@ -80,6 +80,66 @@ pages read as:
   to look at every table it found on `dev` and `test`. Two columns, two rows and cells across
   columns are not found.
 
+**Robustness round, same day.** No new documents: the 66 pages of `dev` and `test` read again
+after a change that should not matter, with a scratch program (`Probe`, not in the repository;
+`ro.sh jitter` is). Edits with the default profile, 5,315 as given:
+
+| The page | Edits before the round | Now |
+| --- | --- | --- |
+| turned 90, 180 or 270 degrees | unreadable (four pages: 94 edits upright, over 2,200 turned) | 5,315 each way |
+| 3 degrees askew, the six pages that fell apart (372 as given) | 9,686 and 8,732 | 456 and 1,379 |
+| 3 degrees askew, the other 60 or 61 pages | 2 to 4 % fewer edits than level | not rerun yet |
+| JPEG at quality 0.3 | 6,582: one page falls apart, the rest +4 % | Bible page still falls apart |
+| at half the resolution | 16,163: six pages of small print fall apart | unchanged, see below |
+
+- **A page on its side or upside down is turned, and a page askew is levelled** (`PageTurn`,
+  `OcrConfig.pageOrientation`, `OcrResult.rotation()`, JSON key `rotation`), see "Turning the
+  page" in internals.md. All 66 pages read the same in the four orientations. As given, two
+  pages change through the levelling: the 1981 notice −43 edits, the Aparri News +7.
+- **Reading order, two more fixes** found this way: a line over the gutter is left out when a
+  side is tested for columns of its own (The Independent 1898, three columns, askew: CER 0.75 to
+  0.089 on its boxes), and a box stays in its column when a line of the other column begins
+  right behind the gutter in its row. The cached pages keep their order.
+- **`ro.sh jitter`** orders every cached page 40 times with its box edges moved as two reads of
+  one page differ (90 % of the edges within 0.04 of the box height, one end in fifty up to half
+  a height). Edits: `dev` 2,349 as cached, 2,414 mean, 3,325 worst; `test` 2,755, 2,753, 2,886.
+  Pages that still hang on a threshold: the arXiv page (13 of 40 trials change, up to 289
+  edits against 91), the bill-of-sale form (33 of 40, small), the 1948 wholesale bill (29 of
+  40, small), the 1935 appeal, and once in 40 the Arct dictionary (29 to 781).
+- **Still open from this round:**
+  - The 1923 Bible page as a strong JPEG, or 3 degrees askew one way: the detector draws the
+    marginal reference and the line of the right column as one box, and the cut rules leave it
+    whole because it starts in the middle of the left column. The row then ends both columns
+    (27 to 1,060 edits).
+  - Half resolution: small print at about 100 dpi is lost (Monthly Weather Review 51 to 7,035).
+    Not looked into; `DetLimit.MIN` scales a small page up for detection, recognition would
+    need the same.
+  - The Arct dictionary 3 degrees askew one way (29 to 185) and the arXiv page under jitter.
+- **Box threshold 0.4 with `--drop-fragments`**, measured for the first time together:
+
+  | | `dev` | `test` | both |
+  | --- | --- | --- | --- |
+  | defaults (0.5, fragments kept) | 2,555 | 2,760 | 5,315 |
+  | box threshold 0.4 | 2,516 | 2,522 | 5,038 |
+  | box threshold 0.4, fragments dropped | 2,423 | 2,479 | 4,902 |
+
+  Better on 20 pages and worse on 7; the largest gain is the 1981 notice (−186), the largest
+  loss the 2017 diploma (+15). Both sets gain, unlike the level stretch. Not made the default:
+  it changes every published number, 0.4 was picked on these sets, and dropping fragments loses
+  real short text (an X in a check box). The place to confirm it is `test3`, once.
+- **Word boxes are within reach.** The recognizer's CTC frames place words well: on 115 words
+  of rendered lines (five texts, three sizes) the end of a word is off by 0.05 line heights in
+  the median and 0.25 at most, the start by 0.15 and 0.31 (the start has a bias of +0.14 that
+  half a frame would take out). Not built yet. It needs the frame of every character carried
+  through `Ctc.Result` and the second reads of the Polish profile, quads in the order of the
+  text for lines read turned, and a `words()` on `TextLine`; then the PDF layer can place every
+  word and an hOCR or ALTO export is short.
+- **CI** now tests JDK 21 and 25 with the Vector API, JDK 21 on the scalar kernels (the eleven
+  kernel comparisons of `RuntimeTest` skip themselves there) and, without failing the run,
+  Windows; the JDK 21 leg also builds the release artifacts unsigned. The test JVM flags are
+  the properties `test.jvm.modules` and `test.jvm.cpus`; CI passes an empty `test.jvm.cpus`, so
+  a runner uses the processors it has. The Windows leg has not run yet.
+
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
 (`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and
@@ -91,11 +151,8 @@ pages. The three `test3` pages are no longer unseen; the owner decides whether t
 
 Found in the review and still open:
 
-- **CI** runs one OS and one JDK, always with the incubator module: the scalar path of the real
-  models is tested nowhere. `-XX:ActiveProcessorCount=12` in the root POM forces twelve, it does
-  not cap at twelve, so a four-core runner runs twelve threads per engine. Add a matrix (with and
-  without `--add-modules`, a newer JDK, one non-Linux OS) and drop or correct the flag.
-- **Build:** the release profile is never built in CI.
+- Nothing but what "Still open from this round" lists above, and the release steps in "What to
+  improve next".
 
 ## Ground rules from the owner
 
