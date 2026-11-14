@@ -147,7 +147,7 @@ after a change that should not matter, with a scratch program (`Probe`, not in t
 
 **New `dev` documents, 2026-11-14.** A collector round on another machine (five agents, the
 prompt was a filled-in copy of the one in bench/COLLECTING.md) brought 34 business documents;
-a second batch is still to come. Checked here before use:
+the second batch is below. Checked here before use:
 
 - Files: every manifest row has twelve columns, `set` dev, an allowed license, and the SHA-256
   of the stored original matches.
@@ -170,6 +170,29 @@ a second batch is still to come. Checked here before use:
 - Related to pages of other sets, by issuer or series, not the same document: a Biedronka
   receipt (`test3` has one), a National Security Action Memorandum (`test2` has number 125), a
   1948 bill from Słupsk (`test` has one from another firm there).
+
+**Second batch of `dev` documents, 2026-11-14.** 24 more business documents from the same
+collector round, checked the same way (six fresh readers, crops of the picture, no OCR; the
+three forms were also checked without their PDFs). 20 stay, so `dev` has 93 pages.
+
+- Dropped four: `pl-bilet-lodz-koluszki-1913` (half of the print is Russian in the old
+  orthography, which the recognizer does not read), `en-invoice-gas-light-baltimore-1834` (a
+  blotted copy of a published photograph of the bill, and half of its text is the caption),
+  `en-receipt-uyc-1922` (a script typeface with pen writing across most printed words),
+  `en-invoice-rubinstein-roth-1897` (more handwriting than print: an engine that reads the pen
+  rows is charged for them whatever it does with the print).
+- Twelve references changed. The larger ones: the reading order of the I-9 and W-9 forms, where
+  the collector's draft from the PDF text layer split a block in the middle; district names
+  written on every row of the Nysa schedule that are printed once; a routing grid that is a
+  rubber stamp (the 1963 memo) and a stamped date (the 1936 bill) taken out; typed `RESTRICTED`
+  lines put in (the 1945 memo).
+- Left as it is and worth knowing: on the receipts the pen writing the references leave out is
+  a quarter to a half of the ink (most on the 1871 Potts receipt), so their CER has a floor an
+  engine cannot get under without telling pen from print. The 1976 sales slip names its
+  customer and her town in pen; nothing else.
+- In the Nysa schedule eighteen June dates are set with a lowercase `l` for the `I` of `VI`.
+  The reference writes `VI`: a sort that stands in for its look-alike is written as the
+  character it stands for, where the context leaves no doubt.
 
 **Where the numbers stand at the end of 2026-11-14** (new defaults, all of the day's changes;
 `ocr.sh score`, CER):
