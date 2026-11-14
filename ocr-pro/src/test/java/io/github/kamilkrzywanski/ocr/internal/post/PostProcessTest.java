@@ -398,6 +398,34 @@ class PostProcessTest {
     }
 
     @Test
+    void aShortLineDrawnOverItsNeighbourStaysInItsColumn() {
+        // Columns that touch at x = 100. In the fourth row the left column ends with a short
+        // reference whose box runs 7 px into the line of the right column.
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            lines.add(i == 3 ? line("note", 70, i * 12, 37, 10) : line("L" + i, 0, i * 12, 100, 10));
+            lines.add(line("R" + i, 99, i * 12, 100, 10));
+        }
+        assertEquals("L0\nL1\nL2\nnote\nL4\nL5\nL6\nL7\nR0\nR1\nR2\nR3\nR4\nR5\nR6\nR7",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+
+        // The same box with nothing beside it is a page number between the columns: it ends a section.
+        List<TextLine> numbered = new ArrayList<>();
+        StringBuilder upper = new StringBuilder();
+        StringBuilder lower = new StringBuilder();
+        for (String side : new String[] {"L", "R"}) {
+            for (int i = 0; i < 13; i++) {
+                if (i != 6) {
+                    numbered.add(line(side + i, side.equals("L") ? 0 : 99, i * 12, 100, 10));
+                    (i < 6 ? upper : lower).append(side).append(i).append('\n');
+                }
+            }
+        }
+        numbered.add(line("7", 85, 6 * 12, 30, 10));
+        assertEquals(upper + "7\n" + lower.toString().strip(), ReadingOrder.join(ReadingOrder.group(numbered)));
+    }
+
+    @Test
     void titleAcrossColumnsEndsASection() {
         List<TextLine> lines = List.of(
                 line("L1", 0, 0, 40, 10),

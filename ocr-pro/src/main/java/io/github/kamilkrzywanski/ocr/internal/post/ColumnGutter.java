@@ -148,10 +148,29 @@ record ColumnGutter(float from, float to, int over) {
         return sorted.length - i - 1;
     }
 
-    /** A row crosses when one of its boxes does. */
+    /**
+     * A row crosses when one of its boxes does. A box that runs into the next box of its row is
+     * first cut where that box begins: the text there is the neighbour's. A short line at the end
+     * of the left column, whose box the detector drew a little too long, then stays in its column
+     * although the padded box lies over a narrow gutter; a title or a page number with nothing
+     * beside it still crosses.
+     */
     boolean crosses(List<TextLine> row, float medianH) {
         for (TextLine line : row) {
-            if (crossing(line, medianH)) {
+            float left = line.left();
+            float right = line.right();
+            for (TextLine other : row) {
+                if (other == line) {
+                    continue;
+                }
+                if (other.left() > line.left() && other.left() < line.right() && other.right() > line.right()) {
+                    right = Math.min(right, other.left());
+                }
+                if (other.right() < line.right() && other.right() > line.left() && other.left() < line.left()) {
+                    left = Math.max(left, other.right());
+                }
+            }
+            if (crossing(left, right, line.bottom() - line.top(), medianH)) {
                 return true;
             }
         }
@@ -165,9 +184,14 @@ record ColumnGutter(float from, float to, int over) {
      * the columns still crosses.
      */
     boolean crossing(TextLine line, float medianH) {
-        float pad = BOX_PAD * (line.bottom() - line.top());
-        float start = line.left() + pad;
-        float end = line.right() - pad;
+        return crossing(line.left(), line.right(), line.bottom() - line.top(), medianH);
+    }
+
+    /** {@link #crossing(TextLine, float)} for a box from {@code left} to {@code right}, {@code height} high. */
+    private boolean crossing(float left, float right, float height, float medianH) {
+        float pad = BOX_PAD * height;
+        float start = left + pad;
+        float end = right - pad;
         if (start > to || end < from) {
             return false;
         }
