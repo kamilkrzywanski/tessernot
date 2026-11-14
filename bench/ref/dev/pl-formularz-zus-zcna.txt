@@ -1,0 +1,49 @@
+PŁATNIK WYPEŁNIA POLA W WYZNACZONYCH KRATKACH KOMPUTEROWO, NA MASZYNIE LUB RĘCZNIE
+DUŻYMI DRUKOWANYMI LITERAMI, CZARNYM LUB NIEBIESKIM KOLOREM.
+ZAKŁAD UBEZPIECZEŃ
+SPOŁECZNYCH
+ZUS
+ZCNA
+strona: 1
+ZGŁOSZENIE DANYCH O CZŁONKACH RODZINY
+DLA CELÓW UBEZPIECZENIA ZDROWOTNEGO
+I. DANE ORGANIZACYJNE
+01. Data nadania (dd / mm / rrrr) 02. Nalepka „R”
+II. DANE IDENTYFIKACYJNE
+PŁATNIKA SKŁADEK
+II. DANE IDENTYFIKACYJNE PŁATNIKA SKŁADEK
+01. Numer NIP (wpisać bez kresek) 02. Numer REGON
+03. Numer PESEL¹) 04. Rodzaj dokumentu: 05. Seria i numer dokumentu
+jeśli dowód osobisty, wpisać 1,
+jeśli paszport - 2
+06. Nazwa skrócona
+07. Nazwisko
+08. Imię pierwsze 09. Data urodzenia (dd / mm / rrrr)
+III. DANE
+IDENTYFIKACYJNE
+OSOBY UBEZPIECZONEJ
+III. DANE IDENTYFIKACYJNE OSOBY UBEZPIECZONEJ
+01. Numer PESEL¹) 02. 03. Rodzaj dokumentu
+(wypełnić jak pole II.04) 04. Seria i numer dokumentu
+05. Nazwisko
+06. Imię pierwsze 07. Data urodzenia (dd / mm / rrrr)
+IV. DANE O CZŁONKU RODZINY OSOBY UBEZPIECZONEJ
+UPRAWNIONYM DO ŚWIADCZEŃ Z UBEZPIECZENIA ZDROWOTNEGO
+IV. A. DANE O CZŁONKU RODZINY OSOBY UBEZPIECZONEJ UPRAWNIONYM DO ŚWIADCZEŃ Z UBEZPIECZENIA ZDROWOTNEGO
+01. Zgłoszenie nowego członka rodziny (wpisać - 1) / 02. Data uzyskania / utraty uprawnień do ubezpieczenia
+wyrejestrowanie członka rodziny (wpisać - 2) zdrowotnego przez członka rodziny (dd / mm / rrrr)
+03. Numer PESEL¹) 04. Numer NIP (wpisać bez kresek)²) 05. Rodzaj dokumentu
+(wypełnić jak pole II.04) 06. Seria i numer dokumentu
+07. Nazwisko
+08. Imię pierwsze 09. Data urodzenia (dd / mm / rrrr)
+10. Kod stopnia pokrewieństwa / powinowactwa 11. Czy pozostaje we wspólnym gospodarstwie
+domowym z osobą ubezpieczoną? Jeśli TAK, wpisać X.
+12. Kod stopnia niepełnosprawności
+IV. B. ADRES ZAMIESZKANIA (wpisać, jeśli adres zamieszkania jest inny niż adres zamieszkania ubezpieczonego)
+01. Kod pocztowy 02. Miejscowość
+-
+03. Gmina / Dzielnica
+04. Ulica
+05. Numer domu 06. Numer lokalu
+07. Numer telefonu 08. Symbol państwa - zagraniczny kod pocztowy (wypełnić w przypadku, gdy
+- adres jest inny niż polski)

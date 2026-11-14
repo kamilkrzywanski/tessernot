@@ -1,0 +1,41 @@
+POLA JASNE WYPEŁNIA PODMIOT SKŁADAJĄCY ZAWIADOMIENIE, POLA CIEMNE WYPEŁNIA URZĄD. WYPEŁNIĆ DUŻYMI, DRUKOWANYMI LITERAMI, CZARNYM LUB NIEBIESKIM KOLOREM.
+1. Identyfikator podatkowy NIP podatnika lub podmiotu 2. Nr dokumentu 3. Status
+ZAW-FA ZAWIADOMIENIE O NADANIU LUB ODEBRANIU UPRAWNIEŃ DO KORZYSTANIA
+Z KRAJOWEGO SYSTEMU E-FAKTUR
+4. Kolejny nr egz. / ogółem liczba egzemplarzy¹)
+Podstawa prawna: § 5 ust. 1 rozporządzenia Ministra Finansów i Gospodarki z dnia 12 grudnia 2025 r. w sprawie korzystania z Krajowego
+Systemu e-Faktur (Dz. U. poz 1815).
+Składający: Podatnicy i podmioty nadający lub odbierający osobie fizycznej uprawnienia do korzystania z Krajowego Systemu e-Faktur.
+Podatnicy zgłaszający dane unikalne powiązane z certyfikatem kwalifikowanego podpisu lub kwalifikowanej pieczęci
+elektronicznej.
+Miejsce składania: Właściwy naczelnik urzędu skarbowego.
+A. MIEJSCE I CEL SKŁADANIA
+5. Właściwy naczelnik urzędu skarbowego
+6. Cel złożenia formularza (zaznaczyć właściwy kwadrat):
+1. nadanie uprawnień²) 2. odebranie uprawnień³) 3. odebranie wszelkich nadanych uprawnień⁴)
+4. zgłoszenie danych unikalnych powiązanych z certyfikatem kwalifikowanego podpisu elektronicznego lub kwalifikowanej pieczęci elektronicznej podatnika⁵)
+B. DANE PODATNIKA LUB PODMIOTU, KTÓRY SKŁADA ZAWIADOMIENIE
+B.1. DANE IDENTYFIKACYJNE
+* – dotyczy podmiotu niebędącego osobą fizyczną ** – dotyczy podmiotu będącego osobą fizyczną
+7. Rodzaj podmiotu (zaznaczyć właściwy kwadrat):
+1. podmiot niebędący osobą fizyczną 2. organ egzekucyjny⁶) 3. osoba fizyczna⁷)
+8. Nazwa pełna* / Nazwisko, pierwsze imię**
+B.2. DANE KONTAKTOWE
+9. Telefon⁸)
+10. E-mail⁹)
+C. DANE OSOBY UPRAWNIONEJ DO KORZYSTANIA Z KRAJOWEGO SYSTEMU E-FAKTUR
+C.1. DANE IDENTYFIKACYJNE
+11. Rodzaj identyfikatora podatkowego (zaznaczyć właściwy kwadrat):
+1. NIP 2. PESEL 3. brak identyfikatora¹⁰)
+12. Identyfikator podatkowy NIP / numer PESEL
+13. Nazwisko 14. Pierwsze imię 15. Data urodzenia¹⁰)
+16. Rodzaj dokumentu potwierdzającego tożsamość¹⁰) 17. Numer i seria dokumentu potwierdzającego tożsamość¹⁰)
+18. Kraj wydania dokumentu potwierdzającego tożsamość¹⁰)
+C.2. DANE KONTAKTOWE
+19. Telefon¹¹)
+20. E-mail¹²)
+D. ZGŁOSZENIE DANYCH UNIKALNYCH POWIĄZANYCH Z CERTYFIKATEM
+KWALIFIKOWANEGO PODPISU LUB KWALIFIKOWANEJ PIECZĘCI ELEKTRONICZNEJ
+NIEZAWIERAJĄCYCH NUMERU IDENTYFIKACJI PODATKOWEJ (NIP) I NUMERU PESEL
+21. Dane unikalne powiązane z certyfikatem kwalifikowanego podpisu elektronicznego lub kwalifikowanej pieczęci elektronicznej (SHA-256)¹³)
+ZAW-FA(3) 1/2
