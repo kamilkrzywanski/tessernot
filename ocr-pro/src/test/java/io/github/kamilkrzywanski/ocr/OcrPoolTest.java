@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -118,24 +118,26 @@ class OcrPoolTest {
             assertEquals(1, pool.size());
             assertSamePage(alone, pool.recognize(image));
 
+            // close() must wait for the borrowed engine: the worker holds it until the closer
+            // thread is parked inside close(), and reads a line on it after that.
             CountDownLatch entered = new CountDownLatch(1);
             CountDownLatch release = new CountDownLatch(1);
-            AtomicLong releasedAt = new AtomicLong();
-            AtomicLong closedAt = new AtomicLong();
+            AtomicReference<OcrResult> lateRead = new AtomicReference<>();
             AtomicReference<Throwable> workerError = new AtomicReference<>();
+            AtomicBoolean closeReturned = new AtomicBoolean();
             Thread worker = new Thread(() -> {
                 try {
                     pool.call(engine -> {
                         entered.countDown();
                         try {
-                            if (!release.await(30, TimeUnit.SECONDS)) {
-                                throw new OcrException("timed out waiting for an engine");
+                            if (!release.await(60, TimeUnit.SECONDS)) {
+                                throw new OcrException("the test never released the engine");
                             }
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             throw new OcrException("interrupted", e);
                         }
-                        releasedAt.set(System.nanoTime());
+                        lateRead.set(engine.recognizeLine(image));
                         return null;
                     });
                 } catch (Throwable error) {
@@ -146,17 +148,27 @@ class OcrPoolTest {
             assertTrue(entered.await(30, TimeUnit.SECONDS));
             Thread closer = new Thread(() -> {
                 pool.close();
-                closedAt.set(System.nanoTime());
+                closeReturned.set(true);
             });
             closer.start();
+            // Parked on the pool's condition, or gone if close() did not wait.
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            while (closer.getState() != Thread.State.WAITING && closer.isAlive() && System.nanoTime() < deadline) {
+                Thread.sleep(5);
+            }
+            assertEquals(Thread.State.WAITING, closer.getState(), "close() waits while an engine is borrowed");
+            assertFalse(closeReturned.get());
+            assertEquals(1, pool.size(), "the borrowed engine is still counted");
+            OcrException closing = assertThrows(OcrException.class, () -> pool.recognize(image));
+            assertTrue(closing.getMessage().contains("engine pool is closed"), closing.getMessage());
             release.countDown();
-            worker.join(30_000);
-            closer.join(30_000);
+            worker.join(60_000);
+            closer.join(60_000);
             assertFalse(worker.isAlive());
             assertFalse(closer.isAlive());
             assertEquals(null, workerError.get());
-            assertTrue(releasedAt.get() > 0L);
-            assertTrue(closedAt.get() >= releasedAt.get());
+            assertTrue(closeReturned.get());
+            assertSamePage(aloneLine, lateRead.get());
             assertEquals(0, pool.size());
             OcrException after = assertThrows(OcrException.class, () -> pool.recognize(image));
             assertTrue(after.getMessage().contains("engine pool is closed"), after.getMessage());
