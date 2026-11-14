@@ -4,6 +4,59 @@ State on 2026-10-14, after the reading-order round and the column-gutter change.
 [internals.md](internals.md) and [benchmark.md](benchmark.md) first; this file is the to-do list
 and the working method.
 
+## Review round, 2026-11-14
+
+A code review of the whole project and the fixes that followed. None of it changes what a page
+reads as: the text of every `dev` and `test` page is byte for byte what it was, in both profiles
+(`ocr.sh score ... --out`, compared with `diff -r`).
+
+- **Memory.** A multi-page PDF on many threads ran out of memory (twelve A4 pages, twelve
+  threads, 10 GB heap), and an idle engine kept 1.5 to 1.9 GB. Now: arena size classes, sessions
+  trimmed after every run and call, and `MemoryBudget` shares of the heap for detection and for
+  the pages in flight. The same PDF reads with a 1 GB heap; an idle engine keeps about 180 MB on
+  twelve threads. See internals.md, "Memory" and "Heap budgets".
+- **`OcrPool`** shares one `ModelSet` between its engines (114 MB instead of 453 MB for four
+  engines with the Polish lists) and divides the configured thread count between them.
+- **Fixed:** `ocr.sh download <dir>` and `ocr.sh score --hyp`; a JPEG with data behind the
+  picture rejected as two images; image reading that needed a writable temp directory; the CTC
+  runner-up decided per timestep (a letter on two timesteps could read twice) and scored with
+  the runner-up's probability (a correction could drop its line); the postal city spelling
+  changing the case; a bias folded over the wrong axis; packed `int64_data` of n×8 bytes read as
+  fixed values; an unsorted lexicon file finding nothing without a word.
+- **Tests.** `OperatorFuzzTest` compares random operators with plain references on an arena that
+  hands out NaN. It found the AveragePool, Transpose, Slice, ReduceMean and ConvTranspose edges
+  fixed in the same commit. `classifierSmokeOnZeros` had no `@Test` and never ran.
+- **Speed.** Dense convolutions on one thread run as im2col + GEMM (a 640 px line: 341 to 302 ms
+  median on one core), softmax has its own float `exp` with the same bits on both paths, gray and
+  ABGR images are read from the raster, and an EXIF turn moves bytes (12 MP: 1860 to 164 ms).
+  Median page times of `ocr.sh score` before and after: `dev` 9.4 to 6.3 s plain and 9.1 to 7.7 s
+  with the Polish profile, `test` 7.5 to 6.7 s with it and 7.9 to 8.0 s plain. The machine was
+  busy with other work on the day (load 25 on 12 threads), so take the direction, not the size.
+- **Structure.** `ReadingOrder` is split into the classes of its steps (internals.md, "Reading
+  order"), the second reads of the Polish profile are `PolishRules`, the runner-up table is
+  `RunnerUps`, and model loading is `ModelSet`. `ro.sh` compiles the split sources.
+- **API.** `DetLimit` is an enum, `TextLine.quad()` and `bounds()` hand out copies (and
+  `left()`, `top()`, `right()`, `bottom()` read the extent), `opDebug` is gone (use
+  `-Docr.trace=true`) and `quantize` is package-private.
+
+Found in the review and left open:
+
+- **CI** runs one OS and one JDK, always with the incubator module: the scalar path of the real
+  models is tested nowhere. `-XX:ActiveProcessorCount=12` in the root POM forces twelve, it does
+  not cap at twelve, so a four-core runner runs twelve threads per engine. Add a matrix (with and
+  without `--add-modules`, a newer JDK, one non-Linux OS) and drop or correct the flag.
+- **`CtcWords` mark floor** is applied per timestep, so a letter on two timesteps pays 6 nats for
+  an unseen mark, not the 3 the docs promise, and falls outside the 4-nat margin (1.6 % of letters
+  span two timesteps). Changing it moves the word-list results: score `dev` and `test` after.
+- **`CtcWords` lowercases with `Locale.ROOT`**, which maps a final capital sigma to `ς` and `I` to
+  `i`: an all-caps Greek word with a medial Σ and a Turkish word with I never match a list.
+- **Gray scans** are read through `getRGB`, which treats the samples as linear light (128 reads
+  as 188). On the ten gray pages of `bench/data` the true samples were slightly worse (795 edits
+  against 774), so the raster path keeps the conversion on purpose. Decide it deliberately.
+- **`OcrPoolTest`** "close waits for running calls" releases the worker before `close()` can
+  block, so it would pass if `close()` stopped waiting.
+- **Build:** no enforcer plugin and no Maven wrapper; the release profile is never built in CI.
+
 ## Ground rules from the owner
 
 - Commits: author `Kamil Krzywański <kamilkrzywanski01@gmail.com>` (pass `-c user.name=... -c
