@@ -4,11 +4,11 @@ import java.util.List;
 
 /**
  * Full-page OCR result. {@code text} is lines joined in reading order.
- * {@code tables} are ruled grids found on the same page and do not change {@code text}.
+ * {@code tables} are the tables found on the same page, ruled or not, and do not change {@code text}.
  *
  * @param text the page text: the lines of a row joined by a space, the rows by a line break
  * @param lines the lines in reading order, unmodifiable
- * @param tables the ruled grids of the page, top to bottom, unmodifiable
+ * @param tables the tables of the page, top to bottom, unmodifiable; see {@link TextTable#ruled()}
  * @param detectionNanos the time detection took
  * @param recognitionNanos the time reading the lines, the reading order and the tables took
  * @param totalNanos the time of the whole call, from the bitmap to this result

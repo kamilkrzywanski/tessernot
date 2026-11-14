@@ -23,7 +23,7 @@ ocr eval [--model dir]
 | Command | What it does |
 | --- | --- |
 | `download` | Fetches the default ONNX files and dictionary from ModelScope and checks SHA-256. A file that already has the right digest is not fetched again. |
-| `ocr` | One image. Page text to stdout, then each ruled table as `--- table N ---` with tab-separated cells. Timings go to stderr. |
+| `ocr` | One image. Page text to stdout, then each table (a ruled grid, or rows set in three or more aligned columns) as `--- table N ---` with tab-separated cells. Timings go to stderr. |
 | `pdf` | Every page of a PDF, rendered with PDFBox at `--dpi` (default 150). With more than one page, each page starts with `--- page N ---` and is printed as soon as it is done. |
 | `bench` | One warm-up and three timed runs on one image. Prints the minimum and the median. |
 | `score` | Held-out benchmark. Compares page text with references, or scores ready outputs of another engine with `--hyp`. See [benchmark.md](benchmark.md). |
@@ -93,12 +93,13 @@ Before the image is read, missing or empty model files are reported with a point
 ```json
 {"text":"...","lines":[{"text":"...","score":0.98,"detScore":0.91,
   "quad":[x0,y0,x1,y1,x2,y2,x3,y3],"bounds":{"x":0,"y":0,"width":0,"height":0}}],
- "tables":[{"bounds":{...},"cells":[["a","b"],["","c"]]}]}
+  "tables":[{"bounds":{...},"ruled":true,"cells":[["a","b"],["","c"]]}]}
 ```
 
 - Keys always come in this order.
 - `quad` is top-left, top-right, bottom-right, bottom-left in image pixels.
 - An empty cell is `""`.
+- `ruled` is true for a grid of printed rules and false for a table found from columns with no rules.
 - A non-finite number is `null`.
 - Timings stay on stderr.
 - `OcrJson.page` and `OcrJson.document` produce the same bytes from Java.

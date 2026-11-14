@@ -44,7 +44,7 @@ class OcrJsonTest {
                 + "{\"text\":\"\",\"score\":null,\"detScore\":1.0,"
                 + "\"quad\":[null,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"
                 + "\"bounds\":{\"x\":0,\"y\":0,\"width\":0,\"height\":0}}],"
-                + "\"tables\":[{\"bounds\":{\"x\":1,\"y\":2,\"width\":100,\"height\":50},"
+                + "\"tables\":[{\"bounds\":{\"x\":1,\"y\":2,\"width\":100,\"height\":50},\"ruled\":true,"
                 + "\"cells\":[[\"zł\",\"\"],[\"a\\\\b\",\"c\\\"d\"]]}]}";
         String json = OcrJson.page(page);
         assertEquals(body + "\n", json);

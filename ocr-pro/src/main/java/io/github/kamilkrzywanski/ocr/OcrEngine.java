@@ -10,6 +10,7 @@ import io.github.kamilkrzywanski.ocr.internal.post.InkGutters;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
 import io.github.kamilkrzywanski.ocr.internal.post.RunnerUps;
 import io.github.kamilkrzywanski.ocr.internal.post.Tables;
+import io.github.kamilkrzywanski.ocr.internal.post.UnruledTables;
 import io.github.kamilkrzywanski.ocr.internal.post.Vocabulary;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Graph;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Session;
@@ -20,6 +21,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -465,10 +467,18 @@ public final class OcrEngine implements AutoCloseable {
             rows = withoutFragments(rows);
         }
         List<TextLine> flat = ReadingOrder.flatten(rows);
+        List<TextTable> tables = readTables(bgr, flat);
+        List<TextTable> unruled = UnruledTables.find(rows, tables);
+        if (!unruled.isEmpty()) {
+            tables = new ArrayList<>(tables);
+            tables.addAll(unruled);
+            tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
+                    .thenComparingInt(table -> table.bounds().x));
+        }
         return new OcrResult(
                 ReadingOrder.join(rows),
                 flat,
-                readTables(bgr, flat),
+                tables,
                 detectionNanos,
                 recognitionNanos,
                 System.nanoTime() - totalStart);

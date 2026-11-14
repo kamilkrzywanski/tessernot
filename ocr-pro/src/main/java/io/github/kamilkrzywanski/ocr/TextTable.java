@@ -5,13 +5,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Cells of one ruled grid, row by row, left to right. An empty cell is an empty string.
+ * Cells of one table, row by row, left to right. An empty cell is an empty string.
  * A table does not change: the cells are unmodifiable and {@link #bounds()} hands out a copy.
+ * <p>
+ * A table is either a grid of printed rules, whose cells are the fields between the rules, or
+ * rows of text set in columns with no rules: at least three rows and three columns whose cells
+ * begin or end under one another. {@link #ruled()} tells which. An unruled table is read from
+ * the places of the lines alone, so it has no cell that spans columns and may miss a table of
+ * two columns or of two rows.
  *
  * @param cells the text of every cell, one list per row, each row with the same number of cells
- * @param bounds the pixel rectangle of the grid on the page
+ * @param bounds the pixel rectangle of the table on the page
+ * @param ruled whether the table is a grid of printed rules
  */
-public record TextTable(List<List<String>> cells, Rectangle bounds) {
+public record TextTable(List<List<String>> cells, Rectangle bounds, boolean ruled) {
+    /**
+     * A ruled table.
+     *
+     * @param cells the text of every cell, one list per row, each row with the same number of cells
+     * @param bounds the pixel rectangle of the grid on the page
+     */
+    public TextTable(List<List<String>> cells, Rectangle bounds) {
+        this(cells, bounds, true);
+    }
+
     /**
      * A null cell becomes empty and a null rectangle an empty one; the rows and the rectangle are copied.
      *

@@ -553,7 +553,7 @@ public final class Cli {
                 Missing model files for ocr and bench, and an empty model file, are reported before the image is read.
                 A flag the command does not use, such as --dpi on ocr, is rejected before a file is opened. So is an engine flag on score --hyp, and a directory together with --model on download.
                 A multi-page PDF prints "--- page N ---" before each page. Timings stay on stderr.
-                A ruled grid is printed after the page text as "--- table N ---", with cells separated by tabs. A page with no rules prints no table.
+                A table is printed after the page text as "--- table N ---", with cells separated by tabs: a ruled grid, or rows set in three or more aligned columns. A page with neither prints no table.
                 --searchable out.pdf also writes a PDF that looks like the input and has the text under each line, to search, select and copy. From an image it is one page, as large as the image is at --dpi (300 when not given). The file may be the input PDF.
                 With --json, ocr and pdf print one JSON document instead of the page text: a page object, or {"pages":[...]} for a PDF. Timings stay on stderr.
                 """);

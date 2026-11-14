@@ -18,7 +18,7 @@ Tesseract still orders the text slightly better. See the [benchmark](#accuracy-a
   `jdk.incubator.vector` is available and falls back to scalar code that gives the same results
   when it is not.
 - **It does more than return text.** You get line boxes and scores, reading order for
-  multi-column pages, and ruled tables as cells. PDF input, in its own module, goes through Apache
+  multi-column pages, and tables as cells, ruled or set in columns. PDF input, in its own module, goes through Apache
   PDFBox. Output is plain text, JSON, or a searchable PDF: the scan with its text under every
   line, to search, select and copy.
 
@@ -73,7 +73,7 @@ try (OcrEngine engine = OcrEngine.load()) {             // models from ocr-pro-m
     for (TextLine line : result.lines()) {
         // line.text(), line.score(), line.detScore(), line.quad(), line.bounds()
     }
-    for (TextTable table : result.tables()) {     // ruled grids only
+    for (TextTable table : result.tables()) {     // table.ruled(): a grid of rules, or columns with none
         List<List<String>> rows = table.cells();  // empty cell = ""
     }
     List<OcrResult> pages = OcrPdf.recognize(engine, Path.of("scan.pdf"), 150f);  // ocr-pro-pdf
@@ -151,7 +151,7 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 | --- | --- |
 | `OcrEngine`, `OcrPool` | run OCR on images or on the pages of a document, one caller at a time or several in parallel |
 | `OcrConfig`, `Corrections`, `Layout`, `Alphabet`, `DetLimit` | models, thresholds, threads, the optional Polish rules, automatic or row-by-row reading order, the characters the recognizer may output, and which side of the page the detection size limits |
-| `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, ruled tables |
+| `OcrResult`, `TextLine`, `TextTable` | page text, lines with boxes and scores, tables |
 | `OcrImages`, `OcrJson` | read an image file (EXIF-aware), write the JSON form |
 | `ModelFiles`, `ModelSource`, `ModelBundle` | download and check the default models; where a model file comes from; the interface of a model JAR |
 | `OcrException` | the single exception type |
@@ -219,7 +219,8 @@ against 0.956, 0.930 and 0.951 for the plain pipeline. It is **off by default**.
 ## Not in scope
 
 - handwriting
-- cells of tables without ruled lines: such a table stays plain text, read row by row
+- tables without ruled lines that have two columns, two rows, or cells across columns: only
+  rows set in three or more aligned columns become a table; the rest stays plain text, read row by row
 - the flow of articles that jump between columns or pages, and ad collages (the columns
   themselves are read in order)
 

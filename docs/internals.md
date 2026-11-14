@@ -11,7 +11,7 @@ BufferedImage
   → recognition at height 48, greedy CTC
   → [Corrections.POLISH only: see corrections.md]
   → reading order
-  → ruled grid → tables(), separate from the page text
+  → ruled grids, and rows set in columns → tables(), separate from the page text
 ```
 
 ## Runtime
@@ -208,7 +208,24 @@ is `""`.
 - An empty cell that still has ink is read once. The read is kept only when it is a short
   number or a short word.
 
-A table without ruled lines stays plain text.
+A table without ruled lines is found from the boxes of the lines (`UnruledTables`), after the
+reading order: rows of at least two boxes that follow one another within 1.5 line heights, whose
+boxes leave blank strips of x between them from the first row to the last. It is a `TextTable`
+with `ruled()` false when it has at least three rows and three columns that are set like
+columns: at least three cells of the column, and at least half of them, begin at one x or end
+at one x, to within half a line height.
+
+- The rows come from `ReadingOrder`, so the lines of text columns arrive one to a row and are
+  never a table.
+- The shared edge is what separates a table from large print that the detector cut into words.
+  On the 63 cached `dev` and `test` pages the blank strips alone gave eleven tables, among them
+  three rows of a warning sign and two paragraphs of a typed notice; with the shared edge four
+  remain, on three pages, all of them tables (a 1937 price list, two blocks of an energy
+  invoice, a list of housing charges). Lost with it: a telephone bill of four rows whose third
+  column has two amounts, and the three-row field grids of a form.
+- Nothing is read again and no pixel is looked at: a cell is the text of its boxes, left to
+  right. There are no cells across columns, and a table of two columns or two rows is not found.
+- Rows inside a ruled table are left to the ruled pass.
 
 ## Concurrency
 

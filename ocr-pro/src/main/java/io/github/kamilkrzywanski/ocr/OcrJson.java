@@ -11,7 +11,8 @@ import java.util.List;
  * A line keeps {@code text}, {@code score}, {@code detScore}, {@code quad}, {@code bounds}.
  * {@code quad} is eight numbers: top-left, top-right, bottom-right, bottom-left.
  * {@code bounds} keeps {@code x}, {@code y}, {@code width}, {@code height} as integers.
- * A table keeps {@code bounds}, then {@code cells} as a row-major array of strings.
+ * A table keeps {@code bounds}, {@code ruled} (true for a grid of printed rules, false for
+ * columns with no rules), then {@code cells} as a row-major array of strings.
  * An empty cell is {@code ""}. Tables do not change {@code text}.
  * A document is {@code \{"pages":[page, ...]\}} in page order, and each element uses the page object.
  * <p>
@@ -117,6 +118,7 @@ public final class OcrJson {
     private static void appendTable(StringBuilder out, TextTable table) {
         out.append("{\"bounds\":");
         bounds(out, table.bounds());
+        out.append(",\"ruled\":").append(table.ruled());
         out.append(",\"cells\":[");
         List<List<String>> cells = table.cells();
         for (int row = 0; row < cells.size(); row++) {
