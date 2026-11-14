@@ -1,0 +1,124 @@
+Form W-4 (2012)
+Purpose. Complete Form W-4 so that your
+employer can withhold the correct federal income
+tax from your pay. Consider completing a new Form
+W-4 each year and when your personal or financial
+situation changes.
+Exemption from withholding. If you are exempt,
+complete only lines 1, 2, 3, 4, and 7 and sign the
+form to validate it. Your exemption for 2012 expires
+February 18, 2013. See Pub. 505, Tax Withholding
+and Estimated Tax.
+Note. If another person can claim you as a
+dependent on his or her tax return, you cannot claim
+exemption from withholding if your income exceeds
+$950 and includes more than $300 of unearned
+income (for example, interest and dividends).
+Basic instructions. If you are not exempt, complete
+the Personal Allowances Worksheet below. The
+worksheets on page 2 further adjust your
+withholding allowances based on itemized
+deductions, certain credits, adjustments to income,
+or two-earners/multiple jobs situations.
+Complete all worksheets that apply. However, you
+may claim fewer (or zero) allowances. For regular
+wages, withholding must be based on allowances
+you claimed and may not be a flat amount or
+percentage of wages.
+Head of household. Generally, you can claim head
+of household filing status on your tax return only if
+you are unmarried and pay more than 50% of the
+costs of keeping up a home for yourself and your
+dependent(s) or other qualifying individuals. See
+Pub. 501, Exemptions, Standard Deduction, and
+Filing Information, for information.
+Tax credits. You can take projected tax credits into
+account in figuring your allowable number of
+withholding allowances. Credits for child or
+dependent care expenses and the child tax credit
+may be claimed using the Personal Allowances
+Worksheet below. See Pub. 505 for information on
+converting your other credits into withholding
+allowances.
+Nonwage income. If you have a large amount of
+nonwage income, such as interest or dividends,
+consider making estimated tax payments using Form
+1040-ES, Estimated Tax for Individuals. Otherwise, you
+may owe additional tax. If you have pension or annuity
+income, see Pub. 505 to find out if you should adjust
+your withholding on Form W-4 or W-4P.
+Two earners or multiple jobs. If you have a
+working spouse or more than one job, figure the
+total number of allowances you are entitled to claim
+on all jobs using worksheets from only one Form
+W-4. Your withholding usually will be most accurate
+when all allowances are claimed on the Form W-4
+for the highest paying job and zero allowances are
+claimed on the others. See Pub. 505 for details.
+Nonresident alien. If you are a nonresident alien,
+see Notice 1392, Supplemental Form W-4
+Instructions for Nonresident Aliens, before
+completing this form.
+Check your withholding. After your Form W-4 takes
+effect, use Pub. 505 to see how the amount you are
+having withheld compares to your projected total tax
+for 2012. See Pub. 505, especially if your earnings
+exceed $130,000 (Single) or $180,000 (Married).
+Future developments. The IRS has created a page
+on IRS.gov for information about Form W-4, at
+www.irs.gov/w4. Information about any future
+developments affecting Form W-4 (such as
+legislation enacted after we release it) will be posted
+on that page.
+Personal Allowances Worksheet (Keep for your records.)
+A Enter "1" for yourself if no one else can claim you as a dependent A
+B Enter "1" if:
+• You are single and have only one job; or
+• You are married, have only one job, and your spouse does not work; or
+• Your wages from a second job or your spouse's wages (or the total of both) are $1,500 or less. B
+C Enter "1" for your spouse. But, you may choose to enter "-0-" if you are married and have either a working spouse or more
+than one job. (Entering "-0-" may help you avoid having too little tax withheld.) C
+D Enter number of dependents (other than your spouse or yourself) you will claim on your tax return D
+E Enter "1" if you will file as head of household on your tax return (see conditions under Head of household above) E
+F Enter "1" if you have at least $1,900 of child or dependent care expenses for which you plan to claim a credit F
+(Note. Do not include child support payments. See Pub. 503, Child and Dependent Care Expenses, for details.)
+G Child Tax Credit (including additional child tax credit). See Pub. 972, Child Tax Credit, for more information.
+• If your total income will be less than $61,000 ($90,000 if married), enter "2" for each eligible child; then less "1" if you have three to
+seven eligible children or less "2" if you have eight or more eligible children.
+• If your total income will be between $61,000 and $84,000 ($90,000 and $119,000 if married), enter "1" for each eligible child G
+H Add lines A through G and enter total here. (Note. This may be different from the number of exemptions you claim on your tax return.) ▶ H
+For accuracy,
+complete all
+worksheets
+that apply.
+• If you plan to itemize or claim adjustments to income and want to reduce your withholding, see the Deductions
+and Adjustments Worksheet on page 2.
+• If you are single and have more than one job or are married and you and your spouse both work and the combined
+earnings from all jobs exceed $40,000 ($10,000 if married), see the Two-Earners/Multiple Jobs Worksheet on page 2 to
+avoid having too little tax withheld.
+• If neither of the above situations applies, stop here and enter the number from line H on line 5 of Form W-4 below.
+Separate here and give Form W-4 to your employer. Keep the top part for your records.
+Form W-4
+Department of the Treasury
+Internal Revenue Service
+Employee's Withholding Allowance Certificate
+▶ Whether you are entitled to claim a certain number of allowances or exemption from withholding is
+subject to review by the IRS. Your employer may be required to send a copy of this form to the IRS.
+OMB No. 1545-0074
+2012
+1 Your first name and middle initial Last name 2 Your social security number
+Home address (number and street or rural route) 3 Single Married Married, but withhold at higher Single rate.
+Note. If married, but legally separated, or spouse is a nonresident alien, check the "Single" box.
+City or town, state, and ZIP code 4 If your last name differs from that shown on your social security card,
+check here. You must call 1-800-772-1213 for a replacement card. ▶
+5 Total number of allowances you are claiming (from line H above or from the applicable worksheet on page 2) 5
+6 Additional amount, if any, you want withheld from each paycheck 6 $
+7 I claim exemption from withholding for 2012, and I certify that I meet both of the following conditions for exemption.
+• Last year I had a right to a refund of all federal income tax withheld because I had no tax liability, and
+• This year I expect a refund of all federal income tax withheld because I expect to have no tax liability.
+If you meet both conditions, write "Exempt" here ▶ 7
+Under penalties of perjury, I declare that I have examined this certificate and, to the best of my knowledge and belief, it is true, correct, and complete.
+Employee's signature Date ▶
+(This form is not valid unless you sign it.) ▶
+8 Employer's name and address (Employer: Complete lines 8 and 10 only if sending to the IRS.) 9 Office code (optional) 10 Employer identification number (EIN)
+For Privacy Act and Paperwork Reduction Act Notice, see page 2. Cat. No. 10220Q Form W-4 (2012)
