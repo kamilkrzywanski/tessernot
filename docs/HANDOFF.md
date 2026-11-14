@@ -111,8 +111,7 @@ after a change that should not matter, with a scratch program (`Probe`, not in t
     whole because it starts in the middle of the left column. The row then ends both columns
     (27 to 1,060 edits).
   - Half resolution: small print at about 100 dpi is lost (Monthly Weather Review 51 to 7,035).
-    Not looked into; `DetLimit.MIN` scales a small page up for detection, recognition would
-    need the same.
+    Partly done later that day, see "Size, turn and export" below.
   - The Arct dictionary 3 degrees askew one way (29 to 185) and the arXiv page under jitter.
 - **Box threshold 0.4 with `--drop-fragments`**, measured for the first time together:
 
@@ -136,8 +135,8 @@ after a change that should not matter, with a scratch program (`Probe`, not in t
   internals.md. On 115 words of rendered lines (five texts, three sizes) both ends of a word are
   right to 0.055 crop heights in the median, 0.2 to 0.25 at worst. The PDF layer sets every word
   over its own box; `pdftotext -raw` still returns the page text unchanged. A line whose text a
-  second read of the Polish profile changed has no word boxes. Not done: an hOCR or ALTO export,
-  which is now short to write.
+  second read of the Polish profile changed has no word boxes. hOCR came later that day;
+  ALTO is not written.
 - **CI** now tests JDK 21 and 25 with the Vector API, JDK 21 on the scalar kernels (the eleven
   kernel comparisons of `RuntimeTest` skip themselves there) and, without failing the run,
   Windows; the JDK 21 leg also builds the release artifacts unsigned. The test JVM flags are
@@ -160,8 +159,8 @@ a second batch is still to come. Checked here before use:
   `pl-formularz-cybercomplex-zsk-2025` (a named person's phone number and an address that may be
   a home). The last one is still in the history of the `ocr-pro-bench` repository.
 - `en-receipt-target-ala-moana-2018` came at 7176x13968 and ran out of a 1 GB heap; it is stored
-  scaled to 2569x5000 and its manifest row says so. The CLI ends with a bare
-  `OutOfMemoryError` on such a picture: it should be an `OcrException` that names the size.
+  scaled to 2569x5000 and its manifest row says so. The CLI ended with a bare
+  `OutOfMemoryError` on such a picture; since that evening it is read at a fraction of its size.
 - Three pictures are under the 1,500 px the collecting rules ask for (the smallest 650x851); the
   readers found every letter legible, so they stay.
 - The engine on the 31 that stay, default profile: pooled CER 0.082. The worst are what the
@@ -185,6 +184,44 @@ a second batch is still to come. Checked here before use:
 By group on the 70 pages of `dev`, default profile: invoices, bills and receipts 0.155 (20
 pages), letters, forms and notices 0.050 (27), books, newspapers and gazettes 0.019 (23).
 Business documents are where the work is.
+
+**Size, turn and export, evening of 2026-11-14.** Five things, measured with `Probe` on the 66
+established pages of `dev` and `test` (the three newest `dev` documents were not read), default
+profile, edits:
+
+| The page | Before | With the classifier window | And with enlarging |
+| --- | --- | --- | --- |
+| as given | 4,975 | 4,607 | 4,607 |
+| at half the resolution | 15,561 | 15,473 | 8,167 |
+
+- **The line classifier sees the middle of a long line** (`PageTurn.window` in
+  `OcrEngine.decode`), as the page vote already did. Squeezed whole into 80×160, a long upright
+  line of small print was now and then called upside down and read turned over: one line of an
+  Official Journal page came out as `-odo o nz zzd e s d e s z d qoso o od`. Five pages better
+  as given, none worse (Gazeta Lwowska 189 to 68, OJ C10 2020 96 to 6, OJ C10 2021 91 to 6,
+  Dziennik Ustaw 1952 135 to 99, Tygodnik Illustrowany 203 to 167). It is also what turns over
+  one long line printed upside down on an upright page.
+- **A small page with small print is enlarged** (`PageTurn.enlarge`), see "The size a page is
+  read at" in internals.md. Six pages better at half the resolution, none worse, no page
+  changed as given. Still lost at half: the Monthly Weather Review (51 as given, 1,862), the
+  1981 notice (572, 955), the Białystok advance notice (37, 734), the Bristol Mercury (387,
+  708; its lines are 22 px there, above the bound, so it is not enlarged). Not tried: a higher
+  `detLimitSideLen` for such pages, or enlarging by more than two.
+- **A picture too large for the heap is read at a fraction of its size** (`MemoryBudget.shrink`),
+  and one the decoder cannot hold fails with an `OcrException` that names its size and the
+  heap. The 100-megapixel receipt reads in a 1 GB heap. Still open: at 512 MB the detector
+  itself runs out of memory on it, with a bare `OutOfMemoryError`.
+- **Pages askew up to 45 degrees are levelled** (it was 20), and upside down is judged after
+  the levelling. The ticket photographed 22 degrees askew went from 44 edits to 24; pages
+  turned by 25 or 40 degrees read as they do level.
+- **hOCR** (`OcrHocr`, `--hocr`), with `OcrResult.width()` and `height()` for the page box.
+  ALTO is not written: there was no schema validator at hand offline, and it is short to add
+  next to hOCR.
+
+The 4,975 is not the 4,902 of the table above: that run was made before `PageTurn`. With the
+new defaults three pages read worse with it than without (the 1981 notice 510 to 572, the
+Aparri News 71 to 80, the Arct dictionary 64 to 66), most likely through the levelling, which
+with the old defaults gained 43 on the 1981 notice. Not looked into.
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
