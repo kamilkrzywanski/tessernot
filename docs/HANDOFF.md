@@ -53,8 +53,7 @@ pages read as:
 - **Gray files** are read with their samples as stored, see "Reading an image" in internals.md
   for the measurement that decided it. The four gray pages of `dev` and `test` moved by five
   edits in all (`test` 0.0461 to 0.0462 plain, 0.0437 to 0.0438 with the Polish profile).
-  The same measurement says a contrast step may help faded newsprint. If it is tried, try it on
-  `dev`, for every image and not by file type.
+  A contrast step for faded newsprint was tried after it and dropped, see "Tried and dropped".
 - **`OcrPoolTest`** holds the borrowed engine until `close()` is parked on the pool's condition;
   with the wait in `close()` removed the test fails.
 - **Before the first release:** the version is `0.1.0-SNAPSHOT`; every public class, method and
@@ -64,6 +63,22 @@ pages read as:
   3.9 with a sentence. Run on this day by hand, not in CI: the whole suite on JDK 25 (265 tests
   pass) and on JDK 21 without `--add-modules jdk.incubator.vector` (all pass, 11 of `RuntimeTest`
   skip themselves), and `mvn -Prelease -Dgpg.skip package`.
+
+- **A box that runs into the next box of its row** is cut there before `ColumnGutter` asks
+  whether it crosses the gutter. Found on a gray copy of the 1923 Bible page (`dev`): the same
+  boxes to a few pixels, CER 0.007 in color and 0.286 in gray, because a short reference at the
+  end of the left column was drawn 24 px longer, lay over the 4 px gutter and ended both
+  columns like a title. Now 28 edits against 27. The order of the 63 cached pages did not move.
+  The other page that fell apart in gray, the 2017 diploma (16 to 85 edits), is not a bug: the
+  blue seal and the signature stand out in color and read as text in gray.
+- **Searchable PDF** (`OcrPdf.searchable`, `--searchable out.pdf` on `ocr` and `pdf`): the
+  source with the text of every line under it, see "Modules and model files" in internals.md.
+  Checked with PDFBox and `pdftotext`; not opened in Acrobat, Preview or a browser.
+- **Tables without rules** (`UnruledTables`, `TextTable.ruled()`): rows set in three or more
+  columns whose cells share an edge, see "Tables" in internals.md. Four tables on three of the
+  63 cached pages, all real. There is no reference for tables in the benchmark: the check was
+  to look at every table it found on `dev` and `test`. Two columns, two rows and cells across
+  columns are not found.
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
@@ -294,6 +309,23 @@ failures come down to one share just under its threshold.
    in `ModelFiles`, so a bundle from another release fails at load time.
 
 ## Tried and dropped
+
+- **Stretching the levels of a page** (2026-11-14). The median luma of the ink (the dark class
+  of Otsu's split) to black and the median luma of the paper to white, the same line for the
+  three channels. Edits with the default profile:
+
+  | Stretch applied to | `dev` (2,555) | `test` (2,760) | both (5,315) |
+  | --- | --- | --- | --- |
+  | the page, for detection and reading | 2,373 | 2,825 | 5,198 |
+  | the page after detection, for reading only | 2,643 | 2,783 | 5,426 |
+  | the detector's input only | 2,246 | 2,884 | 5,130 |
+
+  The gain is in detection, not in reading: faded newsprint finds its lines (Bristol Mercury
+  1832 −122, Gazeta Lwowska 1914, Nature 1896 −47). It does not carry from `dev` to `test`,
+  where the detector's variant is worse on 12 pages and better on 9 (the PGE invoice +85, the
+  1935 appeal +36, the 1981 notice +34). The paper level does not tell which page gains: pages
+  with paper at 163 and 175 lose, pages at 172 and 223 gain. Dropped, not left behind a flag: a
+  user has no way to know which of their pages it helps.
 
 - **A margin around the line crop** (2026-10-17). The crop grown by a share of the box height
   above and below, taken from the page: `dev` CER 0.0230 with none, 0.0254 at 0.05, 0.0316 at
