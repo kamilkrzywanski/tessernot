@@ -343,6 +343,40 @@ class OcrEndToEndTest {
 
     @Test
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void oneLongLinePrintedUpsideDownIsTurnedOver() {
+        // Four long lines; the third is printed upside down. The page as a whole is upright.
+        String[] texts = {"Faktura za dostawę towarów zgodnie z umową numer 2024/10",
+                "Termin płatności wynosi czternaście dni od daty wystawienia",
+                "Prosimy o przelew na rachunek bankowy podany poniżej w stopce",
+                "Dziękujemy za współpracę i zapraszamy ponownie do naszego sklepu"};
+        BufferedImage page = new BufferedImage(1700, 520, BufferedImage.TYPE_INT_RGB);
+        Graphics2D draw = Images.prepare(page);
+        try {
+            draw.setFont(Samples.font(40f));
+            for (int i = 0; i < texts.length; i++) {
+                if (i == 2) {
+                    java.awt.geom.AffineTransform before = draw.getTransform();
+                    draw.rotate(Math.PI, 850, 100 + 110 * i - 14);
+                    draw.drawString(texts[i], 60, 100 + 110 * i);
+                    draw.setTransform(before);
+                } else {
+                    draw.drawString(texts[i], 60, 100 + 110 * i);
+                }
+            }
+        } finally {
+            draw.dispose();
+        }
+        OcrResult result = engine.recognize(page);
+        assertEquals(0, result.rotation(), "one line does not turn the page");
+        assertEquals(String.join("\n", texts), result.text());
+        // Its words are placed from the right: the first word of the line is at its right end.
+        TextLine turned = result.lines().get(2);
+        assertTrue(turned.words().get(0).quad()[0] > turned.words().get(turned.words().size() - 1).quad()[0],
+                "first word at x " + turned.words().get(0).quad()[0]);
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void wordsLieWhereTheyArePrinted() {
         String[] texts = {"Zażółć gęślą jaźń i wróć do domu", "FAKTURA VAT nr 2024/10/0042 z dnia 12.10.2024",
                 "il li ill Illinois minimum www MMM WWW"};

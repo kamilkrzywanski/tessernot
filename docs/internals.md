@@ -121,7 +121,13 @@ by reflection.
   - Size: the longer side is limited to 2048 (`detLimitSideLen`), then rounded to a multiple of 32 with
     `Math.round` (half up). Python's half-to-even `round` can differ by 32 px.
   - The output gets a sigmoid when its values leave about `[0, 1.2]`.
-- **Classifier**: input size comes from the model signature (80×160 for the default model).
+- **Classifier**: input size comes from the model signature (80×160 for the default model). It
+  squeezes a crop to twice its height, so a line longer than eight heights is shown to it by its
+  middle, eight heights long (`PageTurn.window`), as the page vote does: squeezed whole, a long
+  upright line of small print was now and then called upside down and read turned over. On the
+  66 pages of `dev` and `test` that took the edits from 4,975 to 4,607, five pages better and
+  none worse (two Official Journal pages 96 to 6 and 91 to 6, the Gazeta Lwowska supplement
+  189 to 68), and one long line printed upside down on an upright page is now turned over.
 - **CTC**: greedy, blank at 0, repeats collapsed. The score is the mean probability of the kept
   steps: for each character, the winner on the first timestep of its run. A second softmax is not applied when the output already sums to 1.
 - **Fragments** (`dropFragments`, on by default): after the reading order is found, a line of

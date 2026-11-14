@@ -916,7 +916,9 @@ public final class OcrEngine implements AutoCloseable {
             turns = 1;
         }
         if (clsSession != null) {
-            int more = quarterTurns(crop, clsSession);
+            // The classifier squeezes a crop to twice its height; it is shown the middle of a
+            // long line, where the letters keep their shape, see PageTurn.WINDOW.
+            int more = quarterTurns(PageTurn.window(crop), clsSession);
             crop = turned(crop, more);
             turns = (turns + more) & 3;
         }
