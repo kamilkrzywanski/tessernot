@@ -183,6 +183,98 @@ class PageTurnTest {
         return at;
     }
 
+    /** Twenty long lines of a 2000 by 3000 page photographed from the side: the right edge is {@code shorter} of the left one. */
+    private static List<DbPost.Box> fanned(double shorter, double tilt) {
+        double p = shorter / ((1 - shorter) * 2000);
+        List<DbPost.Box> boxes = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            float[] quad = new float[8];
+            float[][] corners = {{200, 200 + 130 * i}, {1800, 200 + 130 * i}, {1800, 240 + 130 * i}, {200, 240 + 130 * i}};
+            for (int k = 0; k < 4; k++) {
+                double x = corners[k][0];
+                double y = corners[k][1] + tilt * (x - 1000);
+                quad[k * 2] = (float) (x / (1 + p * x));
+                quad[k * 2 + 1] = (float) (1500 + (y - 1500) / (1 + p * x));
+            }
+            boxes.add(new DbPost.Box(quad, 1f));
+        }
+        return boxes;
+    }
+
+    private static double slope(float[] q) {
+        return (q[3] - q[1] + q[5] - q[7]) / (double) (q[2] - q[0] + q[4] - q[6]);
+    }
+
+    @Test
+    void linesThatRunToOnePointAreLaidFlat() {
+        // The right edge 12 % shorter: the lines meet 1 / p = 14,667 px from the left edge.
+        List<DbPost.Box> boxes = fanned(0.12, 0);
+        assertTrue(Math.abs(slope(boxes.get(0).quad()) - slope(boxes.get(19).quad())) > 0.15, "the lines fan out");
+        PageTurn.Fan fan = PageTurn.fan(boxes, 2000, 3000);
+        assertEquals(14_667 - 1000, fan.distance(), 300);
+        double least = Double.POSITIVE_INFINITY;
+        double most = Double.NEGATIVE_INFINITY;
+        for (DbPost.Box box : boxes) {
+            float[] q = box.quad();
+            float[] flat = new float[8];
+            for (int k = 0; k < 8; k += 2) {
+                float[] at = fan.forward(q[k], q[k + 1]);
+                flat[k] = at[0];
+                flat[k + 1] = at[1];
+                float[] home = fan.back(at[0], at[1]);
+                assertEquals(q[k], home[0], 0.05f);
+                assertEquals(q[k + 1], home[1], 0.05f);
+                // The flat page holds the text and a margin of three line heights, no more.
+                assertTrue(at[0] >= 0 && at[0] <= fan.flatWidth() && at[1] >= 0 && at[1] <= fan.flatHeight());
+            }
+            least = Math.min(least, slope(flat));
+            most = Math.max(most, slope(flat));
+        }
+        assertEquals(0, most - least, 0.003, "the lines of the flat page are parallel");
+        assertTrue(fan.flatWidth() < 1800 && fan.flatHeight() < 3000, fan.toString());
+
+        // The same page askew by a degree and a half: still a fan, with a slope left for levelling.
+        assertEquals(14_667 - 1000, PageTurn.fan(fanned(0.12, 0.026), 2000, 3000).distance(), 600);
+    }
+
+    @Test
+    void parallelLinesAreNotAFan() {
+        assertEquals(null, PageTurn.fan(fanned(0, 0), 2000, 3000));
+        assertEquals(null, PageTurn.fan(fanned(0, 0.05), 2000, 3000), "askew, but parallel");
+        // A fan too weak to move the end of a line by a line height: 1,600 px long, 40 px high.
+        assertEquals(null, PageTurn.fan(fanned(0.01, 0), 2000, 3000));
+        // Lines that wobble by a third of a degree with no order in it.
+        List<DbPost.Box> wobbly = fanned(0, 0);
+        java.util.Random random = new java.util.Random(7);
+        for (DbPost.Box box : wobbly) {
+            float lift = (random.nextFloat() - 0.5f) * 20;
+            box.quad()[3] += lift;
+            box.quad()[5] += lift;
+        }
+        assertEquals(null, PageTurn.fan(wobbly, 2000, 3000));
+        // Too few long lines to tell.
+        assertEquals(null, PageTurn.fan(fanned(0.12, 0).subList(0, 5), 2000, 3000));
+    }
+
+    @Test
+    void aQuadOfTheFlatPageGoesBackToThePixelsItWasLaidFlatFrom() {
+        int width = 300;
+        int height = 200;
+        byte[] data = new byte[width * height * 3];
+        java.util.Arrays.fill(data, (byte) 255);
+        int dotX = 231;
+        int dotY = 57;
+        for (int c = 0; c < 3; c++) {
+            data[(dotY * width + dotX) * 3 + c] = 0;
+        }
+        PageTurn.Fan fan = PageTurn.Fan.of(width, height, 150 + 900, List.of(), 0);
+        Bgr flat = Images.flatten(new Bgr(data, width, height), fan.distance(), fan.left(), fan.top(), fan.flatWidth(), fan.flatHeight());
+        int[] darkest = darkest(flat);
+        float[] before = fan.before(new float[] {darkest[0], darkest[1]});
+        assertEquals(dotX, before[0], 1f);
+        assertEquals(dotY, before[1], 1f);
+    }
+
     @Test
     void aSmallPageWithSmallPrintIsEnlargedUpToTheDetectorsLimit() {
         List<DbPost.Box> small = new ArrayList<>();

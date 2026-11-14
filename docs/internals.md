@@ -109,6 +109,25 @@ by reflection.
   a page has to stand upright and level before they are looked for. After the first detection:
   - **On its side:** most of the text, by box length, stands in boxes at least 1.5 times as high
     as wide. The page is turned a quarter counter-clockwise.
+  - **Seen from the side:** the lines of a page photographed from the side are not parallel,
+    they run to one point far off the page, and one angle does not level them. The slope of
+    each long box, taken where its line crosses the middle of the page, is fitted against its
+    height there (the median of the slopes between pairs of lines, `PageTurn.fan`). The page
+    is a fan when, from its top line to its bottom one, the slope changes by enough to move
+    the end of a line of median length by more than a line height, half of the boxes lie
+    within a quarter of that change of the fit, and the point is at least one and a half page
+    widths away. The page is then laid flat (`PageTurn.Fan`, `Images.flatten`): the map that
+    sends the point to infinity, with the scale kept at the middle of the page, onto a canvas
+    cut to the text and three line heights around it. What slope the flat lines share is left
+    to the next step. The canvas is cut because a page seen from the side fills less of its
+    picture, and the detector scales the whole canvas to its limit: a three-column weekly read
+    with 1,015 edits on the whole canvas and 56 on the cut one. The crop of a line is warped
+    from the picture as given, through the four corners of its quad mapped back.
+    Measured on the 66 pages of `dev` and `test` made into photos from the side, one edge 12 %
+    shorter in true perspective (4,570 edits as given): 19,914 edits before, 7,088 with the
+    page laid flat, 38 pages better and 11 worse. As given, no page of `dev` or `test` is
+    taken for a fan. A page photographed from below, whose lines stay level while its margins
+    lean in, is not helped: its point would have to come from the margins.
   - **Askew:** the median angle of the long boxes, up to 45 degrees, moves a vertical gutter
     sideways by more than a line height between the top and the bottom of the page. The picture
     is turned level (bilinear, on a larger white canvas). Below that, `PageSkew` levels the

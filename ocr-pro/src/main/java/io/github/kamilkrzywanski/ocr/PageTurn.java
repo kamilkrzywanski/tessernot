@@ -298,6 +298,184 @@ final class PageTurn {
         }
     }
 
+    /** A fan is looked for among at least this many long lines. */
+    static final int FAN_VOTERS = 8;
+    /** The lines run to a point at least this many page widths from the middle of the page; nearer, it is not a page seen from the side. */
+    static final double FAN_NEAREST = 1.5;
+    /** The slopes follow the fan when half of them lie within this share of its whole spread. */
+    static final double FAN_FIT = 0.25;
+
+    /**
+     * A page photographed from the side: its lines are not parallel, they run to one point far
+     * off the page, and their slope changes evenly from the top line to the bottom one. One
+     * angle does not level such a page. The slope of the long boxes is fitted against their
+     * height on the page (the median of the slopes between pairs of boxes, so that single
+     * boxes do not move it); the page is a fan when, from the top line to the bottom one, the
+     * slope changes by enough to move the end of a line of median length by more than a line
+     * height, and when the boxes follow the fit.
+     *
+     * @return the fan, or null for a page whose lines run side by side
+     */
+    static Fan fan(List<DbPost.Box> boxes, int width, int height) {
+        int count = 0;
+        double[] slope = new double[boxes.size()];
+        double[] cy = new double[boxes.size()];
+        double[] length = new double[boxes.size()];
+        double[] tall = new double[boxes.size()];
+        for (DbPost.Box box : boxes) {
+            float[] q = box.quad();
+            float dx = (q[2] - q[0] + q[4] - q[6]) * 0.5f;
+            float dy = (q[3] - q[1] + q[5] - q[7]) * 0.5f;
+            if (dx > 0f && dx >= VOTER * height(q)) {
+                slope[count] = dy / dx;
+                // Where the line crosses the middle of the page: there the slopes of a fan
+                // change evenly with the height, wherever on its line a box lies.
+                cy[count] = (q[1] + q[3] + q[5] + q[7]) * 0.25
+                        + slope[count] * (width * 0.5 - (q[0] + q[2] + q[4] + q[6]) * 0.25);
+                length[count] = dx;
+                tall[count] = Math.min(width(q), height(q));
+                count++;
+            }
+        }
+        if (count < FAN_VOTERS) {
+            return null;
+        }
+        double lineHeight = median(tall, count);
+        // Slopes between pairs of lines well apart: lines close together say nothing about a fan.
+        double[] pairs = new double[count * (count - 1) / 2];
+        int n = 0;
+        for (int i = 0; i < count; i++) {
+            for (int j = i + 1; j < count; j++) {
+                double apart = cy[j] - cy[i];
+                if (Math.abs(apart) > 2 * lineHeight) {
+                    pairs[n++] = (slope[j] - slope[i]) / apart;
+                }
+            }
+        }
+        if (n < FAN_VOTERS) {
+            return null;
+        }
+        double b = median(pairs, n);
+        double[] rest = new double[count];
+        for (int i = 0; i < count; i++) {
+            rest[i] = slope[i] - b * cy[i];
+        }
+        double a = median(rest, count);
+        double top = Double.POSITIVE_INFINITY;
+        double bottom = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < count; i++) {
+            top = Math.min(top, cy[i]);
+            bottom = Math.max(bottom, cy[i]);
+            rest[i] = Math.abs(slope[i] - a - b * cy[i]);
+        }
+        double spread = Math.abs(b) * (bottom - top);
+        if (spread * median(length, count) <= lineHeight || median(rest, count) > FAN_FIT * spread) {
+            return null;
+        }
+        // The line that crosses the middle of the page at height y has the slope a + b y there:
+        // all of them meet 1 / b to the left of the middle, where y drops out.
+        if (1 / Math.abs(b) < FAN_NEAREST * width) {
+            return null;
+        }
+        return Fan.of(width, height, width * 0.5 - 1 / b, boxes, (float) (FAN_MARGIN * lineHeight));
+    }
+
+    /**
+     * The flat page is cut to the text, with this many line heights around it. A page seen from
+     * the side fills less of its picture than one seen from above, and on a canvas that held the
+     * whole picture it would be smaller still: the detector, which scales the canvas to its
+     * limit, then drew the lines of two columns as one (a three-column weekly: 1,015 edits on
+     * the whole canvas, 56 cut to its text).
+     */
+    static final float FAN_MARGIN = 3f;
+
+    private static double median(double[] values, int count) {
+        double[] sorted = Arrays.copyOf(values, count);
+        Arrays.sort(sorted);
+        return (count & 1) == 1 ? sorted[count / 2] : (sorted[count / 2 - 1] + sorted[count / 2]) * 0.5;
+    }
+
+    /**
+     * A page whose lines run to one point, laid flat: the map that sends that point to infinity,
+     * so that the lines come out parallel, with the scale of the page kept at its middle. The
+     * flat page holds the text of the page and a margin, see {@link #FAN_MARGIN}. Its lines
+     * still share one slope, that of the line through the middle; levelling takes it out.
+     *
+     * @param distance from the middle of the page to the point, along x, signed
+     * @param width width of the page before
+     * @param height height of the page before
+     * @param left x of the flat page's left edge, from the middle of the page
+     * @param top y of the flat page's top edge, from the middle of the page
+     * @param flatWidth width of the flat page
+     * @param flatHeight height of the flat page
+     */
+    record Fan(double distance, int width, int height, double left, double top, int flatWidth, int flatHeight) {
+        /**
+         * For a page of this size whose lines run to a point at {@code pointX}; the flat page
+         * holds {@code boxes} with {@code margin} around them, and nothing beyond the picture.
+         */
+        static Fan of(int width, int height, double pointX, List<DbPost.Box> boxes, float margin) {
+            double distance = pointX - width * 0.5;
+            double[] frame = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
+            for (int corner = 0; corner < 4; corner++) {
+                widen(frame, (corner & 1) == 0 ? 0 : width, (corner & 2) == 0 ? 0 : height, width, height, distance);
+            }
+            double[] text = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
+            for (DbPost.Box box : boxes) {
+                float[] q = box.quad();
+                for (int i = 0; i < 8; i += 2) {
+                    widen(text, q[i], q[i + 1], width, height, distance);
+                }
+            }
+            if (boxes.isEmpty()) {
+                text = frame;
+            }
+            double left = Math.max(frame[0], text[0] - margin);
+            double right = Math.min(frame[1], text[1] + margin);
+            double top = Math.max(frame[2], text[2] - margin);
+            double bottom = Math.min(frame[3], text[3] + margin);
+            return new Fan(distance, width, height, left, top, (int) Math.ceil(right - left), (int) Math.ceil(bottom - top));
+        }
+
+        /** Takes the point {@code (x, y)} of the page into the bounds {@code u0, u1, v0, v1} of the flat page, from its middle. */
+        private static void widen(double[] bounds, double x, double y, int width, int height, double distance) {
+            double dx = x - width * 0.5;
+            double dy = y - height * 0.5;
+            double den = 1 - dx / distance;
+            bounds[0] = Math.min(bounds[0], dx / den);
+            bounds[1] = Math.max(bounds[1], dx / den);
+            bounds[2] = Math.min(bounds[2], dy / den);
+            bounds[3] = Math.max(bounds[3], dy / den);
+        }
+
+        /** A point of the flat page in the page before. */
+        float[] back(float x, float y) {
+            double u = x + left;
+            double v = y + top;
+            double den = 1 + u / distance;
+            return new float[] {(float) (u / den + width * 0.5), (float) (v / den + height * 0.5)};
+        }
+
+        /** A point of the page before on the flat page. */
+        float[] forward(float x, float y) {
+            double dx = x - width * 0.5;
+            double dy = y - height * 0.5;
+            double den = 1 - dx / distance;
+            return new float[] {(float) (dx / den - left), (float) (dy / den - top)};
+        }
+
+        /** A quad of the flat page, in pixel indices, as the quad of the same pixels on the page before. */
+        float[] before(float[] quad) {
+            float[] out = new float[quad.length];
+            for (int i = 0; i < quad.length; i += 2) {
+                float[] at = back(quad[i] + 0.5f, quad[i + 1] + 0.5f);
+                out[i] = at[0] - 0.5f;
+                out[i + 1] = at[1] - 0.5f;
+            }
+            return out;
+        }
+    }
+
     /** Degrees clockwise that set the original picture upright, for a page turned {@code turns} quarters counter-clockwise. */
     static int rotation(int turns) {
         return ((4 - (turns & 3)) & 3) * 90;

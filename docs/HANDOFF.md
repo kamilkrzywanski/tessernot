@@ -318,6 +318,36 @@ newest pages were read by the engine here for the first time):
   (Goodyear 0.53, Lafayette 0.47, Potts 0.36, Maritime Electric 0.31), the purple duplicator
   memo of 1945 (0.22), the 1818 account table (0.22).
 
+**False gutters and photos from the side, 2026-11-15.**
+
+- **A cut the boxes suggest needs the ink's consent** (`InkGutters.confirmed`), see "The ink
+  has the last word on a geometric cut" in internals.md. The ZSK letter 548 edits to 55; no
+  other page of `dev` (93) or `test` (27) changes. `dev` 0.0519 to 0.0493, default profile.
+  This closes one of the three kinds of loss the layout analysis had on business documents.
+  The other two are open, and they are orders, not cuts: rows of a form whose fields stand
+  side by side, read block by block where the reference reads them row by row (PIT-11, 446
+  against 33 with `--layout rows`; the name and title list of the Ivey Steel memo, 238 against
+  41), and header blocks side by side (the 2025 letter of the President's office, 148 against
+  32). The W-4 and W-9 forms need the opposite, so this is not a threshold to move.
+- **A page photographed from the side is laid flat** (`PageTurn.fan`, `PageTurn.Fan`,
+  `Images.flatten`), see "Seen from the side" in internals.md.
+  The 66 established pages as photos from the side (`Probe` variant `persx12`: one edge 12 %
+  shorter, in true perspective; 4,570 edits as given): 19,914 edits to 7,088, 38 pages better
+  and 11 worse; the three-column Wisła weekly 2,765 to 55, The Independent 2,315 to 76, Volumina
+  Legum 2,177 to 29. The earlier variant `keyx12`, which shortens one edge without narrowing
+  the page, 12,870 to 6,191. As given, no page of `dev` (93) or `test` (27) is taken for a fan.
+  - Still far from their reading as given: the 1916 Arct dictionary (29, 607), the Gazeta
+    Lwowska supplement (68, 528), the Białystok notice (37, 343), the bill-of-sale form (12,
+    317), Monthly Weather Review (51, 284). The far side of such a photo has three quarters
+    of the resolution, so part of this is small print lost, as at half resolution.
+  - Worse than before on a few pages that had read better askew than they do as given (the
+    Mennica receipt 215 to 382 against 417 as given, the 1981 notice 645 to 775 against 546).
+  - The flat page is cut to the text of the first detection and three line heights around
+    it: a line that detection missed and that lies further out than that is lost. Not seen
+    on these pages; a real photo with a small note far out in the margin could show it.
+  - Not done: a page photographed from below (`keyy12`, 6,541 before and after). Its lines
+    stay level; the point has to be found from the lean of margins and gutters.
+
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
 (`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and

@@ -416,6 +416,61 @@ class OcrEndToEndTest {
 
     @Test
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void aPagePhotographedFromTheSideIsLaidFlatAndItsLinesComeBackWhereTheyAre() {
+        String[] texts = {"Faktura za dostawę towarów zgodnie z umową numer 2024/10",
+                "Termin płatności wynosi czternaście dni od daty wystawienia",
+                "Prosimy o przelew na rachunek bankowy podany poniżej w stopce",
+                "Dziękujemy za współpracę i zapraszamy ponownie do naszego sklepu",
+                "Towar pozostaje własnością sprzedawcy do dnia zapłaty całej ceny",
+                "Reklamacje przyjmujemy na piśmie w ciągu siedmiu dni od odbioru",
+                "Zamówienie zostało wysłane kurierem w dniu wystawienia faktury",
+                "Do paczki dołączono instrukcję obsługi oraz kartę gwarancyjną",
+                "W razie pytań prosimy o kontakt z naszym działem obsługi klienta",
+                "Niniejszy dokument został wystawiony elektronicznie bez podpisu"};
+        int width = 1700;
+        int height = 1300;
+        BufferedImage page = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D draw = Images.prepare(page);
+        try {
+            draw.setFont(Samples.font(40f));
+            for (int i = 0; i < texts.length; i++) {
+                draw.drawString(texts[i], 60, 110 + 115 * i);
+            }
+        } finally {
+            draw.dispose();
+        }
+        // The right edge of the page 12 % shorter than the left one, in true perspective: the
+        // point (x, y) of the page lies at x / (1 + p x) and, from the middle, at y / (1 + p x).
+        double p = 0.12 / (0.88 * width);
+        BufferedImage photo = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                double fromX = x / (1 - p * x);
+                double fromY = height / 2.0 + (y - height / 2.0) * (1 + p * fromX);
+                int sx = (int) Math.round(fromX);
+                int sy = (int) Math.round(fromY);
+                photo.setRGB(x, y, sx >= 0 && sy >= 0 && sx < width && sy < height ? page.getRGB(sx, sy) : 0xffffff);
+            }
+        }
+        OcrResult result = engine.recognize(photo);
+        assertEquals(0, result.rotation());
+        assertEquals(String.join("\n", texts), result.text());
+        for (int i = 0; i < texts.length; i++) {
+            // Where the line was drawn, and where that lies on the photo: its left end, and its
+            // slope there, which runs from up at the top of the page to down at its bottom.
+            double baseline = 110 + 115 * i;
+            double leftX = 60 / (1 + p * 60);
+            double leftY = height / 2.0 + (baseline - height / 2.0) / (1 + p * 60);
+            double slope = -p * (baseline - 15 - height / 2.0);
+            float[] quad = result.lines().get(i).quad();
+            assertEquals(leftX, quad[0], 25, "line " + i + " left end");
+            assertTrue(quad[1] < leftY - 10 && quad[7] > leftY - 10, "line " + i + " from " + quad[1] + " to " + quad[7] + " around " + leftY);
+            assertEquals(slope, (quad[3] - quad[1]) / (quad[2] - quad[0]), 0.012, "line " + i + " slope");
+        }
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
     void wordsLieWhereTheyArePrinted() {
         String[] texts = {"Zażółć gęślą jaźń i wróć do domu", "FAKTURA VAT nr 2024/10/0042 z dnia 12.10.2024",
                 "il li ill Illinois minimum www MMM WWW"};

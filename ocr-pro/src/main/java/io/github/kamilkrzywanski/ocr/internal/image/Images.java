@@ -873,6 +873,40 @@ public final class Images {
         return new Bgr(out, width, height);
     }
 
+    /**
+     * A page whose lines run to one point, laid flat on a white canvas of {@code width} by
+     * {@code height}: the output pixel at {@code (u, v)} from the middle of the page, with
+     * {@code u = x + left} and {@code v = y + top}, shows the input at
+     * {@code (u, v) / (1 + u / distance)} from its own middle. Bilinear; what lies outside
+     * the input is white.
+     */
+    public static Bgr flatten(Bgr image, double distance, double left, double top, int width, int height) {
+        int w = image.width();
+        int h = image.height();
+        byte[] in = image.data();
+        byte[] out = new byte[packedBytes(width, height)];
+        for (int y = 0; y < height; y++) {
+            double v = y + 0.5 + top;
+            for (int x = 0; x < width; x++) {
+                double u = x + 0.5 + left;
+                double den = 1 + u / distance;
+                float sx = (float) (u / den + w * 0.5 - 0.5);
+                float sy = (float) (v / den + h * 0.5 - 0.5);
+                int o = (y * width + x) * 3;
+                if (!(den > 0) || sx < -0.5f || sy < -0.5f || sx > w - 0.5f || sy > h - 0.5f) {
+                    out[o] = (byte) 255;
+                    out[o + 1] = (byte) 255;
+                    out[o + 2] = (byte) 255;
+                } else {
+                    for (int c = 0; c < 3; c++) {
+                        out[o + c] = (byte) Math.round(sampleBilinear(in, w, h, sx, sy, c));
+                    }
+                }
+            }
+        }
+        return new Bgr(out, width, height);
+    }
+
     /** Projection-profile deskew over about -10..10 degrees. Off by default in the engine. */
     public static Bgr deskew(Bgr image) {
         if (image.width() <= 0 || image.height() <= 0) {

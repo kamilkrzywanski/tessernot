@@ -22,7 +22,6 @@ import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -487,9 +486,11 @@ public final class OcrEngine implements AutoCloseable {
         // turn, then levelling, then half a turn on the level page, where the classifier sees
         // its lines straight.
         int turns = 0;
+        PageTurn.Fan fan = null;
         PageTurn.Level level = null;
-        // The page before it was turned level: the crops of its lines are cut from this one.
-        Bgr unlevelled = null;
+        // The page before it was laid flat or turned level: the crops of its lines are cut from
+        // this one.
+        Bgr source = null;
         boolean flipped = false;
         if (detect && cfg.pageOrientation()) {
             if (PageTurn.sideways(boxes)) {
@@ -497,20 +498,28 @@ public final class OcrEngine implements AutoCloseable {
                 turns = 1;
                 boxes = detect(bgr, lineParallel);
             }
+            fan = PageTurn.fan(boxes, bgr.width(), bgr.height());
+            if (fan != null) {
+                source = bgr;
+                bgr = Images.flatten(bgr, fan.distance(), fan.left(), fan.top(), fan.flatWidth(), fan.flatHeight());
+                boxes = detect(bgr, lineParallel);
+            }
             double skew = PageTurn.skew(boxes);
             if (PageTurn.wanders(skew, bgr.height(), boxes)) {
                 level = PageTurn.Level.of(bgr.width(), bgr.height(), skew);
-                unlevelled = bgr;
+                if (source == null) {
+                    source = bgr;
+                }
                 bgr = Images.turn(bgr, level.cos(), level.sin(), level.levelWidth(), level.levelHeight());
                 boxes = detect(bgr, lineParallel);
             }
-            if (upsideDown(new Page(bgr, unlevelled, level, false), boxes)) {
+            if (upsideDown(new Page(bgr, source, fan, level, false), boxes)) {
                 bgr = Images.rot180(bgr);
                 flipped = true;
                 boxes = detect(bgr, lineParallel);
             }
         }
-        Page page = new Page(bgr, unlevelled, level, flipped);
+        Page page = new Page(bgr, source, fan, level, flipped);
         int upsideDownWidth = bgr.width();
         int upsideDownHeight = bgr.height();
         long detectionNanos = System.nanoTime() - detStart;
@@ -540,16 +549,21 @@ public final class OcrEngine implements AutoCloseable {
             tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
                     .thenComparingInt(table -> table.bounds().x));
         }
-        if (turns != 0 || level != null || flipped || shrink != 1 || enlarge > 1f) {
+        if (turns != 0 || fan != null || level != null || flipped || shrink != 1 || enlarge > 1f) {
             // Back into the pixels of the picture as it was given: out of the half turn, off
-            // the levelled canvas, out of the quarter turn, then to the size it came in.
+            // the levelled canvas, off the flat page, out of the quarter turn, then to the
+            // size it came in.
             int quarters = turns;
+            PageTurn.Fan fanned = fan;
             PageTurn.Level levelled = level;
             boolean half = flipped;
             PageTurn.Back back = (x, y) -> {
                 float[] p = half ? new float[] {upsideDownWidth - x, upsideDownHeight - y} : new float[] {x, y};
                 if (levelled != null) {
                     p = levelled.back(p[0], p[1]);
+                }
+                if (fanned != null) {
+                    p = fanned.back(p[0], p[1]);
                 }
                 p = PageTurn.back(p[0], p[1], quarters, pageWidth, pageHeight);
                 p[0] *= shrink / enlarge;
@@ -1036,22 +1050,37 @@ public final class OcrEngine implements AutoCloseable {
 
     /**
      * The page the lines are found on, and the picture their crops are cut from. They are one
-     * and the same unless the page was turned level: the levelled page is the picture resampled
-     * once, and a crop cut from it would be the picture resampled twice. So a line found on the
-     * levelled page is cut from the page before, through its quad mapped back, and small print
-     * keeps what one resampling leaves of it.
+     * and the same unless the page was laid flat or turned level: such a page is the picture
+     * resampled, and a crop cut from it would be the picture resampled twice. So a line found
+     * there is cut from the page before, through its quad mapped back, and small print keeps
+     * what one resampling leaves of it. The quad of a line of a fanned page is not a rectangle
+     * on the page before; the crop is warped from its four corners all the same.
      *
-     * @param pixels the page as it is read: upright and level
-     * @param unlevelled the page before it was turned level, or null when it was not
-     * @param level how {@code unlevelled} became {@code pixels}, before the half turn
+     * @param pixels the page as it is read: flat, level and upright
+     * @param source the page before it was laid flat or levelled, or null when it was neither
+     * @param fan how {@code source} was laid flat, or null
+     * @param level how the page was turned level after that, or null
      * @param flipped whether {@code pixels} got half a turn after the levelling
      */
-    private record Page(Bgr pixels, Bgr unlevelled, PageTurn.Level level, boolean flipped) {
+    private record Page(Bgr pixels, Bgr source, PageTurn.Fan fan, PageTurn.Level level, boolean flipped) {
         Bgr crop(float[] quad) {
-            if (unlevelled == null) {
+            if (source == null) {
                 return OcrEngine.crop(pixels, quad);
             }
-            return OcrEngine.crop(unlevelled, level.before(quad, flipped));
+            float[] before = quad;
+            if (level != null) {
+                before = level.before(before, flipped);
+            } else if (flipped) {
+                before = new float[quad.length];
+                for (int i = 0; i < quad.length; i += 2) {
+                    before[i] = pixels.width() - 1 - quad[i];
+                    before[i + 1] = pixels.height() - 1 - quad[i + 1];
+                }
+            }
+            if (fan != null) {
+                before = fan.before(before);
+            }
+            return OcrEngine.crop(source, before);
         }
     }
 

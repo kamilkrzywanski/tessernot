@@ -84,7 +84,8 @@ Before the image is read, missing or empty model files are reported with a point
 
 - JPEG input is turned upright from EXIF Orientation (1–8). PNG and `BufferedImage` input are not rotated.
 - A page that lies on its side or upside down, with or without an EXIF tag, is found from its
-  lines and read turned. A page scanned askew is turned level first.
+  lines and read turned. A page scanned askew is turned level first, and one photographed
+  from the side, whose lines run to a point, is laid flat.
 - A multi-image TIFF or GIF is rejected with the image count. A JPEG with more data behind the
   picture (a gain map, a motion clip) is read as that one picture.
 - Images are decoded in memory; no temporary file is written.

@@ -271,10 +271,11 @@ public final class OcrConfig {
      * A page is on its side when most of its text stands in boxes on their short side, and
      * upside down when most of its long lines read that way to the orientation classifier. A
      * page is askew when its lines run at an angle that moves a column gutter sideways by more
-     * than a line height from top to bottom; it is turned level. The result still gives every
-     * line in the pixels of the picture as it was given, and {@link OcrResult#rotation()} tells
-     * the quarter turns. Default: true. Turn it off for pages that are set in vertical lines on
-     * purpose.
+     * than a line height from top to bottom; it is turned level. A page photographed from the
+     * side, whose lines run to one point instead of side by side, is laid flat first. The
+     * result still gives every line in the pixels of the picture as it was given, and
+     * {@link OcrResult#rotation()} tells the quarter turns. Default: true. Turn it off for pages
+     * that are set in vertical lines on purpose.
      */
     public boolean pageOrientation() { return pageOrientation; }
 
