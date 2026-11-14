@@ -68,33 +68,13 @@ final class Exif {
         if (turned != null) {
             return turned;
         }
-        int[] pixels = src.getRGB(0, 0, w, h, null, 0, w);
-        int[] out = new int[dw * dh];
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int dx = switch (orientation) {
-                    case 2, 3 -> w - 1 - x;
-                    case 5, 8 -> y;
-                    case 6, 7 -> h - 1 - y;
-                    default -> x;
-                };
-                int dy = switch (orientation) {
-                    case 3, 4 -> h - 1 - y;
-                    case 5, 6 -> x;
-                    case 7, 8 -> w - 1 - x;
-                    default -> y;
-                };
-                out[dy * dw + dx] = pixels[y * w + x];
-            }
-        }
-        BufferedImage dst = new BufferedImage(dw, dh, BufferedImage.TYPE_INT_RGB);
-        dst.setRGB(0, 0, dw, dh, out, 0, dw);
-        return dst;
+        // Any other layout: the pixels as the engine reads them, a gray sample as it is stored.
+        return turn(Images.toBgr(src).data(), 0, w * 3, orientation, w, h, dw, dh);
     }
 
     /**
      * The usual case, a color JPEG decoded as TYPE_3BYTE_BGR: the bytes are moved straight into
-     * an image of the same type. Null for any other layout, which goes through {@code getRGB}.
+     * an image of the same type. Null for any other layout, which goes through {@link Images#toBgr}.
      * A 12 megapixel photo turns in a tenth of the time, with no {@code int} copy of the picture.
      */
     private static BufferedImage uprightBytes(BufferedImage src, int orientation, int w, int h, int dw, int dh) {
@@ -117,6 +97,11 @@ final class Exif {
         if (scan < w * 3 || start < 0 || start + (h - 1) * scan + w * 3 > in.length) {
             return null;
         }
+        return turn(in, start, scan, orientation, w, h, dw, dh);
+    }
+
+    /** Rows of blue, green, red bytes, {@code scan} bytes apart from {@code start}, moved into an upright image. */
+    private static BufferedImage turn(byte[] in, int start, int scan, int orientation, int w, int h, int dw, int dh) {
         BufferedImage dst = new BufferedImage(dw, dh, BufferedImage.TYPE_3BYTE_BGR);
         byte[] out = ((DataBufferByte) dst.getRaster().getDataBuffer()).getData();
         for (int y = 0; y < h; y++) {

@@ -27,35 +27,67 @@ class ImagePrepTest {
         BufferedImage argb = new BufferedImage(17, 9, BufferedImage.TYPE_INT_ARGB);
         assertRgb(argb, true);
         assertRgb(argb.getSubimage(3, 2, 11, 5), true);
-        BufferedImage gray = new BufferedImage(8, 3, BufferedImage.TYPE_BYTE_GRAY);
-        assertRgb(gray, false);
-        // Every gray sample, and a part of a larger scan: the same values as getRGB gives.
-        BufferedImage ramp = new BufferedImage(64, 9, BufferedImage.TYPE_BYTE_GRAY);
-        assertRgb(ramp, false);
-        assertRgb(ramp.getSubimage(5, 2, 40, 6), false);
         BufferedImage abgr = new BufferedImage(17, 9, BufferedImage.TYPE_4BYTE_ABGR);
         assertRgb(abgr, true);
         assertRgb(abgr.getSubimage(3, 2, 11, 5), true);
         // Layouts without a raster path still go through getRGB.
-        assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_USHORT_GRAY), false);
         assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_BYTE_INDEXED), false);
+        assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_BYTE_BINARY), false);
         assertRgb(new BufferedImage(17, 9, BufferedImage.TYPE_INT_ARGB_PRE), true);
     }
 
-    /** A gray sample is read as linear light, as getRGB reads it: 128 comes out as 188. */
+    /**
+     * A gray sample is the value of the three channels. getRGB would brighten it (128 to 188),
+     * and the same scan saved in color would then read differently.
+     */
     @Test
-    void graySamplesKeepTheValuesOfGetRgb() {
+    void graySamplesAreReadAsStored() {
         BufferedImage gray = new BufferedImage(3, 1, BufferedImage.TYPE_BYTE_GRAY);
         gray.getRaster().setSample(0, 0, 0, 0);
         gray.getRaster().setSample(1, 0, 0, 128);
         gray.getRaster().setSample(2, 0, 0, 255);
-        byte[] data = Images.toBgr(gray).data();
-        assertEquals(0, data[0] & 255);
-        assertEquals(gray.getRGB(1, 0) & 255, data[3] & 255);
-        assertEquals(188, data[3] & 255);
-        assertEquals(data[3], data[4]);
-        assertEquals(data[3], data[5]);
-        assertEquals(255, data[6] & 255);
+        assertEquals(188, gray.getRGB(1, 0) & 255, "what the JDK makes of the sample");
+        assertArrayEquals(new byte[] {0, 0, 0, (byte) 128, (byte) 128, (byte) 128, -1, -1, -1},
+                Images.toBgr(gray).data());
+
+        // Every sample, a part of a larger scan, and the same scan in color.
+        BufferedImage ramp = new BufferedImage(64, 9, BufferedImage.TYPE_BYTE_GRAY);
+        BufferedImage color = new BufferedImage(64, 9, BufferedImage.TYPE_3BYTE_BGR);
+        for (int y = 0; y < 9; y++) {
+            for (int x = 0; x < 64; x++) {
+                int v = (x * 4 + y * 29) & 255;
+                ramp.getRaster().setSample(x, y, 0, v);
+                color.setRGB(x, y, 0xff000000 | v * 0x010101);
+            }
+        }
+        assertArrayEquals(Images.toBgr(color).data(), Images.toBgr(ramp).data());
+        assertArrayEquals(Images.toBgr(color.getSubimage(5, 2, 40, 6)).data(),
+                Images.toBgr(ramp.getSubimage(5, 2, 40, 6)).data());
+    }
+
+    @Test
+    void sixteenBitGrayAndGrayWithAlphaKeepTheirSamplesToo() {
+        BufferedImage deep = new BufferedImage(4, 1, BufferedImage.TYPE_USHORT_GRAY);
+        int[] samples = {0, 0x8080, 0xffff, 0x0100};
+        deep.getRaster().setSamples(0, 0, 4, 1, 0, samples);
+        assertArrayEquals(new byte[] {0, 0, 0, (byte) 128, (byte) 128, (byte) 128, -1, -1, -1, 1, 1, 1},
+                Images.toBgr(deep).data());
+        BufferedImage part = deep.getSubimage(1, 0, 2, 1);
+        assertArrayEquals(new byte[] {(byte) 128, (byte) 128, (byte) 128, -1, -1, -1}, Images.toBgr(part).data());
+
+        // What ImageIO returns for a gray PNG with alpha: two bands, gray and alpha, laid over white.
+        java.awt.image.ComponentColorModel model = new java.awt.image.ComponentColorModel(
+                java.awt.color.ColorSpace.getInstance(java.awt.color.ColorSpace.CS_GRAY), true, false,
+                java.awt.Transparency.TRANSLUCENT, java.awt.image.DataBuffer.TYPE_BYTE);
+        java.awt.image.WritableRaster raster = model.createCompatibleWritableRaster(3, 1);
+        raster.setPixels(0, 0, 3, 1, new int[] {100, 255, 100, 0, 0, 128});
+        BufferedImage veiled = new BufferedImage(model, raster, false, null);
+        byte[] data = Images.toBgr(veiled).data();
+        assertEquals(100, data[0] & 255, "opaque: the sample");
+        assertEquals(255, data[3] & 255, "transparent: the white under it");
+        assertEquals(127, data[6] & 255, "black at half cover over white");
+        assertEquals(data[6], data[7]);
+        assertEquals(data[6], data[8]);
     }
 
     private static void assertRgb(BufferedImage image, boolean alpha) {

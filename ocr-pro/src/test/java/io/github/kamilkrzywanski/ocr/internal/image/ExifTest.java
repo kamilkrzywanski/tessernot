@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +48,20 @@ class ExifTest {
         }
         assertPixels(src, Exif.upright(Exif.upright(src, 6), 8));
         assertPixels(src, Exif.upright(Exif.upright(src, 8), 6));
+    }
+
+    /** A gray JPEG keeps its samples through the turn, as it does when it needs none. */
+    @Test
+    void aGrayImageTurnsWithItsSamplesAsStored() {
+        BufferedImage gray = new BufferedImage(2, 1, BufferedImage.TYPE_BYTE_GRAY);
+        gray.getRaster().setSample(0, 0, 0, 128);
+        gray.getRaster().setSample(1, 0, 0, 40);
+        BufferedImage turned = Exif.upright(gray, 6);
+        assertEquals(1, turned.getWidth());
+        assertEquals(2, turned.getHeight());
+        assertEquals(0xff808080, turned.getRGB(0, 0));
+        assertEquals(0xff282828, turned.getRGB(0, 1));
+        assertArrayEquals(new byte[] {(byte) 128, (byte) 128, (byte) 128, 40, 40, 40}, Images.toBgr(turned).data());
     }
 
     /** A color JPEG is TYPE_3BYTE_BGR and is turned byte by byte; the pixels are those of the general path. */

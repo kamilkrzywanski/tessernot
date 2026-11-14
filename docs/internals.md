@@ -74,6 +74,16 @@ by reflection.
 
 ## Pre- and post-processing
 
+- **Reading an image** (`Images.toBgr`): the usual rasters are copied channel by channel, the
+  rest goes through `getRGB`, and alpha is laid over white. A gray image is the exception to
+  `getRGB`: its sample becomes the value of all three channels, at 8 or 16 bits, with or without
+  alpha. The JDK takes the gray of these images for linear light, so `getRGB` returns 188 for a
+  sample of 128, and a gray scan would be read brighter than the same scan saved in color or
+  rendered from a PDF. Until 2026-11-14 it was. Measured on every `dev` and `test` page turned
+  into a gray scan (66 pages, default profile): 6,211 edits with the samples as stored and 8,646
+  through the JDK's conversion (CER 0.036 and 0.051). The conversion read 22 pages better and 33
+  worse. It helps faded newsprint (Bristol Mercury 1832: 431 to 352) and costs most where the
+  print is thin or light (an arXiv page: 91 to 2,104).
 - **Preprocessing** follows PP-OCR / OpenCV:
   - BGR channels, mean and std 0.5.
   - Half-pixel bilinear resize: `src = (dst + 0.5) * scale - 0.5`.

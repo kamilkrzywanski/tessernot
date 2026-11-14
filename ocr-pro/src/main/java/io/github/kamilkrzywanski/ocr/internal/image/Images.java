@@ -21,8 +21,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.awt.RenderingHints;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
 import java.awt.image.ComponentSampleModel;
+import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Raster;
@@ -155,6 +159,10 @@ public final class Images {
         if (direct != null) {
             return direct;
         }
+        Bgr gray = fromGraySamples(image, w, h);
+        if (gray != null) {
+            return gray;
+        }
         int[] px = image.getRGB(0, 0, w, h, null, 0, w);
         byte[] bgr = new byte[bytes];
         for (int i = 0; i < px.length; i++) {
@@ -176,7 +184,8 @@ public final class Images {
 
     /**
      * Standard rasters already store the channels. {@code getRGB} converts them and is the slow part.
-     * A child raster or an unusual sample model returns null and the caller uses {@code getRGB}.
+     * A child raster or an unusual sample model returns null; the caller then reads gray samples
+     * with {@link #fromGraySamples} and everything else with {@code getRGB}.
      */
     private static Bgr fromRaster(BufferedImage image, int w, int h) {
         Raster raster = image.getRaster();
@@ -212,29 +221,12 @@ public final class Images {
     }
 
     /**
-     * What {@code getRGB} returns for each sample of a TYPE_BYTE_GRAY image. That is not the
-     * sample itself: the JDK treats the gray as linear light and converts it to sRGB (128 reads
-     * as 188). The scans of the benchmark were read this way, so the table keeps it.
+     * One gray sample per pixel, the usual form of a gray scan. The sample is the value of all
+     * three channels, as it is when the same scan is saved in color or rendered from a PDF.
+     * {@code getRGB} would not return it: the JDK takes the gray of these images for linear light
+     * and converts it to sRGB (128 comes out as 188), so the page would be read brighter than it
+     * was scanned, and only when its file happens to be gray.
      */
-    private static final class GrayTable {
-        static final byte[] VALUES = build();
-
-        private static byte[] build() {
-            BufferedImage ramp = new BufferedImage(256, 1, BufferedImage.TYPE_BYTE_GRAY);
-            byte[] samples = ((DataBufferByte) ramp.getRaster().getDataBuffer()).getData();
-            for (int i = 0; i < 256; i++) {
-                samples[i] = (byte) i;
-            }
-            int[] rgb = ramp.getRGB(0, 0, 256, 1, null, 0, 256);
-            byte[] values = new byte[256];
-            for (int i = 0; i < 256; i++) {
-                values[i] = (byte) rgb[i];
-            }
-            return values;
-        }
-    }
-
-    /** One gray sample per pixel, the usual form of a gray scan. The values are those of {@code getRGB}. */
     private static Bgr fromGrayBytes(DataBufferByte bytes, ComponentSampleModel cm, int w, int h, int sx, int sy) {
         if (w == 0 || h == 0) {
             return new Bgr(new byte[0], w, h);
@@ -248,16 +240,59 @@ public final class Images {
         if (scan < w || start < 0 || start + (h - 1) * scan + w > src.length) {
             return null;
         }
-        byte[] table = GrayTable.VALUES;
         byte[] dst = new byte[packedBytes(w, h)];
         for (int y = 0; y < h; y++) {
             int row = start + y * scan;
             int o = y * w * 3;
             for (int x = 0; x < w; x++) {
-                byte v = table[src[row + x] & 255];
+                byte v = src[row + x];
                 dst[o] = v;
                 dst[o + 1] = v;
                 dst[o + 2] = v;
+                o += 3;
+            }
+        }
+        return new Bgr(dst, w, h);
+    }
+
+    /**
+     * Every other gray image with one sample per pixel: 16 bits, gray with alpha, a raster the
+     * byte path does not take. The samples are scaled to 8 bits and stay what they are, see
+     * {@link #fromGrayBytes}. Null when the image is not gray, has a palette, or stores its samples
+     * as anything but unsigned integers; the caller then uses {@code getRGB}.
+     */
+    private static Bgr fromGraySamples(BufferedImage image, int w, int h) {
+        ColorModel model = image.getColorModel();
+        if (!(model instanceof ComponentColorModel) || model.getColorSpace().getType() != ColorSpace.TYPE_GRAY
+                || model.isAlphaPremultiplied()) {
+            return null;
+        }
+        int transfer = model.getTransferType();
+        boolean alpha = model.hasAlpha();
+        Raster raster = image.getRaster();
+        if (transfer != DataBuffer.TYPE_BYTE && transfer != DataBuffer.TYPE_USHORT
+                || raster.getNumBands() != (alpha ? 2 : 1) || raster.getWidth() < w || raster.getHeight() < h) {
+            return null;
+        }
+        int max = (1 << model.getComponentSize(0)) - 1;
+        int alphaMax = alpha ? (1 << model.getComponentSize(1)) - 1 : 255;
+        int[] gray = new int[w];
+        int[] cover = alpha ? new int[w] : null;
+        byte[] dst = new byte[packedBytes(w, h)];
+        for (int y = 0; y < h; y++) {
+            raster.getSamples(raster.getMinX(), raster.getMinY() + y, w, 1, 0, gray);
+            if (alpha) {
+                raster.getSamples(raster.getMinX(), raster.getMinY() + y, w, 1, 1, cover);
+            }
+            int o = y * w * 3;
+            for (int x = 0; x < w; x++) {
+                int v = max == 255 ? gray[x] : (gray[x] * 255 + max / 2) / max;
+                if (alpha) {
+                    v = coverWhite(v, alphaMax == 255 ? cover[x] : (cover[x] * 255 + alphaMax / 2) / alphaMax);
+                }
+                dst[o] = (byte) v;
+                dst[o + 1] = (byte) v;
+                dst[o + 2] = (byte) v;
                 o += 3;
             }
         }

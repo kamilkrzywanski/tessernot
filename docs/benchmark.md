@@ -95,6 +95,14 @@ the median over documents.
 | **RapidOCR** | rapidocr 3.10.0 on onnxruntime 1.31.0, running **the same ONNX files** with the same DB settings (limit 2048, threshold 0.35), see `bench/run-rapidocr.py` |
 | **Tesseract** | 5.5.3 with `pol` or `eng` matching the document, default page segmentation, see `bench/run-tesseract.sh` |
 
+Since 2026-11-14 a gray file is read with its samples as stored; before, the JDK's color
+conversion brightened it (see "Reading an image" in [internals.md](internals.md)). Four pages of
+`dev` and `test` are gray files. The Ho Chi Minh telegram on `dev` kept its score. On `test` the
+`ocr-pro` column of three rows was rescored: Outing 0.0013 to 0.0011, the 1954 memo 0.0768 to
+0.0793, the MSZ letter 0.1595 to 0.1623, five edits more in all, and the pooled numbers did not
+move at three decimals (0.0461 to 0.0462). The other ocr-pro columns of those rows and the three
+gray pages of `test2` (Tesco 1994, NSAM 125, Przegląd Tygodniowy 1903) were not rescored.
+
 All engines ran on one laptop: Intel Core i7-1365U (2 performance + 8 efficiency cores,
 12 threads), Linux, OpenJDK 21.0.12, in one session on 2026-10-15 with no other heavy job
 running, so the times can be compared across engines. The page time is the median over the
@@ -181,8 +189,8 @@ Per document, CER / word F1:
 | en-bill-nb-telephone-1932 | 0.195 / 0.843 | 0.220 / 0.876 | 0.195 / 0.843 | 0.282 / 0.852 | 0.464 / 0.642 |
 | en-form-bill-of-sale-reg135 | 0.003 / 0.998 | 0.029 / 0.962 | 0.003 / 0.998 | 0.014 / 0.996 | 0.039 / 0.924 |
 | en-journal-nature-1896-p419 | 0.053 / 0.972 | 0.022 / 0.995 | 0.633 / 0.972 | 0.614 / 0.962 | 0.429 / 0.949 |
-| en-magazine-outing-v45-developers | 0.001 / 0.994 | 0.002 / 0.993 | 0.711 / 0.994 | 0.712 / 0.996 | 0.003 / 0.991 |
-| en-memo-conference-president-1954 | 0.077 / 0.952 | 0.076 / 0.960 | 0.077 / 0.952 | 0.082 / 0.940 | 0.051 / 0.939 |
+| en-magazine-outing-v45-developers | 0.001 / 0.995 | 0.002 / 0.993 | 0.711 / 0.994 | 0.712 / 0.996 | 0.003 / 0.991 |
+| en-memo-conference-president-1954 | 0.079 / 0.945 | 0.076 / 0.960 | 0.077 / 0.952 | 0.082 / 0.940 | 0.051 / 0.939 |
 | en-newspaper-aparri-news-1900 | 0.014 / 0.933 | 0.013 / 0.935 | 0.744 / 0.933 | 0.750 / 0.925 | 0.197 / 0.774 |
 | en-poster-coalbrookdale-auction-1910 | 0.033 / 0.972 | 0.030 / 0.944 | 0.033 / 0.972 | 0.082 / 0.974 | 0.075 / 0.861 |
 | en-programme-toledo-symphony-1921 | 0.086 / 0.844 | 0.087 / 0.853 | 0.086 / 0.844 | 0.136 / 0.853 | 0.136 / 0.778 |
@@ -197,7 +205,7 @@ Per document, CER / word F1:
 | pl-odezwa-zhp-lodz-1935 | 0.017 / 0.969 | 0.029 / 0.957 | 0.768 / 0.969 | 0.768 / 0.967 | 0.009 / 0.967 |
 | pl-paragon-castorama-2021 | 0.020 / 0.853 | 0.038 / 0.794 | 0.020 / 0.853 | 0.024 / 0.842 | 0.137 / 0.748 |
 | pl-paragon-inmedio-2024 | 0.033 / 0.831 | 0.035 / 0.821 | 0.033 / 0.831 | 0.041 / 0.800 | 0.149 / 0.495 |
-| pl-pismo-msz-ambasada-palestyny-2010 | 0.160 / 0.904 | 0.147 / 0.906 | 0.125 / 0.904 | 0.142 / 0.903 | 0.105 / 0.819 |
+| pl-pismo-msz-ambasada-palestyny-2010 | 0.162 / 0.904 | 0.147 / 0.906 | 0.125 / 0.904 | 0.142 / 0.903 | 0.105 / 0.819 |
 | pl-pismo-umwp-2026 | 0.008 / 0.988 | 0.028 / 0.962 | 0.008 / 0.988 | 0.007 / 0.990 | 0.013 / 0.975 |
 | pl-rachunek-hurtownia-slupsk-1948 | 0.157 / 0.810 | 0.317 / 0.750 | 0.157 / 0.810 | 0.246 / 0.810 | 0.683 / 0.612 |
 | pl-rachunek-mennica-1931 | 0.470 / 0.777 | 0.467 / 0.747 | 0.461 / 0.777 | 0.490 / 0.758 | 0.683 / 0.489 |
