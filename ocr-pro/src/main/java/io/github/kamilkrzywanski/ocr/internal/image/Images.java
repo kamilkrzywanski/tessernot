@@ -123,6 +123,11 @@ public final class Images {
         return false;
     }
 
+    /** Whether {@link #read} shows the pixels of these file bytes as they are stored: no EXIF tag asks for a turn. */
+    public static boolean storedUpright(byte[] bytes) {
+        return Exif.orientation(bytes) <= 1;
+    }
+
     /** PNG, JPEG, GIF, BMP, and both TIFF byte orders. {@code n} is how many leading bytes are valid. */
     public static boolean hasImageHeader(byte[] head, int n) {
         if (head == null || n <= 0) {

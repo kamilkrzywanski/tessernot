@@ -465,6 +465,25 @@ class CliArgsTest {
         assertTrue(dpiOnOcr.err.contains("--dpi is not used by ocr"), dpiOnOcr.err);
         assertFalse(dpiOnOcr.err.contains("cannot read"), dpiOnOcr.err);
 
+        Run searchableNoFile = run(() -> Cli.execute(new String[]{"pdf", "missing.pdf", "--searchable"}));
+        assertEquals(1, searchableNoFile.code);
+        assertTrue(searchableNoFile.err.contains("--searchable needs a value"), searchableNoFile.err);
+
+        Run searchableNoDirectory = run(() -> Cli.execute(
+                new String[]{"pdf", "missing.pdf", "--searchable", "no-such-directory/out.pdf"}));
+        assertEquals(1, searchableNoDirectory.code);
+        assertTrue(searchableNoDirectory.err.contains("--searchable: no directory"), searchableNoDirectory.err);
+        assertFalse(searchableNoDirectory.err.contains("cannot render"), searchableNoDirectory.err);
+
+        Run searchableDirectory = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--searchable", "."}));
+        assertEquals(1, searchableDirectory.code);
+        assertTrue(searchableDirectory.err.contains("is a directory"), searchableDirectory.err);
+        assertFalse(searchableDirectory.err.contains("cannot read"), searchableDirectory.err);
+
+        Run searchableOnBench = run(() -> Cli.execute(new String[]{"bench", "missing.png", "--searchable", "out.pdf"}));
+        assertEquals(1, searchableOnBench.code);
+        assertTrue(searchableOnBench.err.contains("--searchable is not used by bench"), searchableOnBench.err);
+
         Run rawOnPdf = run(() -> Cli.execute(new String[]{"pdf", "missing.pdf", "--raw"}));
         assertEquals(1, rawOnPdf.code);
         assertTrue(rawOnPdf.err.contains("--raw is not used by pdf"), rawOnPdf.err);

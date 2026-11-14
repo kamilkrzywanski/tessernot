@@ -8,8 +8,8 @@ run on its own without `--model`, it uses those, and `download` writes to `./mod
 
 ```text
 ocr download [dir]
-ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json]
-ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json]
+ocr ocr <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json] [--searchable out.pdf [--dpi N]]
+ocr pdf <file> [--dpi N] [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--json] [--searchable out.pdf]
 ocr bench <image> [--model dir] [--limit N] [--no-cls] [--no-det] [--threads N] [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...]
 ocr score <ref-dir> <image-dir> [--corrections none|polish] [--layout auto|rows] [--alphabet all|latin] [--words file,...] [--out dir] [--model dir] [--limit N] [--threads N]
 ocr score <ref-dir> --hyp <dir>
@@ -54,7 +54,14 @@ ocr eval [--model dir]
   ornaments read as CJK characters, and stray marks. Off by default: it also drops real short
   text the recognizer is unsure of, such as an `X` in a check box or a misread page number.
 - `--json`: one JSON document instead of text (see below).
-- `--dpi N`: PDF render resolution.
+- `--dpi N`: PDF render resolution (150 when not given). On `ocr` it goes with `--searchable`
+  only: the resolution of the image, which sets the size of the page (300 when not given).
+- `--searchable out.pdf`: besides the usual output, writes a PDF that looks like the input and
+  can be searched. The text of every line lies under the line, invisible, so a viewer can find,
+  select and copy it. A PDF keeps its pages and everything on them; a PDF that already has text
+  gets a second layer. An image becomes one page. `out.pdf` may be the input PDF, which is
+  replaced when the new file is complete. The text is exact at the ends of a line and
+  approximate inside it; a signature on the input PDF does not stay valid.
 
 Flags accept `--flag value` and `--flag=value`. A switch (`--no-cls`, `--no-det`, `--raw`,
 `--json`, `--drop-fragments`) never consumes the next argument. `--json=false` turns it off.
@@ -64,6 +71,7 @@ Flags accept `--flag value` and `--flag=value`. A switch (`--no-cls`, `--no-det`
 Bad input fails with exit code 1 and a message, before any model or file is opened. This covers:
 
 - an unknown flag, a repeated flag, a flag the command does not use, or a flag without a value
+- `--searchable` with a directory, or a file in a directory that does not exist
 - a non-numeric, zero or negative number
 - an extra positional argument
 

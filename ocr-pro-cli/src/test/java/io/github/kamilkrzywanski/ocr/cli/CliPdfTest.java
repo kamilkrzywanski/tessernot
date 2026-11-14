@@ -45,4 +45,40 @@ class CliPdfTest {
             Files.deleteIfExists(pdf);
         }
     }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void searchableWritesAPdfWithTheTextAndStillPrintsIt() throws Exception {
+        Path pdf = Files.createTempFile("cli-pages", ".pdf");
+        Path searchable = Files.createTempFile("cli-searchable", ".pdf");
+        PrintStream out = System.out;
+        PrintStream err = System.err;
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBytes = new ByteArrayOutputStream();
+        try {
+            PdfSamples.writeAsciiPages(pdf, "FAKTURA JEDEN", "HELLO POLAND");
+            long source = Files.size(pdf);
+            System.setOut(new PrintStream(outBytes, true, StandardCharsets.UTF_8));
+            System.setErr(new PrintStream(errBytes, true, StandardCharsets.UTF_8));
+            int code = Cli.execute(new String[]{"pdf", pdf.toString(), "--dpi", "120", "--threads", "2",
+                    "--searchable", searchable.toString()});
+            String text = outBytes.toString(StandardCharsets.UTF_8);
+            assertEquals(0, code, errBytes.toString(StandardCharsets.UTF_8));
+            assertTrue(text.contains("FAKTURA"), text);
+            assertTrue(Files.size(searchable) > source, "the copy holds the pages and the layer");
+            try (org.apache.pdfbox.pdmodel.PDDocument document = org.apache.pdfbox.Loader.loadPDF(searchable.toFile())) {
+                assertEquals(2, document.getNumberOfPages());
+                org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper();
+                stripper.setSuppressDuplicateOverlappingText(false);
+                String both = stripper.getText(document);
+                // Once printed on the page and once in the layer.
+                assertEquals(2, both.split("FAKTURA", -1).length - 1, both);
+            }
+        } finally {
+            System.setOut(out);
+            System.setErr(err);
+            Files.deleteIfExists(pdf);
+            Files.deleteIfExists(searchable);
+        }
+    }
 }

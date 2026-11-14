@@ -19,7 +19,8 @@ Tesseract still orders the text slightly better. See the [benchmark](#accuracy-a
   when it is not.
 - **It does more than return text.** You get line boxes and scores, reading order for
   multi-column pages, and ruled tables as cells. PDF input, in its own module, goes through Apache
-  PDFBox. Output is plain text or JSON.
+  PDFBox. Output is plain text, JSON, or a searchable PDF: the scan with its text under every
+  line, to search, select and copy.
 
 Expect 2–8 s per page on a laptop CPU, depending on how much text the page has; a dense
 newspaper page with a hundred lines takes longest. Detection at 960 px instead of the default
@@ -35,6 +36,7 @@ You need Java 21 or newer. `./mvnw` downloads Maven 3.9; a Maven 3.9 of your own
 ./mvnw -DskipTests package
 ./ocr.sh ocr scan.jpg
 ./ocr.sh pdf document.pdf --dpi 150 --json
+./ocr.sh pdf scan.pdf --searchable scan-with-text.pdf
 ```
 
 The default models are in `models/`. `./ocr.sh download models` fetches them again from
@@ -61,7 +63,7 @@ all under `io.github.kamilkrzywanski` with version `0.1.0-SNAPSHOT`:
 | `ocr-pro` | the engine, with no runtime dependencies |
 | `ocr-pro-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
 | `ocr-pro-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
-| `ocr-pro-pdf` | PDF input through Apache PDFBox |
+| `ocr-pro-pdf` | PDF input and searchable PDF output through Apache PDFBox |
 | `ocr-pro-cli` | the command line: one runnable JAR with all of the above |
 
 ```java
@@ -75,6 +77,8 @@ try (OcrEngine engine = OcrEngine.load()) {             // models from ocr-pro-m
         List<List<String>> rows = table.cells();  // empty cell = ""
     }
     List<OcrResult> pages = OcrPdf.recognize(engine, Path.of("scan.pdf"), 150f);  // ocr-pro-pdf
+    // The same scan, or an image, as a PDF with the text under every line:
+    OcrPdf.searchable(engine, Path.of("scan.pdf"), Path.of("scan-with-text.pdf"), 150f);
 }
 ```
 

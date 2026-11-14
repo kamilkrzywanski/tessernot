@@ -12,7 +12,7 @@
 
     <artifactId>ocr-pro-pdf</artifactId>
     <name>ocr-pro-pdf</name>
-    <description>PDF input for ocr-pro: pages are rendered with Apache PDFBox and then read as images.</description>
+    <description>PDF input and searchable PDF output for ocr-pro: pages are rendered with Apache PDFBox and read as images, and the text can be written back under them.</description>
 
     <dependencies>
         <dependency>

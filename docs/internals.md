@@ -264,6 +264,18 @@ the second reads of `Corrections.POLISH` are `PolishRules`.
   the bundles (`ocr-pro-models-pl`).
 - `ocr-pro-pdf` renders pages with PDFBox and hands them to `OcrEngine.recognizePages`. The
   document is released right after its last page is rendered.
+- A searchable PDF (`OcrPdf.searchable`, `TextLayer`) is the source with a text layer added:
+  each line is one string in text rendering mode 3, stretched over the line's box, along its
+  lower edge and as high as the box. A box that stands on its short side holds its text from
+  the bottom up, as `rotateVertical` reads it. Line pixels become page points through the crop
+  box and the page rotation. The layer needs a font with Polish letters and has no font file:
+  it writes Type 3 fonts whose glyph procedures draw nothing, 223 codes each, handed to the
+  characters of the document as they turn up, with a `ToUnicode` map; a document with more
+  characters gets more fonts. Widths are Helvetica's for the letter or for its base letter, so
+  a word inside a line lies about where it is printed. The page content already there is
+  wrapped in `q ... Q`. Checked with PDFBox's text stripper in the tests and by hand with
+  Poppler's `pdftotext -raw`, which returned the page text of a Polish page unchanged; no other
+  viewer was tried.
 
 ## Performance notes
 
@@ -311,6 +323,9 @@ For timings on real documents next to Tesseract and RapidOCR, see [benchmark.md]
 - A synthetic invoice rendered with DejaVu: CER below 0.25, and `Zażółć gęślą jaźń` is present.
 - Empty and 1×1 images, `null`, a vertical `FAKTURA`, EXIF orientations 1–8.
 - PDFs: one page, several pages in order, empty, encrypted (`ocr-pro-pdf`).
+- Searchable PDFs: the layer read back with PDFBox (Polish letters, more characters than one
+  font holds), its place checked against the rendered page on all four page rotations, a
+  standing box, and that it draws nothing.
 - The bundled models, with and without the Polish word lists, read the same as `models/`.
 - Three real scans (`QualityGateTest`): an edit ceiling for the plain pipeline and one for
   `Corrections.POLISH`. These are the tuning scans, so they guard against regressions. They do
