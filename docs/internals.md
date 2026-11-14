@@ -101,8 +101,13 @@ by reflection.
   best listed word wins when its CTC probability (forward algorithm, every alignment) is at most
   4 nats below the greedy word's on the same timesteps. A letter with marks is scored at least
   e⁻³ times its plain letter (`Charset.plain()`: NFD base, plus ł, ø, đ, ħ), so one unseen mark
-  fits in the margin. A run glued to a digit is skipped; before a hyphen a listed prefix counts
-  as a word. `-Docr.ctcwords.trace=true` prints every searched word.
+  fits in the margin. The factor is paid on the timestep where the letter starts; where it goes
+  on, the letter with marks scores as its plain letter does, so a letter on two timesteps costs
+  the same 3 nats as a letter on one. A run glued to a digit is skipped; before a hyphen a listed
+  prefix counts as a word. Words are compared in lowercase, letter by letter, so that the start
+  of a word is always the start of its lowercase: a capital Σ is σ, and ς of the list when it
+  ends the word, and a capital I is tried as i and as the dotless ı of Turkish.
+  `-Docr.ctcwords.trace=true` prints every searched word.
 - **Charset**: one token per line. Empty lines are skipped, and one trailing CR and a BOM are
   removed. `useSpaceChar` appends the space class. With the default model there are 18710
   classes: blank, 18708 characters and the space.

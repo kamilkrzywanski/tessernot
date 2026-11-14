@@ -15,11 +15,14 @@ import java.util.Map;
  * <p>
  * The recognizer often misses a mark at its input height of 48 px, mostly on capitals: it may give
  * {@code ą} almost nothing where it reads {@code a}. So a letter with marks is never less probable
- * here than {@link #MARK} times its plain letter (see {@link Charset#plain()}). With the default
- * margin that pays for one unseen mark per word, in any language with a Latin-like script, and the
- * word still has to be listed. It only adds a mark: a mark the recognizer did read ({@code Vía}) is
- * not taken away or swapped this way. A line with no mark at all gets no unseen marks: a fiscal
- * printer or a telegram that cannot print them keeps {@code SPRZEDAZ}.
+ * here than {@link #MARK} times its plain letter (see {@link Charset#plain()}). The factor is paid
+ * once per letter, on the timestep the letter starts; on the timesteps it goes on, the letter with
+ * marks is as probable as the plain one. A wide letter that takes two timesteps then costs the
+ * same 3 nats as a narrow one. With the default margin that pays for one unseen mark per word, in
+ * any language with a Latin-like script, and the word still has to be listed. It only adds a
+ * mark: a mark the recognizer did read ({@code Vía}) is not taken away or swapped this way. A
+ * line with no mark at all gets no unseen marks: a fiscal printer or a telegram that cannot print
+ * them keeps {@code SPRZEDAZ}.
  * <p>
  * The search changes letters, not their number. A CTC path drops a letter almost for free by
  * reading its timesteps as blank, so a shorter listed word would win on probability too easily.
@@ -39,7 +42,7 @@ final class CtcWords {
     private static final double LOG_FLOOR = Math.log(1e-12);
     /** {@code -Docr.ctcwords.trace=true} prints every searched word, its best listed spelling and their gap in nats. */
     private static final boolean TRACE = Boolean.getBoolean("ocr.ctcwords.trace");
-    /** e^-3: an unseen mark costs 3 nats against the margin. */
+    /** e^-3: an unseen mark costs 3 nats against the margin, once per letter. */
     static final float MARK = (float) Math.exp(-3.0);
 
     private CtcWords() {
@@ -103,18 +106,20 @@ final class CtcWords {
         if (word.length() < MIN_LETTERS || word.length() > MAX_LETTERS) {
             return word;
         }
-        String lower = word.toLowerCase(Locale.ROOT);
-        if (words.word(lower) || hyphen && words.prefix(lower)) {
+        if (known(words, word, hyphen)) {
             return word;
         }
         float[] seen = marked(probs, classes, from, to, charset.plain(), marks ? MARK : 0f);
+        // Null on a line without marks: a letter with marks borrows nothing from its plain letter.
+        int[] plain = marks ? charset.plain() : null;
         int steps = to - from;
-        int[] best = search(probs, seen, classes, charset, from, to, labels.length, hyphen, words, charset.marked());
+        int[] best = search(probs, seen, plain, classes, charset, from, to, labels.length, hyphen, words,
+                charset.marked());
         if (best == null) {
             return word;
         }
-        double greedy = logProb(seen, classes, labels, 0, steps);
-        double listed = logProb(seen, classes, best, 0, steps);
+        double greedy = logProb(seen, plain, classes, labels, 0, steps);
+        double listed = logProb(seen, plain, classes, best, 0, steps);
         String fixed = text(charset, best);
         if (TRACE) {
             System.err.printf(Locale.ROOT, "CTCWORDS\t%s\t%s\t%.3f%n", word, fixed, listed - greedy);
@@ -124,7 +129,8 @@ final class CtcWords {
 
     /**
      * Timesteps {@code from..to} with every letter with marks raised to at least {@code mark} times
-     * its plain letter. Rows are not renormalized: the result only compares spellings.
+     * its plain letter: what a letter scores on the timestep it starts. {@link #held} is what it
+     * scores on the timesteps after. Rows are not renormalized: the result only compares spellings.
      */
     private static float[] marked(float[] probs, int classes, int from, int to, int[] plain, float mark) {
         int steps = Math.max(0, to - from + 1);
@@ -142,11 +148,21 @@ final class CtcWords {
     }
 
     /**
+     * What {@code label} scores on a timestep where it goes on from the timestep before. The mark
+     * was paid for when the letter started, so a letter with marks is as probable here as its plain
+     * letter. {@code plain} is null when no mark may be added.
+     */
+    private static float held(float[] seen, int base, int label, int[] plain) {
+        float p = seen[base + label];
+        return plain == null || plain[label] == 0 ? p : Math.max(p, seen[base + plain[label]]);
+    }
+
+    /**
      * The best labeling of {@code letters} letters whose every prefix is listed and which is a listed word, or null.
      * Letters come from the recognizer's own top choices and those letters with marks; {@code seen} scores them.
      */
-    private static int[] search(float[] probs, float[] seen, int classes, Charset charset, int from, int to,
-                                int letters, boolean hyphen, Vocabulary words, int[][] marks) {
+    private static int[] search(float[] probs, float[] seen, int[] plain, int classes, Charset charset, int from,
+                                int to, int letters, boolean hyphen, Vocabulary words, int[][] marks) {
         List<Beam> beams = new ArrayList<>();
         beams.add(new Beam(new int[0], 0.0, Double.NEGATIVE_INFINITY));
         Map<String, Boolean> prefixes = new HashMap<>();
@@ -162,7 +178,7 @@ final class CtcWords {
                 add(next, keys, labels, total + blankP, Double.NEGATIVE_INFINITY);
                 int last = labels.length == 0 ? -1 : labels[labels.length - 1];
                 if (last > 0) {
-                    add(next, keys, labels, Double.NEGATIVE_INFINITY, beam.label() + log(seen[base + last]));
+                    add(next, keys, labels, Double.NEGATIVE_INFINITY, beam.label() + log(held(seen, base, last, plain)));
                 }
                 for (int c : top) {
                     double p = log(seen[base + c]);
@@ -193,8 +209,7 @@ final class CtcWords {
             if (labels.length != letters) {
                 continue;
             }
-            String lower = text(charset, labels).toLowerCase(Locale.ROOT);
-            if (words.word(lower) || hyphen && words.prefix(lower)) {
+            if (known(words, text(charset, labels), hyphen)) {
                 return labels;
             }
         }
@@ -202,8 +217,53 @@ final class CtcWords {
     }
 
     private static boolean listed(Map<String, Boolean> cache, Charset charset, int[] labels, Vocabulary words) {
-        String lower = text(charset, labels).toLowerCase(Locale.ROOT);
-        return cache.computeIfAbsent(lower, words::prefix);
+        return cache.computeIfAbsent(text(charset, labels), text -> starts(words, text));
+    }
+
+    /** Whether the list has {@code text} as a word, or as the start of one before a hyphen. */
+    private static boolean known(Vocabulary words, String text, boolean hyphen) {
+        return hyphen ? starts(words, text) : anyCase(text, lower -> wordOrFinalSigma(words, lower));
+    }
+
+    /** Whether {@code text} is a listed word or starts one. */
+    private static boolean starts(Vocabulary words, String text) {
+        return anyCase(text, lower -> words.prefix(lower) || wordOrFinalSigma(words, lower));
+    }
+
+    /**
+     * {@code listed} on the lowercase of {@code text}, and for a capital I also on the reading with
+     * a dotless ı: Turkish and Azerbaijani write KIZ for kız, and the capital alone does not say
+     * which language the word is in. A list without ı never has the second spelling.
+     */
+    private static boolean anyCase(String text, java.util.function.Predicate<String> listed) {
+        return listed.test(lower(text)) || text.indexOf('I') >= 0 && listed.test(lower(text.replace('I', 'ı')));
+    }
+
+    /** A list writes the sigma that ends a word as ς; {@link #lower} has σ for every capital. */
+    private static boolean wordOrFinalSigma(Vocabulary words, String lower) {
+        return words.word(lower)
+                || lower.endsWith("σ") && words.word(lower.substring(0, lower.length() - 1) + "ς");
+    }
+
+    /**
+     * Lowercase, each letter on its own. {@code String.toLowerCase} looks at the neighbours: a
+     * capital sigma becomes ς at the end and σ elsewhere, so the prefix ΟΣ of ΟΣΟΙ would fold to
+     * ος, which starts no word, and İ becomes i and a combining dot. Here the start of a word
+     * always folds to the start of the folded word, which the prefix search relies on.
+     */
+    static String lower(String text) {
+        StringBuilder out = null;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            char low = Character.toLowerCase(c);
+            if (low != c && out == null) {
+                out = new StringBuilder(text.length()).append(text, 0, i);
+            }
+            if (out != null) {
+                out.append(low);
+            }
+        }
+        return out == null ? text : out.toString();
     }
 
     private static void add(Map<String, double[]> next, Map<String, int[]> keys, int[] labels,
@@ -272,6 +332,14 @@ final class CtcWords {
 
     /** Log of the CTC probability of {@code labels} over timesteps {@code from..to}. */
     static double logProb(float[] probs, int classes, int[] labels, int from, int to) {
+        return logProb(probs, null, classes, labels, from, to);
+    }
+
+    /**
+     * The same with unseen marks: {@code seen} is what a label scores on the timestep it starts,
+     * and {@link #held} what it scores when it goes on.
+     */
+    private static double logProb(float[] seen, int[] plain, int classes, int[] labels, int from, int to) {
         int states = labels.length * 2 + 1;
         double[] alpha = new double[states];
         double[] next = new double[states];
@@ -280,22 +348,31 @@ final class CtcWords {
             return labels.length == 0 ? 0.0 : Double.NEGATIVE_INFINITY;
         }
         int base = from * classes;
-        alpha[0] = log(probs[base]);
+        alpha[0] = log(seen[base]);
         if (labels.length > 0) {
-            alpha[1] = log(probs[base + labels[0]]);
+            alpha[1] = log(seen[base + labels[0]]);
         }
         for (int t = from + 1; t <= to; t++) {
             base = t * classes;
             for (int s = 0; s < states; s++) {
-                double v = alpha[s];
-                if (s > 0) {
-                    v = logAdd(v, alpha[s - 1]);
+                if (s % 2 == 0) {
+                    // Blank: it goes on, or the label before it ends.
+                    double v = s > 0 ? logAdd(alpha[s], alpha[s - 1]) : alpha[s];
+                    next[s] = v + log(seen[base]);
+                    continue;
                 }
-                int label = s % 2 == 0 ? 0 : labels[s / 2];
-                if (s > 1 && label != 0 && label != labels[s / 2 - 1]) {
-                    v = logAdd(v, alpha[s - 2]);
+                int label = labels[s / 2];
+                // The label starts after a blank, or right after a different label.
+                boolean skip = s > 1 && label != labels[s / 2 - 1];
+                float starts = seen[base + label];
+                float goesOn = held(seen, base, label, plain);
+                if (goesOn == starts) {
+                    double v = logAdd(alpha[s], alpha[s - 1]);
+                    next[s] = (skip ? logAdd(v, alpha[s - 2]) : v) + log(starts);
+                } else {
+                    double start = skip ? logAdd(alpha[s - 1], alpha[s - 2]) : alpha[s - 1];
+                    next[s] = logAdd(alpha[s] + log(goesOn), start + log(starts));
                 }
-                next[s] = v + log(probs[base + label]);
             }
             double[] swap = alpha;
             alpha = next;

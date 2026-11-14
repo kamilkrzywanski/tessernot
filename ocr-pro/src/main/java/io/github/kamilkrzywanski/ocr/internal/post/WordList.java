@@ -122,7 +122,9 @@ final class WordList implements Vocabulary {
         }
         List<byte[]> words = new ArrayList<>();
         for (String line : text.split("\\R")) {
-            String word = Normalizer.normalize(line.strip(), Normalizer.Form.NFC).toLowerCase(Locale.ROOT);
+            // İ on its own: toLowerCase would leave an i and a combining dot, which no reading has.
+            String word = Normalizer.normalize(line.strip(), Normalizer.Form.NFC).replace('İ', 'i')
+                    .toLowerCase(Locale.ROOT);
             if (!word.isEmpty() && word.codePoints().noneMatch(Character::isWhitespace)) {
                 words.add(word.getBytes(StandardCharsets.UTF_8));
             }

@@ -59,6 +59,130 @@ class CtcWordsTest {
     }
 
     @Test
+    void anUnseenMarkCostsTheSameOnALetterOfTwoTimesteps() {
+        // ę on the line, then s, i and an e that takes two timesteps with no trace of the mark.
+        float[] wide = steps(
+                new float[] {0, 0, 0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, 0, 0, 0, 1},
+                new float[] {0, 1, 0, 0, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0, 0, 0},
+                new float[] {0, 0, 0, 0.99999f, 0.00001f, 0, 0},
+                new float[] {0, 0, 0, 0.99999f, 0.00001f, 0, 0},
+                new float[] {1, 0, 0, 0, 0, 0, 0});
+        // 3 nats, inside the margin of 4. Paid on both timesteps it would be 6.
+        assertEquals("ę się", Ctc.greedy(wide, 7, 7, charset, false, lexicon).text());
+    }
+
+    @Test
+    void twoUnseenMarksInOneWordAreTooMany() {
+        Lexicon twice = Lexicon.of(new String[] {"sęę"}, new String[0]);
+        float[] probs = steps(
+                new float[] {0, 0, 0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, 0, 0, 0, 1},
+                new float[] {0, 1, 0, 0, 0, 0, 0},
+                new float[] {0, 0, 0, 0.99999f, 0.00001f, 0, 0},
+                new float[] {1, 0, 0, 0, 0, 0, 0},
+                new float[] {0, 0, 0, 0.99999f, 0.00001f, 0, 0});
+        assertEquals("ę see", Ctc.greedy(probs, 6, 7, charset, false, twice).text());
+        // One of the two marks seen at one in three: 3 nats and a little, and the word is taken.
+        float[] half = probs.clone();
+        half[3 * 7 + 3] = 0.7f;
+        half[3 * 7 + 4] = 0.3f;
+        assertEquals("ę sęę", Ctc.greedy(half, 6, 7, charset, false, twice).text());
+    }
+
+    @Test
+    void aMarkOnTheFirstTimestepOfALetterCarriesOverTheSecond() {
+        // The e takes two timesteps; the mark shows on the first only.
+        float[] probs = steps(
+                new float[] {0, 0, 0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, 0, 0, 0, 1},
+                new float[] {0, 1, 0, 0, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0, 0, 0},
+                new float[] {0, 0, 0, 0.9f, 0.1f, 0, 0},
+                new float[] {0, 0, 0, 0.99999f, 0.00001f, 0, 0},
+                new float[] {1, 0, 0, 0, 0, 0, 0});
+        assertEquals("ę się", Ctc.greedy(probs, 7, 7, charset, false, lexicon).text());
+        // Without a mark anywhere on the line nothing is borrowed from the plain letter.
+        float[] bare = java.util.Arrays.copyOfRange(probs, 2 * 7, probs.length);
+        assertEquals("sie", Ctc.greedy(bare, 5, 7, charset, false, lexicon).text());
+    }
+
+    @Test
+    void lowercaseIsLetterByLetter() {
+        assertEquals("οσοι", CtcWords.lower("ΟΣΟΙ"));
+        assertEquals("οδοσ", CtcWords.lower("ΟΔΟΣ"));
+        assertEquals("istanbul", CtcWords.lower("İSTANBUL"));
+        assertEquals("straße", CtcWords.lower("Straße"));
+        String already = "łódź";
+        assertTrue(already == CtcWords.lower(already));
+    }
+
+    /** Rows over a charset of four letters: blank and the four. */
+    private static float[] rows(float[]... rows) {
+        float[] out = new float[rows.length * 5];
+        for (int t = 0; t < rows.length; t++) {
+            System.arraycopy(rows[t], 0, out, t * 5, 5);
+        }
+        return out;
+    }
+
+    @Test
+    void aCapitalSigmaInsideAWordKeepsThePrefixListed() {
+        Charset greek = Charset.of("Ο", "Σ", "Ι", "Θ");
+        // Ο, Σ, then Θ over Ο, then Ι: the listed ΟΣΟΙ is found through the prefix ΟΣ.
+        float[] probs = rows(
+                new float[] {0, 1, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0},
+                new float[] {0, 0.3f, 0, 0, 0.7f},
+                new float[] {0, 0, 0, 1, 0});
+        assertEquals("ΟΣΘΙ", Ctc.greedy(probs, 4, 5, greek, false, null).text());
+        assertEquals("ΟΣΟΙ", Ctc.greedy(probs, 4, 5, greek, false, WordList.of("όσοι", "οσοι")).text());
+    }
+
+    @Test
+    void aCapitalSigmaAtTheEndMatchesTheFinalSigmaOfTheList() {
+        Charset greek = Charset.of("Ο", "Σ", "Δ", "Θ");
+        Vocabulary list = Vocabulary.read("οδος\n".getBytes(StandardCharsets.UTF_8), "el");
+        float[] read = rows(
+                new float[] {0, 1, 0, 0, 0},
+                new float[] {0, 0, 0, 0.3f, 0.7f},
+                new float[] {0, 1, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0});
+        assertEquals("ΟΔΟΣ", Ctc.greedy(read, 4, 5, greek, false, list).text());
+        // A list in capitals is lowercased as a whole word, with ς at the end.
+        Vocabulary capitals = Vocabulary.read("ΟΔΟΣ\n".getBytes(StandardCharsets.UTF_8), "EL");
+        assertTrue(capitals.word("οδος"));
+        assertEquals("ΟΔΟΣ", Ctc.greedy(read, 4, 5, greek, false, capitals).text());
+    }
+
+    @Test
+    void aCapitalIMayBeTheDotlessOne() {
+        Charset turkish = Charset.of("K", "I", "Z", "S");
+        float[] probs = rows(
+                new float[] {0, 1, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, 0.3f, 0.7f});
+        assertEquals("KIS", Ctc.greedy(probs, 3, 5, turkish, false, null).text());
+        assertEquals("KIZ", Ctc.greedy(probs, 3, 5, turkish, false, WordList.of("kız")).text());
+        // The dotted reading still counts: an English list has no ı.
+        assertEquals("KIZ", Ctc.greedy(probs, 3, 5, turkish, false, WordList.of("kiz")).text());
+        // A listed word is left alone in either reading.
+        float[] sure = rows(
+                new float[] {0, 1, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, 0, 1});
+        assertEquals("KIS", Ctc.greedy(sure, 3, 5, turkish, false, WordList.of("kıs", "kız")).text());
+    }
+
+    @Test
+    void aDottedCapitalIInAListIsAPlainI() {
+        Vocabulary list = Vocabulary.read("İSTANBUL\nIŞIK\n".getBytes(StandardCharsets.UTF_8), "tr");
+        assertTrue(list.word("istanbul"));
+        assertTrue(list.prefix("ist"));
+    }
+
+    @Test
     void aListedPrefixBeforeAHyphenIsKnown() {
         float[] probs = steps(
                 new float[] {0, 1, 0, 0, 0, 0, 0},
