@@ -124,6 +124,17 @@ by reflection.
   at most 10 characters with mean character probability below 0.8 is left out. Removing it
   earlier changed column and row bounds on the test set, since the fragment is still ink on the
   page. The results barely moved between thresholds 0.7 and 0.9.
+- **Word boxes** (`Words`, `TextLine.words()`): the decoder keeps, for every character, the
+  timesteps it came out of, as shares of the line crop's width: from one timestep before its
+  first to one after its last. (A character's first timestep lies about a timestep right of its
+  left edge; with that correction the start and the end of a word are both right to 0.055 crop
+  heights in the median on rendered lines, 0.2 to 0.25 at worst. A timestep is a sixth of the
+  line height wide.) A word is the run between two spaces, and its quad the strip of the line's
+  box between its ends. The crop may have been turned before it was read (a standing box, a
+  line the classifier turned over), so the corners of a word's quad are named as the text sees
+  them. The word search changes letters and not their number, so its words keep their places;
+  a second read of `Corrections.POLISH` gives a line without word boxes. The PDF layer sets
+  every word over its own box, and a line without them as one string.
 - **Word-list search** (`CtcWords`, only with word lists): each greedy letter run that no list
   holds gets a prefix beam search (width 16) over its own timesteps, from the end of the previous
   emitted character to the start of the next. Per timestep it tries the six most probable
@@ -303,8 +314,8 @@ the second reads of `Corrections.POLISH` are `PolishRules`.
 - `ocr-pro-pdf` renders pages with PDFBox and hands them to `OcrEngine.recognizePages`. The
   document is released right after its last page is rendered.
 - A searchable PDF (`OcrPdf.searchable`, `TextLayer`) is the source with a text layer added:
-  each line is one string in text rendering mode 3, stretched over the line's box, along its
-  lower edge and as high as the box. A box that stands on its short side holds its text from
+  each word is one string in text rendering mode 3, stretched over the word's box, along its
+  lower edge and as high as the box; a line without word boxes is one string over its own box. A box that stands on its short side holds its text from
   the top down, as `rotateVertical` reads it. Line pixels become page points through the crop
   box and the page rotation. The layer needs a font with Polish letters and has no font file:
   it writes Type 3 fonts whose glyph procedures draw nothing, 223 codes each, handed to the

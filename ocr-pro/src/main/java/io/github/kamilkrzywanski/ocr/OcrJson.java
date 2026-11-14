@@ -9,7 +9,9 @@ import java.util.List;
  * <p>
  * A page object keeps the keys {@code text}, {@code lines}, {@code tables}, {@code rotation}, in
  * that order; {@code rotation} is {@link OcrResult#rotation()}, 0 for an upright page.
- * A line keeps {@code text}, {@code score}, {@code detScore}, {@code quad}, {@code bounds}.
+ * A line keeps {@code text}, {@code score}, {@code detScore}, {@code quad}, {@code bounds},
+ * {@code words}; a word keeps {@code text} and {@code quad}, and the list is empty when the
+ * places of the words are not known.
  * {@code quad} is eight numbers: top-left, top-right, bottom-right, bottom-left.
  * {@code bounds} keeps {@code x}, {@code y}, {@code width}, {@code height} as integers.
  * A table keeps {@code bounds}, {@code ruled} (true for a grid of printed rules, false for
@@ -113,7 +115,25 @@ public final class OcrJson {
         }
         out.append("],\"bounds\":");
         bounds(out, line.bounds());
-        out.append('}');
+        out.append(",\"words\":[");
+        List<TextWord> words = line.words();
+        for (int i = 0; i < words.size(); i++) {
+            if (i > 0) {
+                out.append(',');
+            }
+            out.append("{\"text\":");
+            string(out, words.get(i).text());
+            out.append(",\"quad\":[");
+            float[] corners = words.get(i).quad();
+            for (int k = 0; k < corners.length; k++) {
+                if (k > 0) {
+                    out.append(',');
+                }
+                number(out, corners[k]);
+            }
+            out.append("]}");
+        }
+        out.append("]}");
     }
 
     private static void appendTable(StringBuilder out, TextTable table) {

@@ -894,11 +894,16 @@ public final class OcrEngine implements AutoCloseable {
         if (crop == null) {
             return null;
         }
+        // Quarter turns counter-clockwise the crop is given before it is read.
+        int turns = 0;
         if (cfg.rotateVertical() && crop.height() >= crop.width() * 1.5f) {
             crop = Images.rot90ccw(crop);
+            turns = 1;
         }
         if (clsSession != null) {
-            crop = orient(crop, clsSession);
+            int more = quarterTurns(crop, clsSession);
+            crop = turned(crop, more);
+            turns = (turns + more) & 3;
         }
         if (polish != null) {
             // A neighbor line split off by a tall white gap is dropped before the resize.
@@ -911,7 +916,10 @@ public final class OcrEngine implements AutoCloseable {
         if (polish != null) {
             result = polish.reread(crop, box, result, reader(page, recSession, clsSession));
         }
-        return textLine(box, result.text(), result.score());
+        TextLine line = textLine(box, result.text(), result.score());
+        List<TextWord> words = Words.of(result, box.quad(), turns);
+        return words.isEmpty() ? line
+                : new TextLine(line.text(), line.score(), line.detScore(), line.quad(), line.bounds(), words);
     }
 
 
@@ -920,11 +928,18 @@ public final class OcrEngine implements AutoCloseable {
         int width = data.length / (3 * cfg.recHeight());
         Tensor input = Tensor.f32(new int[]{1, 3, cfg.recHeight(), width}, data);
         Tensor output = only(recSession.run(Map.of(recInput, input)));
-        return Ctc.greedy(output, charset, runnerUps, words);
+        // The timesteps span the padded input; the crop fills its left part.
+        float filled = Images.recWidth(crop, cfg.recHeight(), cfg.recMaxWidth()) / (float) width;
+        return Ctc.greedy(output, charset, runnerUps, words).scaled(1f / filled);
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {
-        return switch (quarterTurns(crop, clsSession)) {
+        return turned(crop, quarterTurns(crop, clsSession));
+    }
+
+    /** The crop after that many quarter turns counter-clockwise. */
+    private static Bgr turned(Bgr crop, int quarterTurns) {
+        return switch (quarterTurns & 3) {
             case 1 -> Images.rot90ccw(crop);
             case 2 -> Images.rot180(crop);
             case 3 -> Images.rot90cw(crop);

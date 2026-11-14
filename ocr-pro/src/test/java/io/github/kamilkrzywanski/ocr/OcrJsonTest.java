@@ -19,7 +19,8 @@ class OcrJsonTest {
                 0.5f,
                 Float.NaN,
                 new float[] {0f, 1f, 2.5f, -3.25f, -0.0f, 1.0E20f, Float.POSITIVE_INFINITY, 0.125f},
-                new Rectangle(10, 20, 30, 40));
+                new Rectangle(10, 20, 30, 40),
+                List.of(new TextWord("Łódź", new float[] {1f, 2f, 3f, 4f, 5f, 6f, 7f, 8.5f})));
         TextLine second = new TextLine(
                 "",
                 Float.NEGATIVE_INFINITY,
@@ -40,10 +41,11 @@ class OcrJsonTest {
         String body = "{\"text\":\"Spółka \\\"X\\\"\\nŁódź\",\"lines\":["
                 + "{\"text\":\"\\b\\f\\n\\r\\t" + u + "00" + u + "1fŁódź\\\\\",\"score\":0.5,\"detScore\":null,"
                 + "\"quad\":[0.0,1.0,2.5,-3.25,-0.0,1.0E20,null,0.125],"
-                + "\"bounds\":{\"x\":10,\"y\":20,\"width\":30,\"height\":40}},"
+                + "\"bounds\":{\"x\":10,\"y\":20,\"width\":30,\"height\":40},"
+                + "\"words\":[{\"text\":\"Łódź\",\"quad\":[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.5]}]},"
                 + "{\"text\":\"\",\"score\":null,\"detScore\":1.0,"
                 + "\"quad\":[null,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"
-                + "\"bounds\":{\"x\":0,\"y\":0,\"width\":0,\"height\":0}}],"
+                + "\"bounds\":{\"x\":0,\"y\":0,\"width\":0,\"height\":0},\"words\":[]}],"
                 + "\"tables\":[{\"bounds\":{\"x\":1,\"y\":2,\"width\":100,\"height\":50},\"ruled\":true,"
                 + "\"cells\":[[\"zł\",\"\"],[\"a\\\\b\",\"c\\\"d\"]]}],\"rotation\":0}";
         String json = OcrJson.page(page);

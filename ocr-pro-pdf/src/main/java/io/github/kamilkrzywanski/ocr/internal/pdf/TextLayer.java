@@ -2,6 +2,7 @@ package io.github.kamilkrzywanski.ocr.internal.pdf;
 
 import io.github.kamilkrzywanski.ocr.OcrResult;
 import io.github.kamilkrzywanski.ocr.TextLine;
+import io.github.kamilkrzywanski.ocr.TextWord;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -28,9 +29,10 @@ import java.util.Map;
 
 /**
  * The text of a page written under its picture, so a viewer can search, select and copy it.
- * Every line is one string in text rendering mode 3 (neither filled nor stroked), stretched over
- * the box of the line: along its lower edge, as high as the box. A skewed line keeps its slant,
- * and a box that stands on its short side holds its text from the top down.
+ * Every word is one string in text rendering mode 3 (neither filled nor stroked), stretched over
+ * the box of the word: along its lower edge, as high as the box, whichever way the text runs. A
+ * line whose word boxes are not known is one string over the box of the line; a skewed line keeps
+ * its slant, and a box that stands on its short side holds its text from the top down.
  * <p>
  * The text needs a font, and no standard PDF font has Polish letters. The layer brings its own:
  * Type 3 fonts whose glyphs draw nothing. A Type 3 font is a dictionary of drawing procedures, so
@@ -38,8 +40,8 @@ import java.util.Map;
  * space), given to the characters of the document in the order they turn up, and a
  * {@code ToUnicode} map that tells a reader which character a code is. A document with more
  * characters gets more fonts. The widths are those of Helvetica for the letter, or for its base
- * letter when Helvetica lacks it, so a word inside a line lies about where it is printed; only
- * the ends of a line are exact.
+ * letter when Helvetica lacks it, so the letters inside a word, or the words inside a line that
+ * has no word boxes, lie about where they are printed.
  * <p>
  * The page content that is already there is wrapped in {@code q ... Q}, so the layer starts from
  * the default coordinates whatever the page did to them.
@@ -49,6 +51,8 @@ public final class TextLayer {
     private static final float DESCENT = 0.25f;
     /** A box this many times as high as it is wide holds a line that runs downward, as {@code OcrConfig.rotateVertical} takes it. */
     private static final float UPRIGHT = 1.5f;
+    /** A gap between two words narrower than this share of their height holds no space of its own. */
+    private static final float MIN_GAP = 0.1f;
     private static final int FIRST_CODE = 33;
     private static final int LAST_CODE = 255;
     private static final int SPACE = 32;
@@ -93,7 +97,34 @@ public final class TextLayer {
         List<Font> used = new ArrayList<>();
         boolean any = false;
         for (TextLine line : result.lines()) {
-            any |= show(content, placement, line, used);
+            List<TextWord> words = line.words();
+            if (words.isEmpty()) {
+                any |= !line.text().isBlank() && show(content, placement, line.text(), line.quad(), true, used);
+                continue;
+            }
+            // Word by word, each over its own box, with a space behind all but the last so that
+            // a reader that copies the text gets the words apart. The space lies over the gap to
+            // the next word. Where the two boxes touch there is no gap, and a space written
+            // behind the word would lie on the next word's first letter (pdftotext then drops
+            // it): there it takes the end of the word's own box.
+            for (int i = 0; i < words.size(); i++) {
+                float[] quad = words.get(i).quad();
+                if (i + 1 == words.size()) {
+                    any |= show(content, placement, words.get(i).text(), quad, false, used);
+                    continue;
+                }
+                float[] next = words.get(i + 1).quad();
+                double gap = Math.hypot(next[0] - quad[2], next[1] - quad[3]);
+                double height = Math.hypot(quad[6] - quad[0], quad[7] - quad[1]);
+                boolean ahead = (next[0] - quad[2]) * (quad[2] - quad[0]) + (next[1] - quad[3]) * (quad[3] - quad[1]) > 0;
+                if (ahead && gap >= MIN_GAP * height) {
+                    any |= show(content, placement, words.get(i).text(), quad, false, used);
+                    show(content, placement, " ", new float[] {quad[2], quad[3], next[0], next[1], next[6], next[7], quad[4], quad[5]},
+                            false, used);
+                } else {
+                    any |= show(content, placement, words.get(i).text() + " ", quad, false, used);
+                }
+            }
         }
         if (!any) {
             return;
@@ -127,14 +158,19 @@ public final class TextLayer {
         }
     }
 
-    /** One line as a text matrix and its strings. False when the line has no text or no size. */
-    private boolean show(StringBuilder content, Placement placement, TextLine line, List<Font> used) {
-        String text = line.text();
-        float[] quad = line.quad();
+    /**
+     * One string over a quad, as a text matrix and its codes, stretched to fill the quad.
+     * {@code line} is
+     * true for the box of a whole line, whose corners are named as the page sees them: a box that
+     * stands is then taken for text that runs down. A word's quad names its corners as the text
+     * sees them and needs no guess. False when there is no text or no size.
+     */
+    private boolean show(StringBuilder content, Placement placement, String text, float[] quad, boolean line,
+                         List<Font> used) {
         float[] bottomLeft = placement.toPage(quad[6], quad[7]);
         float[] bottomRight = placement.toPage(quad[4], quad[5]);
         float[] topLeft = placement.toPage(quad[0], quad[1]);
-        if (distance(bottomLeft, topLeft) >= UPRIGHT * distance(bottomLeft, bottomRight)) {
+        if (line && distance(bottomLeft, topLeft) >= UPRIGHT * distance(bottomLeft, bottomRight)) {
             // A box that stands: the engine reads it as text turned a quarter clockwise, from the
             // top down, with the feet of the letters on the left.
             float[] topRight = placement.toPage(quad[2], quad[3]);
@@ -145,7 +181,7 @@ public final class TextLayer {
         float dx = bottomRight[0] - bottomLeft[0];
         float dy = bottomRight[1] - bottomLeft[1];
         float length = (float) Math.hypot(dx, dy);
-        if (text.isBlank() || !(length > 0.01f)) {
+        if (text.isEmpty() || !(length > 0.01f)) {
             return false;
         }
         float ux = dx / length;

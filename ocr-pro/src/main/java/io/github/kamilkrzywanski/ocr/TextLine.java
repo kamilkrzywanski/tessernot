@@ -1,6 +1,7 @@
 package io.github.kamilkrzywanski.ocr;
 
 import java.awt.Rectangle;
+import java.util.List;
 
 /**
  * One detected text line after recognition. {@code quad} is TL, TR, BR, BL in pixels (8 values).
@@ -12,15 +13,32 @@ import java.awt.Rectangle;
  * @param detScore the mean probability of text inside the detected box, 0 to 1
  * @param quad x and y of the top left, top right, bottom right and bottom left corner, in pixels of the page
  * @param bounds the pixel rectangle around the quad
+ * @param words the words of the line with their boxes, left to right as read, unmodifiable.
+ *        Empty when the places of the characters are not known: the line was not read, or its
+ *        text was changed after the read, as by a second read of {@link Corrections#POLISH}
  */
-public record TextLine(String text, float score, float detScore, float[] quad, Rectangle bounds) {
+public record TextLine(String text, float score, float detScore, float[] quad, Rectangle bounds, List<TextWord> words) {
     /**
-     * A null text becomes empty, a null quad eight zeros and a null rectangle an empty one; the
-     * quad and the rectangle are copied.
+     * A line without word boxes.
+     *
+     * @param text the text of the line
+     * @param score the mean probability of the characters read
+     * @param detScore the mean probability of text inside the detected box
+     * @param quad the four corners, eight values, or null
+     * @param bounds the pixel rectangle around the quad, or null
+     */
+    public TextLine(String text, float score, float detScore, float[] quad, Rectangle bounds) {
+        this(text, score, detScore, quad, bounds, List.of());
+    }
+
+    /**
+     * A null text becomes empty, a null quad eight zeros, a null rectangle an empty one and a
+     * null word list empty; the quad, the rectangle and the list are copied.
      *
      * @throws OcrException when the quad does not have eight values
      */
     public TextLine {
+        words = words == null ? List.of() : List.copyOf(words);
         text = text == null ? "" : text;
         if (quad == null) {
             quad = new float[8];

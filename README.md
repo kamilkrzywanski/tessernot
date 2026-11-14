@@ -17,7 +17,7 @@ Tesseract still orders the text slightly better. See the [benchmark](#accuracy-a
   the official ONNX files, fuses the graph and runs it. It uses the Vector API when
   `jdk.incubator.vector` is available and falls back to scalar code that gives the same results
   when it is not.
-- **It does more than return text.** You get line boxes and scores, reading order for
+- **It does more than return text.** You get line and word boxes with scores, reading order for
   multi-column pages, and tables as cells, ruled or set in columns. PDF input, in its own module, goes through Apache
   PDFBox. Output is plain text, JSON, or a searchable PDF: the scan with its text under every
   line, to search, select and copy.
@@ -72,6 +72,7 @@ try (OcrEngine engine = OcrEngine.load()) {             // models from ocr-pro-m
     String text = result.text();                  // page text in reading order
     for (TextLine line : result.lines()) {
         // line.text(), line.score(), line.detScore(), line.quad(), line.bounds()
+        // line.words(): every word with its own box
     }
     for (TextTable table : result.tables()) {     // table.ruled(): a grid of rules, or columns with none
         List<List<String>> rows = table.cells();  // empty cell = ""

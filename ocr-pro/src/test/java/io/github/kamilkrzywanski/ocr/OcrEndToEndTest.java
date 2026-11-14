@@ -29,6 +29,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -303,6 +304,30 @@ class OcrEndToEndTest {
             };
             Rectangle found = result.lines().get(0).bounds();
             assertEquals(title.text(), result.lines().get(0).text());
+            // Its words too, corner for corner: the first corner of a word is the top left of its text.
+            List<TextWord> words = result.lines().get(0).words();
+            assertEquals(title.words().size(), words.size(), "quarter " + quarter);
+            for (int w = 0; w < words.size(); w++) {
+                float[] was2 = title.words().get(w).quad();
+                float[] now = words.get(w).quad();
+                for (int corner = 0; corner < 4; corner++) {
+                    float x = was2[corner * 2];
+                    float y = was2[corner * 2 + 1];
+                    int width = upright.getWidth();
+                    int height = upright.getHeight();
+                    // The same quarter turns clockwise the picture was given.
+                    for (int turn = 0; turn < quarter; turn++) {
+                        float nx = height - y;
+                        y = x;
+                        x = nx;
+                        int swap = width;
+                        width = height;
+                        height = swap;
+                    }
+                    assertEquals(x, now[corner * 2], 8f, "quarter " + quarter + " word " + w + " corner " + corner + " x");
+                    assertEquals(y, now[corner * 2 + 1], 8f, "quarter " + quarter + " word " + w + " corner " + corner + " y");
+                }
+            }
             assertTrue(Math.abs(found.x - expected.x) <= 4 && Math.abs(found.y - expected.y) <= 4
                             && Math.abs(found.width - expected.width) <= 6 && Math.abs(found.height - expected.height) <= 6,
                     "quarter " + quarter + ": " + found + " for " + expected);
@@ -312,6 +337,58 @@ class OcrEndToEndTest {
         try (OcrEngine plain = OcrEngine.create(asGiven)) {
             assertEquals(0, plain.recognize(page).rotation());
         }
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    void wordsLieWhereTheyArePrinted() {
+        String[] texts = {"Zażółć gęślą jaźń i wróć do domu", "FAKTURA VAT nr 2024/10/0042 z dnia 12.10.2024",
+                "il li ill Illinois minimum www MMM WWW"};
+        BufferedImage page = new BufferedImage(1500, 420, BufferedImage.TYPE_INT_RGB);
+        Graphics2D draw = Images.prepare(page);
+        List<List<float[]>> truth = new ArrayList<>();
+        try {
+            draw.setFont(Samples.font(40f));
+            FontMetrics metrics = draw.getFontMetrics();
+            for (int i = 0; i < texts.length; i++) {
+                draw.drawString(texts[i], 60, 100 + 120 * i);
+                // Where the font put each word: from the width of the text before it.
+                List<float[]> spans = new ArrayList<>();
+                int at = 0;
+                for (String word : texts[i].split(" ")) {
+                    int from = texts[i].indexOf(word, at);
+                    spans.add(new float[] {60 + metrics.stringWidth(texts[i].substring(0, from)),
+                            60 + metrics.stringWidth(texts[i].substring(0, from + word.length()))});
+                    at = from + word.length();
+                }
+                truth.add(spans);
+            }
+        } finally {
+            draw.dispose();
+        }
+        OcrResult result = engine.recognize(page);
+        assertEquals(texts.length, result.lines().size(), result.text());
+        int checked = 0;
+        for (int i = 0; i < texts.length; i++) {
+            TextLine line = result.lines().get(i);
+            assertEquals(texts[i], line.text());
+            List<TextWord> words = line.words();
+            assertEquals(truth.get(i).size(), words.size(), line.text());
+            float height = line.bottom() - line.top();
+            for (int w = 0; w < words.size(); w++) {
+                float[] quad = words.get(w).quad();
+                assertEquals(texts[i].split(" ")[w], words.get(w).text());
+                // Both ends within half the line height, about one letter. The third line is the
+                // hard one: runs of i and l beside m and W, where a timestep is wider than a letter.
+                assertEquals(truth.get(i).get(w)[0], quad[0], height / 2f, line.text() + ": start of " + words.get(w).text());
+                assertEquals(truth.get(i).get(w)[1], quad[2], height / 2f, line.text() + ": end of " + words.get(w).text());
+                // The strip is as high as the line's box.
+                assertEquals(line.top(), quad[1], 3f);
+                assertEquals(line.bottom(), quad[5], 3f);
+                checked++;
+            }
+        }
+        assertEquals(22, checked);
     }
 
     /** Stored the way a camera tags Orientation 6: pixels are 90 degrees counter-clockwise. */

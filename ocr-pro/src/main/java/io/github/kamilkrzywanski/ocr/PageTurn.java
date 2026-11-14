@@ -127,8 +127,18 @@ final class PageTurn {
         }
         int x = (int) Math.floor(minX);
         int y = (int) Math.floor(minY);
+        List<TextWord> words = new ArrayList<>(line.words().size());
+        for (TextWord word : line.words()) {
+            float[] corners = word.quad();
+            for (int i = 0; i < 4; i++) {
+                float[] p = back.at(corners[i * 2], corners[i * 2 + 1]);
+                corners[i * 2] = p[0];
+                corners[i * 2 + 1] = p[1];
+            }
+            words.add(new TextWord(word.text(), corners));
+        }
         return new TextLine(line.text(), line.score(), line.detScore(), quad,
-                new Rectangle(x, y, Math.max(1, (int) Math.ceil(maxX) - x), Math.max(1, (int) Math.ceil(maxY) - y)));
+                new Rectangle(x, y, Math.max(1, (int) Math.ceil(maxX) - x), Math.max(1, (int) Math.ceil(maxY) - y)), words);
     }
 
     /** The table with the rectangle around its four corners in the original picture. */

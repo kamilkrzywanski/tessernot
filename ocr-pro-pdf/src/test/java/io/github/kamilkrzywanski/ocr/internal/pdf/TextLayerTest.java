@@ -176,6 +176,63 @@ class TextLayerTest {
     }
 
     @Test
+    void wordsWithBoxesAreSetOneByOneOverThem() throws IOException {
+        byte[] bytes;
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(new PDRectangle(400, 600));
+            document.addPage(page);
+            // A line from x = 50 to 350 whose second word starts far to the right, at 250: as one
+            // string over the line it would start near 130. 72 dpi: a pixel is a point.
+            TextLine line = new TextLine("Suma 12,50", 1f, 1f, new float[] {50, 100, 350, 100, 350, 120, 50, 120}, null,
+                    List.of(new io.github.kamilkrzywanski.ocr.TextWord("Suma", new float[] {50, 100, 110, 100, 110, 120, 50, 120}),
+                            new io.github.kamilkrzywanski.ocr.TextWord("12,50", new float[] {250, 100, 350, 100, 350, 120, 250, 120})));
+            TextLayer layer = new TextLayer(document);
+            layer.add(page, page(line), 72f);
+            layer.finish();
+            bytes = saved(document);
+        }
+        try (PDDocument document = Loader.loadPDF(bytes)) {
+            assertEquals("Suma 12,50", new PDFTextStripper().getText(document).strip());
+            List<float[]> glyphs = layerGlyphs(document);
+            // S u m a, a space, 1 2 , 5 0.
+            assertEquals(10, glyphs.size());
+            assertEquals(50f, glyphs.get(0)[0], 0.5f);
+            assertEquals(110f, glyphs.get(3)[0] + glyphs.get(3)[2], 0.5f, "the word ends where its box ends");
+            assertEquals(250f, glyphs.get(5)[0], 0.5f, "the second word starts at its own box");
+            assertEquals(350f, glyphs.get(9)[0] + glyphs.get(9)[2], 0.5f);
+            // The space lies over the gap between the two boxes.
+            assertEquals(110f, glyphs.get(4)[0], 0.5f);
+            assertEquals(250f, glyphs.get(4)[0] + glyphs.get(4)[2], 0.5f);
+        }
+    }
+
+    @Test
+    void wordsWhoseBoxesTouchStillHaveASpaceBetweenThem() throws IOException {
+        byte[] bytes;
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(new PDRectangle(400, 600));
+            document.addPage(page);
+            // The second word starts exactly where the first ends.
+            TextLine line = new TextLine("nim, głosy", 1f, 1f, new float[] {50, 100, 250, 100, 250, 120, 50, 120}, null,
+                    List.of(new io.github.kamilkrzywanski.ocr.TextWord("nim,", new float[] {50, 100, 130, 100, 130, 120, 50, 120}),
+                            new io.github.kamilkrzywanski.ocr.TextWord("głosy", new float[] {130, 100, 250, 100, 250, 120, 130, 120})));
+            TextLayer layer = new TextLayer(document);
+            layer.add(page, page(line), 72f);
+            layer.finish();
+            bytes = saved(document);
+        }
+        try (PDDocument document = Loader.loadPDF(bytes)) {
+            assertEquals("nim, głosy", new PDFTextStripper().getText(document).strip());
+            List<float[]> glyphs = layerGlyphs(document);
+            assertEquals(10, glyphs.size());
+            // The space is the last glyph inside the first word's box, not on the g behind it.
+            assertEquals(130f, glyphs.get(4)[0] + glyphs.get(4)[2], 0.5f);
+            assertTrue(glyphs.get(4)[0] > 110f, "space at " + glyphs.get(4)[0]);
+            assertEquals(130f, glyphs.get(5)[0], 0.5f);
+        }
+    }
+
+    @Test
     void theLayerDrawsNothing() throws IOException {
         Path file = Files.createTempFile("layer", ".pdf");
         try {

@@ -679,14 +679,14 @@ public final class Images {
     }
 
     /** Resize to {@code height} and pad on the right with normalized zeros up to at least {@code minWidth}. */
-    public static float[] recTensor(Bgr image, int height, int minWidth, int maxWidth, float mean, float std) {
+    /** The width a line crop has in the recognizer's input once it is {@code height} high: what {@link #recTensor} fills before the padding. */
+    public static int recWidth(Bgr image, int height, int maxWidth) {
         int resizedW = (int) Math.ceil(height * (image.width() / (double) Math.max(1, image.height())));
-        if (resizedW < 1) {
-            resizedW = 1;
-        }
-        if (resizedW > maxWidth) {
-            resizedW = maxWidth;
-        }
+        return Math.max(1, Math.min(maxWidth, resizedW));
+    }
+
+    public static float[] recTensor(Bgr image, int height, int minWidth, int maxWidth, float mean, float std) {
+        int resizedW = recWidth(image, height, maxWidth);
         int tensorW = Math.min(maxWidth, Math.max(resizedW, minWidth));
         float[] resized = resizeNormalize(image, resizedW, height, mean, std);
         if (tensorW == resizedW) {

@@ -94,12 +94,17 @@ Before the image is read, missing or empty model files are reported with a point
 
 ```json
 {"text":"...","lines":[{"text":"...","score":0.98,"detScore":0.91,
-  "quad":[x0,y0,x1,y1,x2,y2,x3,y3],"bounds":{"x":0,"y":0,"width":0,"height":0}}],
+  "quad":[x0,y0,x1,y1,x2,y2,x3,y3],"bounds":{"x":0,"y":0,"width":0,"height":0},
+  "words":[{"text":"...","quad":[x0,y0,x1,y1,x2,y2,x3,y3]}]}],
   "tables":[{"bounds":{...},"ruled":true,"cells":[["a","b"],["","c"]]}],"rotation":0}
 ```
 
 - Keys always come in this order.
 - `quad` is top-left, top-right, bottom-right, bottom-left in image pixels.
+- `words` are the words of the line, each with the strip of the line's box where it was read;
+  the corners of a word's quad are in the order of its text. The list is empty when the places
+  are not known: the line's text was changed after it was read (`--corrections polish` does that
+  to some lines).
 - An empty cell is `""`.
 - `ruled` is true for a grid of printed rules and false for a table found from columns with no rules.
 - `rotation` is 0, or 90, 180 or 270 when the page lay on its side or upside down and was read
