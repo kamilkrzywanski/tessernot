@@ -1,0 +1,17 @@
+SHIEKH SHOES LLC
+2039 Westminster mall
+Westminster, CA 92683
+714-899-4822
+Receipt #: A18385 Date: 6-19-02
+Cashier: 28 Time: 11:07
+SalesPerson: 10 ENRIQUE
+Trans Type: 01 Sale
+How Paid: 01 Cash
+SKU Descrip SP Siz Wth Qty Amount
+33-869 A FRC1 MID 11 1 79.97
+Tax 6.20
+Total $ 86.17
+Amount Paid 100.00
+Change $ 13.83
+no exchange/refund on worn items/30 day
+No exchange/refund without receipt
