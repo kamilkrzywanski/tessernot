@@ -21,6 +21,7 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -270,6 +271,47 @@ class OcrEndToEndTest {
         OcrResult result = engine.recognize(page);
         System.out.println("vertical: " + result.text());
         assertTrue(result.text().contains("FAKTURA"), result.text());
+    }
+
+    @Test
+    @Timeout(value = 300, unit = TimeUnit.SECONDS)
+    void aPageOnItsSideOrUpsideDownReadsAsTheUprightOne() {
+        BufferedImage upright = Samples.invoice();
+        OcrResult straight = engine.recognize(upright);
+        assertEquals(0, straight.rotation());
+        TextLine title = straight.lines().get(0);
+        BufferedImage page = upright;
+        // Each step turns the picture a quarter clockwise: the turn back grows by 270 each time.
+        for (int quarter = 1; quarter <= 3; quarter++) {
+            BufferedImage turned = new BufferedImage(page.getHeight(), page.getWidth(), BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < page.getHeight(); y++) {
+                for (int x = 0; x < page.getWidth(); x++) {
+                    turned.setRGB(page.getHeight() - 1 - y, x, page.getRGB(x, y));
+                }
+            }
+            page = turned;
+            OcrResult result = engine.recognize(page);
+            assertEquals((360 - 90 * quarter) % 360, result.rotation(), "quarter " + quarter);
+            assertEquals(straight.text(), result.text(), "quarter " + quarter);
+            // The first line lies where the turn put it, in the pixels of the turned picture.
+            Rectangle was = title.bounds();
+            Rectangle expected = switch (quarter) {
+                case 1 -> new Rectangle(upright.getHeight() - was.y - was.height, was.x, was.height, was.width);
+                case 2 -> new Rectangle(upright.getWidth() - was.x - was.width, upright.getHeight() - was.y - was.height,
+                        was.width, was.height);
+                default -> new Rectangle(was.y, upright.getWidth() - was.x - was.width, was.height, was.width);
+            };
+            Rectangle found = result.lines().get(0).bounds();
+            assertEquals(title.text(), result.lines().get(0).text());
+            assertTrue(Math.abs(found.x - expected.x) <= 4 && Math.abs(found.y - expected.y) <= 4
+                            && Math.abs(found.width - expected.width) <= 6 && Math.abs(found.height - expected.height) <= 6,
+                    "quarter " + quarter + ": " + found + " for " + expected);
+        }
+        // With the turn off the page is read as it lies, and nothing is reported.
+        OcrConfig asGiven = engine.config().toBuilder().pageOrientation(false).threads(2).build();
+        try (OcrEngine plain = OcrEngine.create(asGiven)) {
+            assertEquals(0, plain.recognize(page).rotation());
+        }
     }
 
     /** Stored the way a camera tags Orientation 6: pixels are 90 degrees counter-clockwise. */

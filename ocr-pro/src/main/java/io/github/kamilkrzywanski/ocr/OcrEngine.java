@@ -448,7 +448,23 @@ public final class OcrEngine implements AutoCloseable {
             bgr = Images.sauvola(bgr);
         }
         long detStart = totalStart;
+        int pageWidth = bgr.width();
+        int pageHeight = bgr.height();
         List<DbPost.Box> boxes = detect ? detect(bgr, lineParallel) : fullPage(bgr);
+        // Quarter turns counter-clockwise given to the page before it is read.
+        int turns = 0;
+        if (detect && cfg.pageOrientation()) {
+            if (PageTurn.sideways(boxes)) {
+                bgr = Images.rot90ccw(bgr);
+                turns = 1;
+                boxes = detect(bgr, lineParallel);
+            }
+            if (upsideDown(bgr, boxes)) {
+                bgr = Images.rot180(bgr);
+                turns += 2;
+                boxes = detect(bgr, lineParallel);
+            }
+        }
         long detectionNanos = System.nanoTime() - detStart;
         long recStart = System.nanoTime();
         List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
@@ -475,13 +491,63 @@ public final class OcrEngine implements AutoCloseable {
             tables.sort(Comparator.comparingInt((TextTable table) -> table.bounds().y)
                     .thenComparingInt(table -> table.bounds().x));
         }
+        if (turns != 0) {
+            // Back into the pixels of the picture as it was given.
+            List<TextLine> lines = new ArrayList<>(flat.size());
+            for (TextLine line : flat) {
+                lines.add(PageTurn.back(line, turns, pageWidth, pageHeight));
+            }
+            flat = lines;
+            List<TextTable> turned = new ArrayList<>(tables.size());
+            for (TextTable table : tables) {
+                turned.add(PageTurn.back(table, turns, pageWidth, pageHeight));
+            }
+            tables = turned;
+        }
         return new OcrResult(
                 ReadingOrder.join(rows),
                 flat,
                 tables,
                 detectionNanos,
                 recognitionNanos,
-                System.nanoTime() - totalStart);
+                System.nanoTime() - totalStart,
+                PageTurn.rotation(turns));
+    }
+
+    /**
+     * Whether most of the long lines of the page read upside down to the line classifier. Needs
+     * a classifier and at least {@link PageTurn#MIN_VOTERS} long lines. A line votes with the
+     * classifier's more likely answer, not with {@link OcrConfig#clsThresh()}: that threshold
+     * guards one line against a wrong turn, and on small print the classifier seldom reaches it,
+     * while the lines of a page decide together.
+     */
+    private boolean upsideDown(Bgr page, List<DbPost.Box> boxes) {
+        if (cls == null) {
+            return false;
+        }
+        List<DbPost.Box> voters = PageTurn.voters(boxes);
+        if (voters.size() < PageTurn.MIN_VOTERS) {
+            return false;
+        }
+        Session session = clsPool == null ? cls : borrow(clsPool);
+        try {
+            int flipped = 0;
+            int votes = 0;
+            for (DbPost.Box box : voters) {
+                Bgr crop = crop(page, box.quad());
+                if (crop != null) {
+                    votes++;
+                    if (turnProbabilities(PageTurn.window(crop), session)[2] > 0.5f) {
+                        flipped++;
+                    }
+                }
+            }
+            return votes >= PageTurn.MIN_VOTERS && flipped * 2 > votes;
+        } finally {
+            if (clsPool != null) {
+                clsPool.offerFirst(session);
+            }
+        }
     }
 
     /** {@link OcrConfig.Builder#dropFragments}: a fragment is at most this many characters... */
@@ -840,6 +906,32 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     private Bgr orient(Bgr crop, Session clsSession) {
+        return switch (quarterTurns(crop, clsSession)) {
+            case 1 -> Images.rot90ccw(crop);
+            case 2 -> Images.rot180(crop);
+            case 3 -> Images.rot90cw(crop);
+            default -> crop;
+        };
+    }
+
+    /** What the classifier says the crop needs to read upright: 0, or 1 to 3 quarter turns counter-clockwise. */
+    private int quarterTurns(Bgr crop, Session clsSession) {
+        float[] turns = turnProbabilities(crop, clsSession);
+        int arg = 0;
+        for (int i = 1; i < 4; i++) {
+            if (turns[i] > turns[arg]) {
+                arg = i;
+            }
+        }
+        // A classifier of two answers turns a line only when it is sure.
+        return turns[4] == 2f && arg == 2 && turns[2] <= cfg.clsThresh() ? 0 : arg;
+    }
+
+    /**
+     * The classifier's probability that the crop needs 0, 1, 2 or 3 quarter turns
+     * counter-clockwise, and in the fifth place how many answers the classifier has.
+     */
+    private float[] turnProbabilities(Bgr crop, Session clsSession) {
         float[] data = Images.clsTensor(crop, clsHeight, clsWidth, cfg.mean(), cfg.std());
         Tensor input = Tensor.f32(new int[]{1, 3, clsHeight, clsWidth}, data);
         Tensor output = only(clsSession.run(Map.of(clsInput, input)));
@@ -848,27 +940,17 @@ public final class OcrEngine implements AutoCloseable {
         int offset = output.f.length - classes;
         System.arraycopy(output.f, Math.max(0, offset), row, 0, classes);
         float[] probs = Ctc.softmaxRow(row);
-        int arg = 0;
-        for (int i = 1; i < classes; i++) {
-            if (probs[i] > probs[arg]) {
-                arg = i;
-            }
-        }
+        float[] turns = new float[5];
+        turns[4] = classes;
         if (classes == 2) {
-            if (arg == 1 && probs[1] > cfg.clsThresh()) {
-                return Images.rot180(crop);
-            }
-            return crop;
+            turns[0] = probs[0];
+            turns[2] = probs[1];
+        } else if (classes >= 4) {
+            System.arraycopy(probs, 0, turns, 0, 4);
+        } else {
+            turns[0] = 1f;
         }
-        if (classes >= 4) {
-            return switch (arg) {
-                case 1 -> Images.rot90ccw(crop);
-                case 2 -> Images.rot180(crop);
-                case 3 -> Images.rot90cw(crop);
-                default -> crop;
-            };
-        }
-        return crop;
+        return turns;
     }
 
     private Bgr crop(Bgr page, float[] quad) {

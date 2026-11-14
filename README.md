@@ -224,7 +224,9 @@ against 0.956, 0.930 and 0.951 for the plain pipeline. It is **off by default**.
 - the flow of articles that jump between columns or pages, and ad collages (the columns
   themselves are read in order)
 
-Vertical lines are rotated and read.
+Vertical lines are rotated and read. A page that was scanned on its side or upside down is
+turned before it is read; the lines still come back in the pixels of the picture as given, and
+`OcrResult.rotation()` tells the turn.
 
 ## Documentation
 

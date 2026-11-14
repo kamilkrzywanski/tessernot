@@ -547,6 +547,7 @@ public final class Cli {
                 Add --add-modules jdk.incubator.vector (see ocr.sh) for the fast backend.
                 Scalar mode is used automatically when that module is absent.
                 JPEG input is turned upright from EXIF Orientation.
+                A page that lies on its side or upside down is turned before it is read; with --json the turn is the key rotation.
                 A PDF header in the first kilobyte belongs to ocr pdf. PNG, JPEG, GIF, BMP, and TIFF belong to ocr ocr, even when that header sits in the file.
                 An encrypted PDF, and a TIFF or GIF with more than one image, stops before the model is loaded.
                 An extra argument, an empty --model=, a --model path that is a file, and a repeated flag are rejected before a file is opened.

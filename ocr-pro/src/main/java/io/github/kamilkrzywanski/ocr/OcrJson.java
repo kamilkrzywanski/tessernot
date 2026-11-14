@@ -7,7 +7,8 @@ import java.util.List;
  * Compact JSON for one page or a whole document. The CLI writes this same text on stdout
  * when given {@code --json}.
  * <p>
- * A page object keeps the keys {@code text}, {@code lines}, {@code tables}, in that order.
+ * A page object keeps the keys {@code text}, {@code lines}, {@code tables}, {@code rotation}, in
+ * that order; {@code rotation} is {@link OcrResult#rotation()}, 0 for an upright page.
  * A line keeps {@code text}, {@code score}, {@code detScore}, {@code quad}, {@code bounds}.
  * {@code quad} is eight numbers: top-left, top-right, bottom-right, bottom-left.
  * {@code bounds} keeps {@code x}, {@code y}, {@code width}, {@code height} as integers.
@@ -92,7 +93,7 @@ public final class OcrJson {
             }
             appendTable(out, tables.get(i));
         }
-        out.append("]}");
+        out.append("],\"rotation\":").append(result.rotation()).append('}');
     }
 
     private static void appendLine(StringBuilder out, TextLine line) {

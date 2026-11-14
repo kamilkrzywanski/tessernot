@@ -79,6 +79,8 @@ Before the image is read, missing or empty model files are reported with a point
 `ocr download`.
 
 - JPEG input is turned upright from EXIF Orientation (1–8). PNG and `BufferedImage` input are not rotated.
+- A page that lies on its side or upside down, with or without an EXIF tag, is found from its
+  lines and read turned.
 - A multi-image TIFF or GIF is rejected with the image count. A JPEG with more data behind the
   picture (a gain map, a motion clip) is read as that one picture.
 - Images are decoded in memory; no temporary file is written.
@@ -93,13 +95,16 @@ Before the image is read, missing or empty model files are reported with a point
 ```json
 {"text":"...","lines":[{"text":"...","score":0.98,"detScore":0.91,
   "quad":[x0,y0,x1,y1,x2,y2,x3,y3],"bounds":{"x":0,"y":0,"width":0,"height":0}}],
-  "tables":[{"bounds":{...},"ruled":true,"cells":[["a","b"],["","c"]]}]}
+  "tables":[{"bounds":{...},"ruled":true,"cells":[["a","b"],["","c"]]}],"rotation":0}
 ```
 
 - Keys always come in this order.
 - `quad` is top-left, top-right, bottom-right, bottom-left in image pixels.
 - An empty cell is `""`.
 - `ruled` is true for a grid of printed rules and false for a table found from columns with no rules.
+- `rotation` is 0, or 90, 180 or 270 when the page lay on its side or upside down and was read
+  turned: the degrees clockwise that set the picture upright. Quads and bounds are in the pixels
+  of the picture as given either way, with the corners of a quad in the order of the text.
 - A non-finite number is `null`.
 - Timings stay on stderr.
 - `OcrJson.page` and `OcrJson.document` produce the same bytes from Java.

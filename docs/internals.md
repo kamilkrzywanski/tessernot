@@ -6,6 +6,7 @@
 BufferedImage
   → BGR, half-pixel resize, normalize (x/255 - 0.5) / 0.5
   → detection (DB): thresholds, minimum-area rectangle, unclip
+  → [a page on its side or upside down: turned, and detected again]
   → crop (rotated 90° left when the line is vertical)
   → orientation classifier 80×160, rotate 180° when needed
   → recognition at height 48, greedy CTC

@@ -45,7 +45,7 @@ class OcrJsonTest {
                 + "\"quad\":[null,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"
                 + "\"bounds\":{\"x\":0,\"y\":0,\"width\":0,\"height\":0}}],"
                 + "\"tables\":[{\"bounds\":{\"x\":1,\"y\":2,\"width\":100,\"height\":50},\"ruled\":true,"
-                + "\"cells\":[[\"zł\",\"\"],[\"a\\\\b\",\"c\\\"d\"]]}]}";
+                + "\"cells\":[[\"zł\",\"\"],[\"a\\\\b\",\"c\\\"d\"]]}],\"rotation\":0}";
         String json = OcrJson.page(page);
         assertEquals(body + "\n", json);
         assertFalse(json.contains("123456789"), json);
@@ -53,7 +53,7 @@ class OcrJsonTest {
         assertFalse(json.contains("Infinity"), json);
 
         OcrResult other = new OcrResult("druga", null, null, 1, 2, 3);
-        assertEquals("{\"pages\":[" + body + ",{\"text\":\"druga\",\"lines\":[],\"tables\":[]}]}\n",
+        assertEquals("{\"pages\":[" + body + ",{\"text\":\"druga\",\"lines\":[],\"tables\":[],\"rotation\":0}]}\n",
                 OcrJson.document(List.of(page, other)));
         assertEquals("{\"pages\":[]}\n", OcrJson.document(List.of()));
     }

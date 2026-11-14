@@ -44,6 +44,7 @@ public final class OcrConfig {
     private final Alphabet alphabet;
     private final List<ModelSource> wordLists;
     private final boolean dropFragments;
+    private final boolean pageOrientation;
 
     private OcrConfig(Builder b) {
         this.detModel = b.detModel;
@@ -79,6 +80,7 @@ public final class OcrConfig {
         this.alphabet = b.alphabet;
         this.wordLists = List.copyOf(b.wordLists);
         this.dropFragments = b.dropFragments;
+        this.pageOrientation = b.pageOrientation;
     }
 
     /** {@return the text detection model, or null when none is set} */
@@ -261,6 +263,16 @@ public final class OcrConfig {
     /** {@return whether short, unsure lines are left out, see {@link Builder#dropFragments(boolean)}} */
     public boolean dropFragments() { return dropFragments; }
 
+    /**
+     * {@return whether a page that lies on its side or upside down is turned before it is read}
+     * A page is on its side when most of its text stands in boxes on their short side, and
+     * upside down when most of its long lines read that way to the orientation classifier. The
+     * result still gives every line in the pixels of the picture as it was given, and
+     * {@link OcrResult#rotation()} tells the turn. Default: true. Turn it off for pages that
+     * are set in vertical lines on purpose.
+     */
+    public boolean pageOrientation() { return pageOrientation; }
+
     /** {@return a builder with the default settings and no models} */
     public static Builder builder() {
         return new Builder();
@@ -348,6 +360,7 @@ public final class OcrConfig {
         private Alphabet alphabet = Alphabet.ALL;
         private final List<ModelSource> wordLists = new ArrayList<>();
         private boolean dropFragments = false;
+        private boolean pageOrientation = true;
 
         /** A builder with the default settings and no models, as {@link OcrConfig#builder()} returns. */
         public Builder() {
@@ -387,6 +400,7 @@ public final class OcrConfig {
             this.alphabet = c.alphabet;
             this.wordLists.addAll(c.wordLists);
             this.dropFragments = c.dropFragments;
+            this.pageOrientation = c.pageOrientation;
         }
 
         /**
@@ -707,6 +721,14 @@ public final class OcrConfig {
          * @return this builder
          */
         public Builder dropFragments(boolean v) { dropFragments = v; return this; }
+
+        /**
+         * Sets {@link OcrConfig#pageOrientation()}.
+         *
+         * @param v false to read every page as it is given
+         * @return this builder
+         */
+        public Builder pageOrientation(boolean v) { pageOrientation = v; return this; }
 
         /**
          * Replaces every word list added so far; an empty list turns the search off.
