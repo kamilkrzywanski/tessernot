@@ -4,6 +4,9 @@
 #   bench/tools/ro.sh score <ref-dir>...  order the cached lines with the current ReadingOrder source, print CER
 #                                         (RO_OPTS=-Drows=true reads row by row, as Layout.ROWS)
 #   bench/tools/ro.sh cuts                lines ReadingOrder.cuts would split on the cached pages
+#   bench/tools/ro.sh jitter <ref-dir>... order every cached page 40 times with its box edges moved a little,
+#                                         as two reads of one page differ: which pages hang on a threshold
+#                                         (RO_OPTS=-Dtrials=N)
 #   bench/tools/ro.sh show <name>         picture of the current order in bench/out/ro/viz/<name>.png
 # The cache holds the engine's lines (text and quads). Only the reading-order sources are recompiled
 # (ReadingOrder and the classes it is split into), so a change to them is scored on every page in
@@ -19,7 +22,7 @@ mkdir -p "$W/json" "$W/tsv" "$W/classes" "$W/viz"
 compile() {
   rm -rf "$W/classes" && mkdir -p "$W/classes"
   # shellcheck disable=SC2086
-  "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro/target/classes $SRC "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java"
+  "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro/target/classes $SRC "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java" "$T/RoJitter.java"
 }
 cmd=$1
 shift
@@ -36,11 +39,12 @@ case $cmd in
     python3 -I "$T/totsv.py" "$W/json" "$W/tsv" ;;
   score) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
   cuts) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoCuts "$W/tsv" ;;
+  jitter) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" ${RO_OPTS:-} RoJitter "$W/tsv" "$@" ;;
   show)
     compile
     "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoOrder "$W/tsv/$1.tsv" "$W/viz/$1.order.tsv"
     for ext in jpg jpeg png tif; do img=bench/data/$1.$ext; [ -f "$img" ] && break; done
     python3 -I "$T/viz.py" "$img" "$W/viz/$1.order.tsv" "$W/viz/$1.png" 1600
     echo "$W/viz/$1.png" ;;
-  *) echo "usage: ro.sh dump|score|cuts|show" >&2; exit 2 ;;
+  *) echo "usage: ro.sh dump|score|cuts|jitter|show" >&2; exit 2 ;;
 esac
