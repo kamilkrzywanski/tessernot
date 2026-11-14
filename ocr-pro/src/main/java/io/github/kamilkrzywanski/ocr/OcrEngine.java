@@ -488,6 +488,8 @@ public final class OcrEngine implements AutoCloseable {
         // its lines straight.
         int turns = 0;
         PageTurn.Level level = null;
+        // The page before it was turned level: the crops of its lines are cut from this one.
+        Bgr unlevelled = null;
         boolean flipped = false;
         if (detect && cfg.pageOrientation()) {
             if (PageTurn.sideways(boxes)) {
@@ -498,26 +500,28 @@ public final class OcrEngine implements AutoCloseable {
             double skew = PageTurn.skew(boxes);
             if (PageTurn.wanders(skew, bgr.height(), boxes)) {
                 level = PageTurn.Level.of(bgr.width(), bgr.height(), skew);
+                unlevelled = bgr;
                 bgr = Images.turn(bgr, level.cos(), level.sin(), level.levelWidth(), level.levelHeight());
                 boxes = detect(bgr, lineParallel);
             }
-            if (upsideDown(bgr, boxes)) {
+            if (upsideDown(new Page(bgr, unlevelled, level, false), boxes)) {
                 bgr = Images.rot180(bgr);
                 flipped = true;
                 boxes = detect(bgr, lineParallel);
             }
         }
+        Page page = new Page(bgr, unlevelled, level, flipped);
         int upsideDownWidth = bgr.width();
         int upsideDownHeight = bgr.height();
         long detectionNanos = System.nanoTime() - detStart;
         long recStart = System.nanoTime();
-        List<TextLine> recognized = recognizeBoxes(bgr, boxes, lineParallel);
+        List<TextLine> recognized = recognizeBoxes(page, boxes, lineParallel);
         if (polish != null) {
-            recognized = splitAmounts(bgr, recognized);
+            recognized = splitAmounts(page, recognized);
         }
         boolean columns = cfg.layout() == Layout.AUTO;
         if (columns) {
-            recognized = splitColumns(bgr, recognized, lineParallel);
+            recognized = splitColumns(page, recognized, lineParallel);
         }
         long recognitionNanos = System.nanoTime() - recStart;
         List<List<TextLine>> rows = ReadingOrder.group(recognized, columns);
@@ -582,7 +586,7 @@ public final class OcrEngine implements AutoCloseable {
      * guards one line against a wrong turn, and on small print the classifier seldom reaches it,
      * while the lines of a page decide together.
      */
-    private boolean upsideDown(Bgr page, List<DbPost.Box> boxes) {
+    private boolean upsideDown(Page page, List<DbPost.Box> boxes) {
         if (cls == null) {
             return false;
         }
@@ -595,7 +599,7 @@ public final class OcrEngine implements AutoCloseable {
             int flipped = 0;
             int votes = 0;
             for (DbPost.Box box : voters) {
-                Bgr crop = crop(page, box.quad());
+                Bgr crop = page.crop(box.quad());
                 if (crop != null) {
                     votes++;
                     if (turnProbabilities(PageTurn.window(crop), session)[2] > 0.5f) {
@@ -641,13 +645,13 @@ public final class OcrEngine implements AutoCloseable {
      * gutter and each half is read again. Otherwise the two lines would come out as one line in
      * the middle of the left column.
      */
-    private List<TextLine> splitColumns(Bgr page, List<TextLine> lines, boolean lineParallel) {
+    private List<TextLine> splitColumns(Page page, List<TextLine> lines, boolean lineParallel) {
         if (!cfg.useRec() || rec == null || lines.size() < 2) {
             return lines;
         }
         // Gutters seen in the ink first: they also find lines merged over three columns, where
         // the boxes alone show no gutter. Then the geometric check on what is left.
-        List<TextLine> inked = cut(page, lines, InkGutters.cuts(page, lines), lineParallel);
+        List<TextLine> inked = cut(page, lines, InkGutters.cuts(page.pixels(), lines), lineParallel);
         Map<TextLine, float[]> geometric = new IdentityHashMap<>();
         for (Map.Entry<TextLine, Float> cut : ReadingOrder.cuts(inked).entrySet()) {
             geometric.put(cut.getKey(), new float[]{cut.getValue()});
@@ -689,7 +693,7 @@ public final class OcrEngine implements AutoCloseable {
      * again. A piece that does not read is dropped, as a line is. The line stays whole instead
      * when the pieces keep less than {@link #CUT_KEEP} of its characters, see {@link #keepWhole}.
      */
-    private List<TextLine> cut(Bgr page, List<TextLine> lines, Map<TextLine, float[]> cuts, boolean lineParallel) {
+    private List<TextLine> cut(Page page, List<TextLine> lines, Map<TextLine, float[]> cuts, boolean lineParallel) {
         if (cuts.isEmpty()) {
             return lines;
         }
@@ -836,7 +840,7 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     /** The lines that read, in box order. */
-    private List<TextLine> recognizeBoxes(Bgr page, List<DbPost.Box> boxes, boolean lineParallel) {
+    private List<TextLine> recognizeBoxes(Page page, List<DbPost.Box> boxes, boolean lineParallel) {
         List<TextLine> lines = new ArrayList<>(boxes.size());
         for (TextLine line : recognizeEach(page, boxes, lineParallel)) {
             if (line != null) {
@@ -847,7 +851,7 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     /** One entry per box, in order: its line, or null when the box did not read. */
-    private List<TextLine> recognizeEach(Bgr page, List<DbPost.Box> boxes, boolean lineParallel) {
+    private List<TextLine> recognizeEach(Page page, List<DbPost.Box> boxes, boolean lineParallel) {
         if (!cfg.useRec() || rec == null) {
             List<TextLine> lines = new ArrayList<>(boxes.size());
             for (DbPost.Box box : boxes) {
@@ -888,7 +892,7 @@ public final class OcrEngine implements AutoCloseable {
         return sequential(page, boxes, rec, cls);
     }
 
-    private List<TextLine> sequential(Bgr page, List<DbPost.Box> boxes, Session recSession, Session clsSession) {
+    private List<TextLine> sequential(Page page, List<DbPost.Box> boxes, Session recSession, Session clsSession) {
         List<TextLine> lines = new ArrayList<>(boxes.size());
         for (DbPost.Box box : boxes) {
             lines.add(decode(page, box, recSession, clsSession));
@@ -900,7 +904,7 @@ public final class OcrEngine implements AutoCloseable {
      * An amount and a VAT rate that one box holds become two lines, see {@link PolishRules#splitAmounts}.
      * The second reads borrow one recognizer after line recognition has returned its sessions.
      */
-    private List<TextLine> splitAmounts(Bgr page, List<TextLine> lines) {
+    private List<TextLine> splitAmounts(Page page, List<TextLine> lines) {
         if (!cfg.useRec() || rec == null || !PolishRules.anyAmount(lines)) {
             return lines;
         }
@@ -916,7 +920,7 @@ public final class OcrEngine implements AutoCloseable {
     }
 
     /** What the rules of {@link Corrections#POLISH} may ask for: this page, read with the sessions of one worker. */
-    private PolishRules.LineReader reader(Bgr page, Session recSession, Session clsSession) {
+    private PolishRules.LineReader reader(Page page, Session recSession, Session clsSession) {
         return new PolishRules.LineReader() {
             @Override
             public Ctc.Result read(Bgr crop) {
@@ -930,13 +934,13 @@ public final class OcrEngine implements AutoCloseable {
 
             @Override
             public Bgr crop(float[] quad) {
-                return OcrEngine.this.crop(page, quad);
+                return page.crop(quad);
             }
         };
     }
 
-    private TextLine decode(Bgr page, DbPost.Box box, Session recSession, Session clsSession) {
-        Bgr crop = crop(page, box.quad());
+    private TextLine decode(Page page, DbPost.Box box, Session recSession, Session clsSession) {
+        Bgr crop = page.crop(box.quad());
         if (crop == null) {
             return null;
         }
@@ -1034,7 +1038,28 @@ public final class OcrEngine implements AutoCloseable {
         return turns;
     }
 
-    private Bgr crop(Bgr page, float[] quad) {
+    /**
+     * The page the lines are found on, and the picture their crops are cut from. They are one
+     * and the same unless the page was turned level: the levelled page is the picture resampled
+     * once, and a crop cut from it would be the picture resampled twice. So a line found on the
+     * levelled page is cut from the page before, through its quad mapped back, and small print
+     * keeps what one resampling leaves of it.
+     *
+     * @param pixels the page as it is read: upright and level
+     * @param unlevelled the page before it was turned level, or null when it was not
+     * @param level how {@code unlevelled} became {@code pixels}, before the half turn
+     * @param flipped whether {@code pixels} got half a turn after the levelling
+     */
+    private record Page(Bgr pixels, Bgr unlevelled, PageTurn.Level level, boolean flipped) {
+        Bgr crop(float[] quad) {
+            if (unlevelled == null) {
+                return OcrEngine.crop(pixels, quad);
+            }
+            return OcrEngine.crop(unlevelled, level.before(quad, flipped));
+        }
+    }
+
+    private static Bgr crop(Bgr page, float[] quad) {
         if (axisAligned(quad)) {
             if (covers(page, quad)) {
                 return page;

@@ -271,6 +271,25 @@ final class PageTurn {
             return new float[] {(float) (cos * dx + sin * dy + width * 0.5), (float) (-sin * dx + cos * dy + height * 0.5)};
         }
 
+        /**
+         * A quad of the levelled page, in pixel indices, as the quad of the same pixels on the
+         * page before: what {@code Images.turn} read them from. A pixel lies at its index plus
+         * a half on the canvas that {@link #back} maps.
+         *
+         * @param flipped whether the levelled page got half a turn after it was levelled
+         */
+        float[] before(float[] quad, boolean flipped) {
+            float[] out = new float[quad.length];
+            for (int i = 0; i < quad.length; i += 2) {
+                float x = flipped ? levelWidth - 1 - quad[i] : quad[i];
+                float y = flipped ? levelHeight - 1 - quad[i + 1] : quad[i + 1];
+                float[] at = back(x + 0.5f, y + 0.5f);
+                out[i] = at[0] - 0.5f;
+                out[i + 1] = at[1] - 0.5f;
+            }
+            return out;
+        }
+
         /** A point of the page before on the levelled canvas. */
         float[] forward(float x, float y) {
             double dx = x - width * 0.5;

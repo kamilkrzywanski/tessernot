@@ -144,6 +144,46 @@ class PageTurnTest {
     }
 
     @Test
+    void aQuadOfTheLevelledPageGoesBackToThePixelsItWasTurnedFrom() {
+        // One black pixel on a white page, turned level by 7 degrees, then half a turn more.
+        int width = 300;
+        int height = 200;
+        byte[] data = new byte[width * height * 3];
+        java.util.Arrays.fill(data, (byte) 255);
+        int dotX = 231;
+        int dotY = 57;
+        for (int c = 0; c < 3; c++) {
+            data[(dotY * width + dotX) * 3 + c] = 0;
+        }
+        PageTurn.Level level = PageTurn.Level.of(width, height, Math.toRadians(7));
+        Bgr levelled = Images.turn(new Bgr(data, width, height), level.cos(), level.sin(), level.levelWidth(), level.levelHeight());
+        for (boolean flipped : new boolean[] {false, true}) {
+            Bgr page = flipped ? Images.rot180(levelled) : levelled;
+            int[] darkest = darkest(page);
+            float[] before = level.before(new float[] {darkest[0], darkest[1]}, flipped);
+            // The dot is spread over up to four pixels of the levelled page; the darkest of them
+            // lies within a pixel of where the dot came from.
+            assertEquals(dotX, before[0], 1f, "flipped " + flipped);
+            assertEquals(dotY, before[1], 1f, "flipped " + flipped);
+        }
+    }
+
+    private static int[] darkest(Bgr page) {
+        int[] at = {0, 0};
+        int least = 256;
+        for (int y = 0; y < page.height(); y++) {
+            for (int x = 0; x < page.width(); x++) {
+                int value = page.data()[(y * page.width() + x) * 3] & 255;
+                if (value < least) {
+                    least = value;
+                    at = new int[] {x, y};
+                }
+            }
+        }
+        return at;
+    }
+
+    @Test
     void aSmallPageWithSmallPrintIsEnlargedUpToTheDetectorsLimit() {
         List<DbPost.Box> small = new ArrayList<>();
         List<DbPost.Box> normal = new ArrayList<>();

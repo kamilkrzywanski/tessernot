@@ -114,6 +114,12 @@ by reflection.
     is turned level (bilinear, on a larger white canvas). Below that, `PageSkew` levels the
     boxes alone, as before. The steps that look at the pixels for a gutter or a rule take it to
     be upright; without this a two-column book page three degrees off level read as rows.
+    The levelled picture is for finding lines, gutters and rules; the crop of a line is cut
+    from the page before, through its quad mapped back (`PageTurn.Level.before`), so that the
+    recognizer sees the picture resampled once and not twice. On the 66 pages of `dev` and
+    `test` that took the edits from 4,607 to 4,570 as given (two pages are levelled there, both
+    better), from 5,119 to 5,037 three degrees askew one way and from 5,699 to 5,608 the other;
+    askew, about as many pages read worse by a few edits as better.
     Beyond 45 degrees the boxes stand rather than lie, so the quarter turn comes first and what
     is left is under 45 again. A ticket photographed 22 degrees askew went from 44 edits to 24,
     and pages turned by 25 or 40 degrees read as they do level.
