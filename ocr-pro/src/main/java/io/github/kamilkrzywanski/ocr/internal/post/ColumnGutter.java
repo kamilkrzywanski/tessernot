@@ -149,11 +149,14 @@ record ColumnGutter(float from, float to, int over) {
     }
 
     /**
-     * A row crosses when one of its boxes does. A box that runs into the next box of its row is
-     * first cut where that box begins: the text there is the neighbour's. A short line at the end
-     * of the left column, whose box the detector drew a little too long, then stays in its column
-     * although the padded box lies over a narrow gutter; a title or a page number with nothing
-     * beside it still crosses.
+     * A row crosses when one of its boxes does. Two things keep a box in its column although its
+     * padded end lies over a narrow gutter. A box that runs into the next box of its row is first
+     * cut where that box begins: the text there is the neighbour's. And a box does not cross when
+     * a line of the other column begins right behind the gutter in the same row, within a line
+     * height of the gutter's far edge: the two were set side by side, and the gutter runs between
+     * them. That is a short line at the end of the left column, or a reference in its margin,
+     * whose box the detector drew a little too long. A title or a page number with nothing beside
+     * it still crosses.
      */
     boolean crosses(List<TextLine> row, float medianH) {
         for (TextLine line : row) {
@@ -170,7 +173,29 @@ record ColumnGutter(float from, float to, int over) {
                     left = Math.max(left, other.right());
                 }
             }
-            if (crossing(left, right, line.bottom() - line.top(), medianH)) {
+            if (crossing(left, right, line.bottom() - line.top(), medianH) && !besideOtherColumn(line, row)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The box lies mostly on one side of the gutter, and on the other side a box of the same row
+     * begins within a line height of the gutter's edge.
+     */
+    private boolean besideOtherColumn(TextLine line, List<TextLine> row) {
+        float height = line.bottom() - line.top();
+        float centre = (line.left() + line.right()) * 0.5f;
+        for (TextLine other : row) {
+            if (other == line) {
+                continue;
+            }
+            float otherCentre = (other.left() + other.right()) * 0.5f;
+            if (centre < from && otherCentre > to && other.left() > centre && other.left() - to <= height) {
+                return true;
+            }
+            if (centre > to && otherCentre < from && other.right() < centre && from - other.right() <= height) {
                 return true;
             }
         }
