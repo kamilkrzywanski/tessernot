@@ -17,10 +17,8 @@ Date Time AM, PM Date Time AM, PM
 (very important to fill this out)
 Name Time Date
 Address Leader sign
-City/State
-Phone
-*In case of any party split or partial
+City/State *In case of any party split or partial
 return of party: note by name when
-party returned or will return.
+Phone party returned or will return.
 ZZ(2300-4)5/90
-FS-6200-23a (5/84)
+FS-6200-28a (5/84)

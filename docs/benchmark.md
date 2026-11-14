@@ -6,7 +6,7 @@ them. This benchmark uses public documents with references transcribed by hand, 
 
 | Set | Documents | Role |
 | --- | --- | --- |
-| `dev` | 39 (21 PL, 18 EN), 110,882 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, and 3 Official Journal pages moved from `test3` on 2026-10-15. Its numbers are **not independent**. |
+| `dev` | 70 (37 PL, 33 EN), 148,127 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, 3 Official Journal pages moved from `test3` on 2026-10-15, and 31 business documents (receipts, invoices, letters, memos, forms) added on 2026-11-14. The tables below are still those of the first 39 documents (110,882 characters). Its numbers are **not independent**. |
 | `test` | 27 (18 PL, 9 EN), 59,772 characters | Scored once, before the reading-order work. Its failures then pointed at what to fix, so it is **no longer independent** either. |
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below). **The honest number.** Do not tune on it. |
 | `test3` | 97 (47 PL, 50 EN), 245,601 characters | Held out for a later round. Collected without looking at any engine output, checked a second time against the images, and not scored. `test2` stays the scored set. Do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups (see below). |
