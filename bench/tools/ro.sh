@@ -1,5 +1,5 @@
 #!/bin/sh
-# Reading-order workbench. Run from the repo root after `mvn -DskipTests package`.
+# Reading-order workbench. Run from the repo root after `./mvnw -DskipTests package`.
 #   bench/tools/ro.sh dump <ref-dir>...   OCR every reference's image once, cache lines in bench/out/ro/tsv
 #   bench/tools/ro.sh score <ref-dir>...  order the cached lines with the current ReadingOrder source, print CER
 #                                         (RO_OPTS=-Drows=true reads row by row, as Layout.ROWS)

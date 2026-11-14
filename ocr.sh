@@ -6,7 +6,7 @@
 ROOT=$(CDPATH= cd -- "$(dirname "$0")" && pwd) || exit 1
 JAR="$ROOT/ocr-pro-cli/target/ocr-pro-cli.jar"
 if [ ! -f "$JAR" ]; then
-  echo "missing $JAR — run: mvn -DskipTests package" >&2
+  echo "missing $JAR — run: ./mvnw -DskipTests package" >&2
   exit 1
 fi
 

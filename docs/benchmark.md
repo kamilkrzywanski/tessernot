@@ -303,7 +303,7 @@ to 0.026, Arct's dictionary 0.735 to 0.048, the 1981 poster photo 0.669 to 0.095
 ## Reproduce
 
 ```bash
-mvn -DskipTests package
+./mvnw -DskipTests package
 # The images are in the submodule bench/data: git submodule update --init bench/data.
 # bench/fetch.sh rebuilds a missing one from its source
 # (curl; pdftoppm for PDF; ddjvu and pnmtopng, ImageMagick or Pillow for DjVu).

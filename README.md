@@ -29,10 +29,10 @@ side by side when the heap is small. Without the incubator module, the scalar pa
 
 ## Quick start
 
-You need Java 21 or newer and Maven 3.9.
+You need Java 21 or newer. `./mvnw` downloads Maven 3.9; a Maven 3.9 of your own works as `mvn`.
 
 ```bash
-mvn -DskipTests package
+./mvnw -DskipTests package
 ./ocr.sh ocr scan.jpg
 ./ocr.sh pdf document.pdf --dpi 150 --json
 ```
@@ -53,8 +53,8 @@ flag, the engine uses the scalar path.
 
 ## Java API
 
-The library is not on Maven Central yet. Run `mvn install` and depend on the artifacts you need,
-all under `io.github.kamilkrzywanski` with version `1.0-SNAPSHOT`:
+The library is not on Maven Central yet. Run `./mvnw install` and depend on the artifacts you need,
+all under `io.github.kamilkrzywanski` with version `0.1.0-SNAPSHOT`:
 
 | Artifact | What it holds |
 | --- | --- |

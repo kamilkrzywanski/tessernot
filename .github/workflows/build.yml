@@ -19,7 +19,7 @@ jobs:
       - name: Install DejaVu, the font of the rendered test pages
         run: sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core
       - name: Build and test
-        run: mvn -B verify
+        run: ./mvnw -B verify
       - name: Fail when a test was skipped
         # A test that needs models/ skips itself when they are missing; on CI that is an error.
         run: |

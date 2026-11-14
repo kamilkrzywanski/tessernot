@@ -6,7 +6,7 @@
 
     <groupId>io.github.kamilkrzywanski</groupId>
     <artifactId>ocr-pro-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>ocr-pro-parent</name>
     <description>Pure Java PP-OCR engine. No native libraries.</description>
@@ -171,8 +171,40 @@
                         <excludePackageNames>io.github.kamilkrzywanski.ocr.internal.*</excludePackageNames>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>3.6.3</version>
+                </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <!-- An older JDK or Maven fails at the start with a sentence, not in the compiler. ./mvnw brings the right Maven. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-build-tools</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[21,)</version>
+                                    <message>ocr-pro builds with Java 21 or newer. Point JAVA_HOME at one.</message>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>[3.9,)</version>
+                                    <message>ocr-pro builds with Maven 3.9 or newer. ./mvnw downloads it.</message>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
