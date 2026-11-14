@@ -82,6 +82,91 @@ class InkGuttersTest {
         assertTrue(InkGutters.cuts(page, lines).isEmpty());
     }
 
+    @Test
+    void manyLinesWithInkAcrossASuggestedCutShowThatTheGutterIsNotOne() {
+        // A letter in one column: every line has ink at x 475, where the boxes of a header and
+        // a signature block made a gutter. None of the suggested cuts is made.
+        Bgr letter = blank();
+        Map<TextLine, Float> suggested = new java.util.IdentityHashMap<>();
+        for (int i = 0; i < 12; i++) {
+            int y = 20 + i * 30;
+            words(letter, 50, 900, y);
+            suggested.put(box("line " + i, 40, 910, y), 435f / 870f);
+        }
+        assertTrue(InkGutters.confirmed(letter, suggested).isEmpty());
+
+        // Two such lines are not enough to say so: they are cut where it was suggested.
+        suggested.clear();
+        TextLine first = box("first", 40, 910, 20);
+        suggested.put(first, 435f / 870f);
+        suggested.put(box("second", 40, 910, 50), 435f / 870f);
+        Map<TextLine, float[]> two = InkGutters.confirmed(letter, suggested);
+        assertEquals(2, two.size());
+        assertEquals(435f / 870f, two.get(first)[0]);
+    }
+
+    @Test
+    void aSuggestedCutMovesToTheGutterInTheInk() {
+        // Two columns with a gutter at x 450..500: three lines read as one box each are cut at
+        // the middle of the gutter, not at 446 where the cut was suggested, in the last word of
+        // the left column. A fourth line of the same gutter has ink across it and is cut where
+        // it was suggested: most lines show the gutter.
+        Bgr columns = blank();
+        Map<TextLine, Float> suggested = new java.util.IdentityHashMap<>();
+        List<TextLine> merged = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            int y = 20 + i * 30;
+            words(columns, 50, 450, y);
+            words(columns, 500, 900, y);
+            TextLine line = box("merged " + i, 40, 910, y);
+            merged.add(line);
+            suggested.put(line, 406f / 870f);
+        }
+        int y = 20 + 3 * 30;
+        words(columns, 50, 900, y);
+        TextLine across = box("across", 40, 910, y);
+        suggested.put(across, 406f / 870f);
+        Map<TextLine, float[]> cuts = InkGutters.confirmed(columns, suggested);
+        assertEquals(4, cuts.size());
+        for (TextLine line : merged) {
+            assertEquals(435f / 870f, cuts.get(line)[0], 0.02f);
+        }
+        assertEquals(406f / 870f, cuts.get(across)[0]);
+
+        // A cut suggested between letters, here in the gutter itself, stays where it is.
+        Map<TextLine, float[]> inGutter = InkGutters.confirmed(columns, Map.of(merged.get(0), 420f / 870f));
+        assertEquals(420f / 870f, inGutter.get(merged.get(0))[0]);
+
+        // A box that cannot be looked at, here one too short, is cut as suggested.
+        TextLine small = box("short", 40, 100, 300);
+        Map<TextLine, float[]> kept = InkGutters.confirmed(columns, Map.of(small, 0.5f));
+        assertEquals(0.5f, kept.get(small)[0]);
+    }
+
+    @Test
+    void aRuleInANarrowGutterShowsTheGutter() {
+        // Two columns set close: the left one ends 2 px before a rule 2 px wide at x 470, the
+        // right one begins 2 px after it. There is no gap as wide as a gutter, but the rule runs
+        // from the top of every box to its bottom, as no letter does.
+        Bgr page = blank();
+        Map<TextLine, Float> suggested = new java.util.IdentityHashMap<>();
+        for (int i = 0; i < 5; i++) {
+            int y = 20 + i * 30;
+            words(page, 55, 468, y);
+            words(page, 474, 900, y);
+            suggested.put(box("merged " + i, 40, 910, y), 430f / 870f);
+        }
+        for (int y = 0; y < 200; y++) {
+            for (int x = 470; x < 472; x++) {
+                int i = (y * W + x) * 3;
+                page.data()[i] = 0;
+                page.data()[i + 1] = 0;
+                page.data()[i + 2] = 0;
+            }
+        }
+        assertEquals(5, InkGutters.confirmed(page, suggested).size());
+    }
+
     private static Bgr blank() {
         byte[] data = new byte[W * H * 3];
         Arrays.fill(data, (byte) 255);

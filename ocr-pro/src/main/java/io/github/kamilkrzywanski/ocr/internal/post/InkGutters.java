@@ -73,7 +73,10 @@ public final class InkGutters {
         List<Gap> gaps = new ArrayList<>();
         for (TextLine line : lines) {
             if (right(line) - left(line) >= WIDE * typical) {
-                gaps.addAll(gaps(page, line));
+                List<Gap> own = gaps(page, line);
+                if (own != null) {
+                    gaps.addAll(own);
+                }
             }
         }
         if (gaps.isEmpty()) {
@@ -106,6 +109,150 @@ public final class InkGutters {
      * them, and the rest is grouped again. A chain of gaps each close to the next does not make a
      * gutter wider than {@code reach} on each side.
      */
+    /** A cut the boxes suggest is borne out by a gap whose middle lies within this many box heights of it... */
+    private static final float CUT_REACH = 1.5f;
+    /** ...or by a rule within this many box heights of it: ink from the top of the box to its bottom. */
+    private static final float RULE_REACH = 1f;
+    private static final float RULE_INK = 0.9f;
+    /** One or two lines do not show that a gutter is not there. */
+    private static final int DENIERS = 3;
+
+    /**
+     * Of the cuts that the boxes alone suggest, those the ink does not speak against.
+     * {@link ReadingOrder#cuts} takes a line for two lines of two columns, merged, from where
+     * the other lines begin and end; it does not see the page. Two column lines read as one box
+     * still have the gutter between them: a strip without ink wider than a word space, or, in
+     * a narrow gutter, the rule between the columns, which runs through the whole height of
+     * the box as no letter does. When three or more lines are suggested for one gutter and
+     * most of them show neither, the gutter is not one and none of them is cut. A one-column
+     * letter whose header and signature blocks stand right of the middle was cut down that
+     * middle, through its words.
+     * <p>
+     * Otherwise every suggested line is cut at the suggested place, or, when that place lies on
+     * ink, at the middle of the widest gap near it. A box that cannot be looked at (too steep,
+     * too short, no contrast) counts as showing the gutter.
+     *
+     * @param cuts for each line, the fraction of its length, from the left, where it would be cut
+     * @return for each line that is cut, the fraction where
+     */
+    public static Map<TextLine, float[]> confirmed(Bgr page, Map<TextLine, Float> cuts) {
+        Map<TextLine, float[]> out = new IdentityHashMap<>();
+        if (cuts.isEmpty()) {
+            return out;
+        }
+        List<Suggested> all = new ArrayList<>(cuts.size());
+        for (Map.Entry<TextLine, Float> cut : cuts.entrySet()) {
+            TextLine line = cut.getKey();
+            float left = left(line);
+            float width = right(line) - left;
+            float x = left + cut.getValue() * width;
+            List<Gap> gaps = gaps(page, line);
+            if (gaps == null) {
+                all.add(new Suggested(line, x, cut.getValue(), true));
+                continue;
+            }
+            float height = bottom(line) - top(line);
+            // The widest gap in reach: the gutter is wider than the word spaces beside it.
+            Gap best = null;
+            for (Gap gap : gaps) {
+                if (Math.abs(gap.x - x) <= CUT_REACH * height && (best == null || gap.width > best.width)) {
+                    best = gap;
+                }
+            }
+            if (best == null) {
+                all.add(new Suggested(line, x, cut.getValue(), rule(page, line, x, RULE_REACH * height)));
+            } else {
+                // A cut that falls between letters stays where it is: beside a justified line
+                // the widest gap may be a word space, and the gutter the narrow one.
+                all.add(new Suggested(line, x, inkAt(page, line, x) ? (best.x - left) / width : cut.getValue(), true));
+            }
+        }
+        // The lines of one gutter are suggested at one x; of two gutters, columns apart.
+        all.sort((a, b) -> Float.compare(a.x, b.x));
+        float near = medianHeight(new ArrayList<>(cuts.keySet()));
+        int from = 0;
+        for (int i = 1; i <= all.size(); i++) {
+            if (i < all.size() && all.get(i).x - all.get(i - 1).x <= near) {
+                continue;
+            }
+            int borne = 0;
+            for (int k = from; k < i; k++) {
+                if (all.get(k).borne) {
+                    borne++;
+                }
+            }
+            if (i - from < DENIERS || borne * 2 >= i - from) {
+                for (int k = from; k < i; k++) {
+                    out.put(all.get(k).line, new float[] {all.get(k).at});
+                }
+            }
+            from = i;
+        }
+        return out;
+    }
+
+    /** Whether a column within {@code reach} of {@code x} is ink from the top of the box to its bottom. */
+    private static boolean rule(Bgr page, TextLine line, float x, float reach) {
+        int l = Math.max(0, (int) Math.floor(left(line)));
+        int r = Math.min(page.width(), (int) Math.ceil(right(line)));
+        int t = Math.max(0, (int) Math.floor(top(line)));
+        int b = Math.min(page.height(), (int) Math.ceil(bottom(line)));
+        int h = b - t;
+        int threshold = threshold(page, l, r, t + h / 4, b - h / 4);
+        if (threshold < 0) {
+            return false;
+        }
+        int from = Math.max(l, Math.round(x - reach));
+        int to = Math.min(r, Math.round(x + reach));
+        for (int column = from; column < to; column++) {
+            int ink = 0;
+            for (int y = t; y < b; y++) {
+                if (gray(page, column, y) < threshold) {
+                    ink++;
+                }
+            }
+            if (ink >= RULE_INK * h) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the column at {@code x} has ink in the middle half of the box's height. */
+    private static boolean inkAt(Bgr page, TextLine line, float x) {
+        int l = Math.max(0, (int) Math.floor(left(line)));
+        int r = Math.min(page.width(), (int) Math.ceil(right(line)));
+        int t = Math.max(0, (int) Math.floor(top(line)));
+        int b = Math.min(page.height(), (int) Math.ceil(bottom(line)));
+        int h = b - t;
+        int threshold = threshold(page, l, r, t + h / 4, b - h / 4);
+        int column = Math.max(l, Math.min(r - 1, Math.round(x)));
+        for (int y = t + h / 4; y < b - h / 4; y++) {
+            if (gray(page, column, y) < threshold) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The gray that parts ink from paper in the rows {@code y0} to {@code y1} of a box, or -1 without contrast. */
+    private static int threshold(Bgr page, int l, int r, int y0, int y1) {
+        int[] hist = new int[256];
+        for (int y = y0; y < y1; y++) {
+            for (int x = l; x < r; x++) {
+                hist[gray(page, x, y)]++;
+            }
+        }
+        int total = (y1 - y0) * (r - l);
+        int p10 = percentile(hist, total, 0.10);
+        int p90 = percentile(hist, total, 0.90);
+        return p90 - p10 < MIN_CONTRAST ? -1 : (p10 + p90) / 2;
+    }
+
+    /** A line the boxes would cut at {@code x}; {@code at} is where, and {@code borne} whether the ink shows a gutter. */
+    private record Suggested(TextLine line, float x, float at, boolean borne) {
+    }
+
     private static List<List<Gap>> clusters(List<Gap> gaps, float reach) {
         List<List<Gap>> out = new ArrayList<>();
         List<Gap> left = new ArrayList<>(gaps);
@@ -172,13 +319,13 @@ public final class InkGutters {
                 && Math.min(leftEnds, rightStarts) >= WEAK_EDGES;
     }
 
-    /** Blank strips inside one box, wide enough to be a gutter. */
+    /** Blank strips inside one box, wide enough to be a gutter; null when the box cannot be looked at. */
     private static List<Gap> gaps(Bgr page, TextLine line) {
         List<Gap> out = new ArrayList<>();
         float[] q = line.quad();
         float dx = q[2] - q[0];
         if (dx <= 0f || Math.abs(q[3] - q[1]) > MAX_SLOPE * dx) {
-            return out;
+            return null;
         }
         int l = Math.max(0, (int) Math.floor(left(line)));
         int r = Math.min(page.width(), (int) Math.ceil(right(line)));
@@ -186,23 +333,14 @@ public final class InkGutters {
         int b = Math.min(page.height(), (int) Math.ceil(bottom(line)));
         int h = b - t;
         if (h < 4 || r - l < 4 * h) {
-            return out;
+            return null;
         }
         int y0 = t + h / 4;
         int y1 = b - h / 4;
-        int[] hist = new int[256];
-        for (int y = y0; y < y1; y++) {
-            for (int x = l; x < r; x++) {
-                hist[gray(page, x, y)]++;
-            }
+        int threshold = threshold(page, l, r, y0, y1);
+        if (threshold < 0) {
+            return null;
         }
-        int total = (y1 - y0) * (r - l);
-        int p10 = percentile(hist, total, 0.10);
-        int p90 = percentile(hist, total, 0.90);
-        if (p90 - p10 < MIN_CONTRAST) {
-            return out;
-        }
-        int threshold = (p10 + p90) / 2;
         boolean[] ink = new boolean[r - l];
         for (int x = l; x < r; x++) {
             for (int y = y0; y < y1; y++) {
@@ -243,7 +381,7 @@ public final class InkGutters {
                 gapEnd = nextEnd;
             }
             if (gapEnd - gapStart >= MIN_GAP * h && gapStart > from && gapEnd < to) {
-                out.add(new Gap(line, l + (gapStart + gapEnd) * 0.5f));
+                out.add(new Gap(line, l + (gapStart + gapEnd) * 0.5f, gapEnd - gapStart));
             }
             x = gapEnd;
         }
@@ -316,6 +454,6 @@ public final class InkGutters {
         return line.bottom();
     }
 
-    private record Gap(TextLine line, float x) {
+    private record Gap(TextLine line, float x, float width) {
     }
 }

@@ -264,6 +264,20 @@ read again. On a three-column 1912 weekly whose lines the detector merged over a
 from 0.528 to 0.024, and on an 1898 weekly with two merged lines from 0.754 to 0.009. A justified
 page whose wide word spaces line up has no margins at those strips and stays whole.
 
+**The ink has the last word on a geometric cut** (`InkGutters.confirmed`). `ReadingOrder.cuts`
+works from boxes alone, and the boxes of a header and a signature block right of the middle of
+a letter look like a right column to it: every full-width line of the letter was then cut down
+that middle, through its words. Two column lines in one box still show the gutter between
+them: a blank strip of 0.4 box heights within 1.5 heights of the suggested cut, or, in a narrow
+gutter, the rule between the columns, ink from the top of the box to its bottom within one
+height of the cut, as no letter is. When three or more lines are suggested for one gutter and
+more than half of them show neither, none is cut. Otherwise all are, as before, at the
+suggested place, or at the middle of the widest gap near it when that place lies on ink.
+On the 93 pages of `dev` and the 27 of `test` exactly one page changes, that letter: 548 edits
+to 55. The first form of the rule, which cut a line only where it had a gap, lost two pages
+whose narrow gutters hold a rule and no gap (a 1914 gazette supplement 68 to 351, a 1944 obituary
+11 to 85); the rule in the gutter and the count of three are there for them.
+
 ## Tables
 
 A grid of ruled lines with at least two columns and two rows becomes a `TextTable`. An empty cell

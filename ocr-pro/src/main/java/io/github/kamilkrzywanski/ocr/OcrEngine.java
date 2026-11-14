@@ -652,11 +652,7 @@ public final class OcrEngine implements AutoCloseable {
         // Gutters seen in the ink first: they also find lines merged over three columns, where
         // the boxes alone show no gutter. Then the geometric check on what is left.
         List<TextLine> inked = cut(page, lines, InkGutters.cuts(page.pixels(), lines), lineParallel);
-        Map<TextLine, float[]> geometric = new IdentityHashMap<>();
-        for (Map.Entry<TextLine, Float> cut : ReadingOrder.cuts(inked).entrySet()) {
-            geometric.put(cut.getKey(), new float[]{cut.getValue()});
-        }
-        return cut(page, inked, geometric, lineParallel);
+        return cut(page, inked, InkGutters.confirmed(page.pixels(), ReadingOrder.cuts(inked)), lineParallel);
     }
 
     /**
