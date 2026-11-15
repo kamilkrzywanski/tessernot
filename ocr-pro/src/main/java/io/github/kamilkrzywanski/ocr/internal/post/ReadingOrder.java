@@ -187,8 +187,21 @@ public final class ReadingOrder {
         }
         List<TextLine> unplaced = ColumnSection.place(vertical, sections, mid);
         List<List<TextLine>> out = new ArrayList<>();
-        for (ColumnSection section : sections) {
-            if (section.split) {
+        for (int i = 0; i < sections.size(); i++) {
+            ColumnSection section = sections.get(i);
+            int below = ColumnSection.pastFigure(sections, i, medianH);
+            if (below > 0) {
+                // A picture across the columns: each column is read through it, the caption between them.
+                ColumnSection rest = sections.get(below);
+                out.addAll(orderBlock(joined(flatten(section.left), flatten(rest.left)),
+                        joined(section.leftExtras, rest.leftExtras), medianH, depth + 1, found));
+                for (int k = i + 1; k < below; k++) {
+                    out.addAll(LineRows.mergeByTop(sections.get(k).rows, sections.get(k).extras));
+                }
+                out.addAll(orderBlock(joined(flatten(section.right), flatten(rest.right)),
+                        joined(section.rightExtras, rest.rightExtras), medianH, depth + 1, found));
+                i = below;
+            } else if (section.split) {
                 out.addAll(orderBlock(flatten(section.left), section.leftExtras, medianH, depth + 1, found));
                 out.addAll(orderBlock(flatten(section.right), section.rightExtras, medianH, depth + 1, found));
             } else if (section.crossing) {
@@ -198,6 +211,12 @@ public final class ReadingOrder {
             }
         }
         return LineRows.mergeByTop(out, unplaced);
+    }
+
+    private static List<TextLine> joined(List<TextLine> first, List<TextLine> second) {
+        List<TextLine> all = new ArrayList<>(first);
+        all.addAll(second);
+        return all;
     }
 
     private static List<List<TextLine>> orderZone(List<List<TextLine>> zone, List<TextLine> vertical, float medianH) {

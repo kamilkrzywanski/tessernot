@@ -268,6 +268,16 @@ step 6), `ColumnGutter` (step 3), `ColumnSection` (step 4), `ColumnTests` (steps
    their height. The letterhead at the top left of a letter, the date above it on the right
    and the addressee further down on the right lie on two sides of a gutter and not beside
    each other; they are read down the page.
+9. **A picture across the columns.** In step 5 a row that crosses the gutter, such as a
+   title, ends a band of columns. A picture set across both columns with its caption does not,
+   when the text runs on past it: only the rows of a caption (three at most) stand between two
+   sections of columns, a blank band of three line heights or more lies above or below them,
+   and in both columns the last line above ends in a letter, a digit, a comma or a hyphen and
+   the first line below begins with a small letter. Then each column is read through the
+   picture, the caption between the two columns. A column that ends its paragraph at the
+   picture keeps the bands, and so does a page read without recognition (the test needs the
+   text). Built on one page, the Encyklopedja staropolska of `test` (0.408 to 0.005), after
+   its reference was put right; no other cached page of `dev` or `test` changes.
 
 Steps 7 (rows of cells) and 8 are from 2026-11-15. A scratch tool turned every columns-or-rows
 decision of the cached `dev` and `test` pages over, one at a time, and scored the page again:

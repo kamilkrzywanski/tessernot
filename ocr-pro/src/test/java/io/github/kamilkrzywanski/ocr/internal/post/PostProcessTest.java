@@ -390,6 +390,63 @@ class PostProcessTest {
                 ReadingOrder.join(ReadingOrder.group(List.of(to2, head1, stamp2, to1, head2, to3, stamp1))));
     }
 
+    /**
+     * Two columns of six lines above a blank band, a caption across the gutter, six lines below.
+     * The right column is set for itself, 4 px lower, as blocks of text are. The last line above the
+     * band and the first one below it carry the given texts; the others are named by their place.
+     */
+    private static List<TextLine> pageWithAPicture(String leftEnds, String leftGoesOn,
+                                                   String rightEnds, String rightGoesOn) {
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            lines.add(line(i == 5 ? leftEnds : "left above " + i, 0, i * 12, 200, 10));
+            lines.add(line(i == 5 ? rightEnds : "right above " + i, 230, 4 + i * 12, 200, 10));
+            lines.add(line(i == 0 ? leftGoesOn : "left below " + i, 0, 190 + i * 12, 200, 10));
+            lines.add(line(i == 0 ? rightGoesOn : "right below " + i, 230, 194 + i * 12, 200, 10));
+        }
+        lines.add(line("A view of the house.", 150, 170, 130, 10));
+        return lines;
+    }
+
+    private static String part(String side, boolean above, String ends, String goesOn) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            String named = side + (above ? " above " : " below ") + i;
+            text.append(above ? (i == 5 ? ends : named) : (i == 0 ? goesOn : named)).append('\n');
+        }
+        return text.toString();
+    }
+
+    @Test
+    void columnsAreReadThroughAPictureWhenTheirSentencesRunOnPastIt() {
+        // An encyclopedia page with a photograph set across both columns: the left column goes on
+        // below it in the middle of a sentence, the right one in the middle of a word.
+        String leftEnds = "the right to go first, granted";
+        String leftGoesOn = "to both sides, was called";
+        String rightEnds = "gave a hand to peo-";
+        String rightGoesOn = "ple in need";
+        String text = ReadingOrder.join(ReadingOrder.group(
+                pageWithAPicture(leftEnds, leftGoesOn, rightEnds, rightGoesOn)));
+        assertEquals(part("left", true, leftEnds, null) + part("left", false, null, leftGoesOn)
+                + "A view of the house.\n"
+                + part("right", true, rightEnds, null) + part("right", false, null, rightGoesOn).stripTrailing(), text);
+    }
+
+    @Test
+    void aLineAcrossTheColumnsEndsTheBandWhenNoSentenceRunsOnPastIt() {
+        // The same page with a heading in place of the caption: the columns above end their
+        // paragraphs and the columns below begin new ones, so the bands are read one after the other.
+        String leftEnds = "and so it ended.";
+        String leftGoesOn = "Another matter begins";
+        String rightEnds = "was the last of them.";
+        String rightGoesOn = "Here a new entry";
+        String text = ReadingOrder.join(ReadingOrder.group(
+                pageWithAPicture(leftEnds, leftGoesOn, rightEnds, rightGoesOn)));
+        assertEquals(part("left", true, leftEnds, null) + part("right", true, rightEnds, null)
+                + "A view of the house.\n"
+                + part("left", false, null, leftGoesOn) + part("right", false, null, rightGoesOn).stripTrailing(), text);
+    }
+
     @Test
     void readingOrderReadsTwoTextColumns() {
         // Two blocks set each for itself: the lines of the right one stand 4 px lower.

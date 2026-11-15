@@ -14,6 +14,11 @@ import static io.github.kamilkrzywanski.ocr.internal.post.LineBoxes.rowTop;
  * and stays whole.
  */
 final class ColumnSection {
+    /** A picture set across the columns leaves a blank band at least this many median lines high. */
+    private static final float FIGURE_GAP = 3f;
+    /** The caption of such a picture has at most this many rows. */
+    private static final int CAPTION_ROWS = 3;
+
     final List<List<TextLine>> rows;
     /** The two sides are columns: {@link #left} is read first, then {@link #right}. */
     final boolean split;
@@ -108,6 +113,40 @@ final class ColumnSection {
             sections.add(of(open, mid, splitter));
         }
         return sections;
+    }
+
+    /**
+     * The index of the section in which the columns of section {@code i} go on below a picture set
+     * across them, or -1. A title across the columns ends a band of columns; a picture does not when
+     * the text runs on past it. Here it does: only the rows of a caption stand between the two
+     * sections, the picture leaves a tall blank band above or below them, and in both columns a
+     * sentence is cut by the picture ({@link ColumnTests#runsOn}).
+     */
+    static int pastFigure(List<ColumnSection> sections, int i, float medianH) {
+        ColumnSection above = sections.get(i);
+        int j = i + 1;
+        while (j < sections.size() && sections.get(j).crossing && j - i <= CAPTION_ROWS) {
+            j++;
+        }
+        if (!above.split || j == i + 1 || j >= sections.size() || !sections.get(j).split) {
+            return -1;
+        }
+        ColumnSection below = sections.get(j);
+        float gap = Math.max(sections.get(i + 1).top() - above.bottom(), below.top() - sections.get(j - 1).bottom());
+        if (gap < FIGURE_GAP * medianH) {
+            return -1;
+        }
+        return ColumnTests.runsOn(last(above.left), first(below.left))
+                && ColumnTests.runsOn(last(above.right), first(below.right)) ? j : -1;
+    }
+
+    private static TextLine first(List<List<TextLine>> rows) {
+        return rows.get(0).get(0);
+    }
+
+    private static TextLine last(List<List<TextLine>> rows) {
+        List<TextLine> row = rows.get(rows.size() - 1);
+        return row.get(row.size() - 1);
     }
 
     /** Vertical words go to the section they overlap most, on the side of their centre; the rest are returned. */

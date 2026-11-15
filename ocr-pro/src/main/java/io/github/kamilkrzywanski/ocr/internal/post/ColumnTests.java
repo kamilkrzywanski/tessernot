@@ -143,6 +143,37 @@ final class ColumnTests {
         return lines == 0 ? 0f : facing / (float) lines;
     }
 
+    /**
+     * Whether a sentence runs on from the last line of a column into the first line of the column
+     * below a picture: the upper line ends in a letter, a digit, a comma or a hyphen, and the lower
+     * one begins with a small letter. A column that ends its paragraph above the picture, or starts
+     * a new one below it, does not run on; with recognition off the texts are empty and nothing does.
+     */
+    static boolean runsOn(TextLine above, TextLine below) {
+        String upper = above.text().strip();
+        String lower = below.text().strip();
+        if (upper.isEmpty() || lower.isEmpty()) {
+            return false;
+        }
+        int last = upper.codePointBefore(upper.length());
+        boolean open = Character.isLetterOrDigit(last) || last == ',' || last == '-' || last == '\u2010'
+                || last == '\u00ad';
+        if (!open) {
+            return false;
+        }
+        for (int i = 0; i < lower.length(); ) {
+            int c = lower.codePointAt(i);
+            if (Character.isLetter(c)) {
+                return Character.isLowerCase(c);
+            }
+            if (Character.isDigit(c)) {
+                return false;
+            }
+            i += Character.charCount(c);
+        }
+        return false;
+    }
+
     /** A fragment that was read: with recognition off every line has an empty text and none is weak. */
     private static boolean weak(TextLine line) {
         return !line.text().isEmpty() && Fragments.is(line);

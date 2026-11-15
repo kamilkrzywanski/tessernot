@@ -15,9 +15,11 @@ and the working method.
   the side, enlarged when small, shrunk when too large for the heap.
 - Blocks side by side are columns, rows of cells or neither by two rules built on the business
   documents; plain rows now beat the layout analysis by ten edits or more on three pages.
-- Open, in the order it would pay: a figure set across two columns, which the engine takes
-  for the end of a band where the columns run on below it (Encyklopedja staropolska in `test`,
-  0.408; "References checked again"), the 1859 note and other rows that would read better as
+- Done on 2026-11-15: a picture set across two columns no longer ends a band when both
+  columns run on past it in the middle of a sentence (Encyklopedja staropolska in `test`,
+  0.408 to 0.005; docs/internals.md, reading order, step 9). It is a rule from one page; a
+  second page of the kind would say whether "both columns" is too strict.
+- Open, in the order it would pay: the 1859 note and other rows that would read better as
   blocks ("Blocks side by side"), small print lost to blur and low resolution ("Pages as a
   phone photographs them"), pages photographed from below (tried and dropped), and a multi-column
   newspaper page the new rules read worse, known only from `test3` ("The held-out sets,
