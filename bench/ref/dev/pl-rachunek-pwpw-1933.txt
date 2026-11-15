@@ -1,0 +1,56 @@
+BILANS
+AKTYWA
+RAZEM OGÓŁEM
+zł gr zł gr
+1. Nieruchomości i ruchomości.
+Place 508.208 65
+Budynki 6,799.420·23
+Instalacje w budynkach 1,875.984·89 8,675.405 12
+Maszyny i urządzenia fabryczne 5,444.818 65
+Ruchomości. 215.306 94 14,843.739 36
+2. Kasa i banki. 1,026.905 86
+3. Weksle 7.272 01
+4. Dłużnicy. 1,198.276 41
+5. Surowce. 952.268 33
+6. Gotowe fabrykaty i półfabrykaty 1,016.824 18 1,969.092 51
+7. Kaucje i wadja 13.893 51
+8. Udziały w innych instytucjach 28.500 —
+9. Papiery procentowe 2,419.100 —
+10. Sumy przechodnie 25.899 08
+21,532.678 74
+PASYWA
+RAZEM OGÓŁEM
+zł gr zł gr
+1. Kapitał Zakładowy 15,000.000 —
+2. Kapitał Zapasowy 473.789 10
+3. Kapitał Amortyzacyjny 3,780.766 46 19,254.555 56
+4. Rezerwa Specjalna 850.000 —
+5. Reszta zysku z lat ubiegłych 25.900 85 875.900 85
+6. Wierzyciele 725.988 80
+7. Sumy przechodnie 187.828 12
+8. Zyski 488.405 41
+21,532.678 74
+RACHUNEK STRAT i ZYSKÓW
+STRATY
+1. Koszty handlowe: ogólne 420.582 04
+administracyjne 427.482 45 848.064 49
+2. Świadczenia socjalne 158.527 95
+3. Amortyzacja 892.981 02
+4. Zysk 488.405 41
+2,387.978 87
+ZARZĄD:
+Dr. Józef Neumann Inż. Karol Chybiński
+KIEROWNIK BIURA RACHUBY:
+Ed. Boerner
+Warszawa, dnia 5 lutego 1934 r.
+ZYSKI
+1. Nadwyżka na fabrykacji 2,218.587 25
+2. Procenty i prowizje 94.228 —
+3. Różne wpływy 75.163 62
+2,387.978 87
+RADA NADZORCZA: Inż. Stefan Przanowski
+Dr. Władysław Mieczkowski
+Jan Kozieł
+Bolesław Oczechowski
+Stanisław Orczykowski
+Dr. Wincenty Taborski

@@ -1,0 +1,48 @@
+RG-OP
+Wniosek o wpis do krajowego rejestru urzędowego podmiotów gospodarki narodowej,
+o zmianę cech objętych wpisem, o skreślenie wpisu
+osoby prawnej, jednostki organizacyjnej niemającej osobowości prawnej
+lub ich jednostki lokalnej
+• We wniosku należy podać dane podmiotu, którego wniosek o wpis, zmianę wpisu albo skreślenie dotyczy, lub jego jednostki lokalnej, której
+wniosek dotyczy; numer identyfikacyjny REGON, o ile został nadany.
+• Informacje o podmiocie, tj. osobie prawnej / jednostce organizacyjnej niemającej osobowości prawnej, są oznaczone literą P, informacje
+o jednostce lokalnej ww. podmiotu – literą L.
+• Wniosek należy wypełnić drukowanymi literami, w przypadku pól wyboru należy zaznaczyć właściwe pole.
+01. (P) Podstawowa forma prawna podmiotu
+1 – osoba prawna 2 – jednostka organizacyjna niemająca osobowości prawnej
+02. (P) Szczególna forma prawna podmiotu (np. spółka cywilna, wspólnota mieszkaniowa)
+03. (P, L) Rodzaj zgłoszenia
+1 – wpis osoby prawnej lub data rozpoczęcia działalności ____-__-__
+jednostki organizacyjnej niemającej osobowości prawnej (RRRR–MM– DD)
+2 – wpis jednostki lokalnej data rozpoczęcia działalności ____-__-__
+(RRRR–MM– DD)
+3 – zmiana cech objętych wpisem data zaistnienia zmiany ____-__-__
+(RRRR–MM– DD)
+4 – skreślenie wpisu data zakończenia działalności ____-__-__
+(RRRR–MM– DD)
+04. (P, L) Numer identyfikacyjny REGON _________ _____
+05. (P) NIP __________
+06. (P, L) Nazwa
+07. (P) Nazwa skrócona (jeśli istnieje)
+08. (P, L) Adres siedziby
+8.1. Województwo 8.2. Powiat 8.3. Gmina/miasto/dzielnica
+8.4. Miejscowość 8.5. Ulica 8.6. Numer porządkowy 8.7. Numer lokalu
+8.8. Kod pocztowy 8.9. Opis nietypowego miejsca lokalizacji
+__-___
+09. (P) Dane kontaktowe (dane fakultatywne)*
+9.1. Numer telefonu siedziby 9.2. Numer faksu siedziby 9.3. Adres e-mail
+9.4. Adres strony internetowej
+10. (P, L) Informacje dotyczące gospodarstwa rolnego
+10.1. Powierzchnia ogólna gospodarstwa rolnego .......... , ....... 10.2. Powierzchnia użytków rolnych .......... , .......
+hektary ary hektary ary
+11. (P) Adres do korespondencji
+11.1. Korespondencję należy 1 – wymieniony w informacji nr 8.1–8.10
+kierować na adres 2 – inny lub do skrytki pocztowej; należy wypełnić odpowiednio informacje nr 11.2–11.14
+11.2. Kraj 11.3. Województwo 11.4. Powiat 11.5. Gmina/miasto/dzielnica
+11.6. Miejscowość 11.7. Ulica 11.8. Numer porządkowy 11.9. Numer lokalu
+11.10. Kod pocztowy 11.11. Skrytka pocztowa
+__-___
+11.12. Opis nietypowego miejsca lokalizacji
+11.13. Nazwa podmiotu, na którego adres jest kierowana korespondencja
+* W przypadku wypełnienia pozycji 9.1, 9.2, 9.3, 9.4 informacje w nich podane podlegają udostępnieniu z rejestru REGON zgodnie z art. 45 ust. 1 ustawy z dnia 29 czerwca 1995 r. o statystyce
+publicznej (Dz. U. z 2024 r. poz. 1799).

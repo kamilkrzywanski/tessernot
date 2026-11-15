@@ -1,0 +1,31 @@
+PRINT FORM
+OMB 3048-0042
+EXPORT- IMPORT BANK TRADE REFERENCE FORM
+Expires 8/31/2028
+Note: This Trade Reference Form should be completed, signed, and dated by the person obtaining the information.
+It should not be completed by any individual closely associated with the Foreign Buyer, including any shareholders,
+employees or related companies of the Foreign Buyer.
+Foreign Buyer name & address
+Name and address of company giving reference:
+Name of individual giving the reference:
+Title: Phone:
+Fax: Email:
+Years of trade experience with Foreign Buyer:
+Estimated current annual sales to Foreign Buyer (specify currency):
+Payment Terms: Credit Limit (specify currency):
+Highest amount owed at one time and paid in the past 12 months (specify currency):
+Please describe security, if any, such as a standby letter of credit, guarantees or collateral. If there is no security, so state.
+Date of last sale (MM/DD/YYYY):
+Current outstanding balance (specify currency):
+Past due balance, if any (specify currency):
+Number of days past due:
+Payment Experience:
+Prompt: 1-30 days slow: 31-60 days slow: 61-90 days slow: 91+ days slow:
+Comments/Reasons for Past Dues:
+Name of company taking reference:
+Name of person taking reference:
+Signature of person taking reference:
+Title: Phone:
+Fax: Email:
+Date (MM/DD/YYY):
+EIB 99-14 (Rev. 12/2024) Page 1 of 2

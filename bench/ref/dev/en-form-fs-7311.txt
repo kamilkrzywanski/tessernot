@@ -1,0 +1,44 @@
+RESET PRINT
+EMPLOYEE’S WITHHOLDING CERTIFICATE
+FOR LOCAL TAXES CITY OR COUNTY
+1. FULL NAME 2. SOCIAL SECURITY NO. 3. AGENCY USE
+4. HOME ADDRESS (STREET, NUMBER, CITY, COUNTY, STATE AND ZIP CODE)
+5. DEPARTMENT - AGENCY - OFFICE 6. PLACE OF EMPLOYMENT (CITY, COUNTY, STATE) 7. MARITAL STATUS
+SINGLE MARRIED
+SEE INSTRUCTIONS BELOW
+8. (CHECK PROPER BOX)
+CITY OR COUNTY EMPLOYED RESIDENT NON RESIDENT
+IF YOU ARE NOT SUBJECT TO LOCAL TAXES
+CHECK HERE AND EXPLAIN BELOW
+9. (CHECK PROPER BOX)
+IF YOUR RESIDENCE IS NOT IN THE SAME STATE AS
+YOUR REGULAR PLACE OF EMPLOYMENT
+DO YOU CONSENT TO WITHHOLDING YES NO
+10. I ESTIMATE THAT % OF MY ANNUAL COMPENSATION IS FOR SERVICES PERFORMED OUTSIDE THE CITY OR COUNTY
+11. TOTAL NUMBER OF EXEMPTIONS (IF APPLICABLE) 12. OTHER ALLOWANCES (IF APPLICABLE) $ 0.00
+13. I CERTIFY THE INFORMATION SUBMITTED ON THIS CERTIFICATE IS TRUE, CORRECT AND COMPLETE TO THE BEST OF MY
+KNOWLEDGE AND BELIEF.
+SIGNATURE: REVIEWED BY:
+The social security number is required under the authority of Executive Order 9397 to provide taxpayer identification. The other
+information is required under the provisions of 5 U.S.C. 5520, Executive Order 11997, dated June 22, 1977, and 31 CFR 215 for the
+purpose of implementing a Federal agreement with the city or county concerned relating to withholding of local income or employment
+taxes pursuant to a city or county ordinance. The information provided will be disclosed to local officials to assure the taxpayer’s
+account has been properly credited for the amounts withheld. Failure to provide the information requested may affect determination of
+the proper amount to be withheld.
+INSTRUCTIONS
+This certificate is to be filed with your employer to be used as the basis to (1) either withhold or not withhold local taxes and (2)
+determine the proper amount to be withheld. A new certificate should be filed whenever your tax status changes. Failure to submit this
+form will result in the maximum withholding if you are employed in or reside in the city or county.
+EXPLANATION OF CERTAIN ITEMS
+Item 8. – If the local ordinance contains a provision which exempts you from the local tax, you should complete this item by placing a
+check mark in the box to indicate that you are not subject to the tax, and explain below.
+I am NOT subject to the local tax and tax withholding because:
+Item 9. – Out of State employees. Local taxes will not be withheld from your compensation if you are not a resident of or are not
+employed in the State in which the city or county located, unless you consent to the withholding. If you are subject to the local tax, you
+must indicate either that you do, or do not, consent to withholding by checking the proper box.
+Item 10. – Based on the local ordinance you may be liable for taxes only on compensation paid for service performed within the city or
+county. If so, and if you perform some part of your services outside the city or county, away from your regular place of employment, the
+amount to be withheld from your compensation may be reduced to approximate your actual tax liability by completing this item with an
+estimate of the percentage of your total compensation paid which is for services performed outside the city or county. Your withholding
+will be adjusted only where a substantial amount is involved, i.e. 25%, or more of your services are performed outside the city or county.
+FS Form 7311 Department of the Treasury | Bureau of the Fiscal Service Revision June 2017

@@ -1,0 +1,5 @@
+Parkschein-Nr. 3944 P09
+Datum PARKZEIT ENDET Uhrzeit
+09.03.12 15:24
+Bezahlt Standort
+1,00EUR POSTSTR. 14:19

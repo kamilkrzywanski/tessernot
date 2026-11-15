@@ -1,0 +1,90 @@
+CFTC CODE NO.
+COMMODITY FUTURES TRADING COMMISSION OMB No. 3038-0009
+STATEMENT OF CASH POSITIONS IN GRAINS,
+SOYBEANS, SOYBEAN OIL, AND SOYBEAN MEAL Report as of close of business Friday (DATE)
+NOTICE: Failure to file a report required by the Commodity Exchange Act and the regulations thereunder, or the filing of a false report, may
+be basis for administrative action under 7 U.S.C. Section 9, and may be punishable by fine or imprisonment, or both, under 7 U.S.C. Section
+13, or 18 U.S.C. Section 1001. Public reporting burden for this collection of information is estimated to average 20 minutes per response,
+including the time for reviewing instructions, searching existing data sources, gathering and maintaining the data needed, and completing and
+reviewing the collection of information. Send comments regarding this burden estimate or any other aspect of this collection of information,
+including suggestions for reducing this, to Agency Clearance Officer, Office of General Counsel, Commodity Futures Trading Commission,
+1155 21st Street, NW, Washington, DC 20581; and to the Office of Information and Regulatory Affairs, Office of Management and Budget,
+Washington, DC 20503.
+PART 1: FIXED-PRICE CASH POSITIONS IN TERMS OF COMMODITY FOR FUTURE DELIVERY
+Report all quantities in thousand bushels, i.e., 000 omitted. Show products and byproducts in terms of ‘000-bushel equivalents.
+If you have no cash position, write “None” on the form and return it to CFTC.
+FUTURES
+MARKET
+USED FOR
+HEDGING
+CASH COMMODITY
+HEDGED IN
+FUTURES
+LONG CASH
+(1) STOCKS
+OWNED
+‘000 Bushels
+(2) PURCHASE
+COMMITMENTS
+‘000 Bushels
+(3) TOTAL
+LONG
+‘000 Bushels
+SHORT CASH
+(4) SALES
+COMMITMENTS
+‘000 Bushels
+WHEAT
+Wheat
+Wheat Products (in ‘000 bu. equiv.)
+Other*
+Total
+CORN
+Corn
+Corn Products (in ‘000 bu. equiv.)
+Other*
+Total
+OATS
+Oats
+Oat Products (in ‘000 bu. equiv.)
+Other*
+Total
+Beans
+SOYBEANS Oil & Oil Products (in ‘000 bu. equiv.)
+SOYBEAN OIL Meal & Meal Products (in ‘000 bu. equiv.)
+SOYBEAN MEAL Other*
+Total
+(OTHER
+FUTURES
+MARKET)
+Grain (same as futures)
+Products (of same futures (in ‘000 bu. equiv.)
+Other*
+Total
+* Use “Other” to identify commodities you are cross hedging. Show quantities in 1,000-bushel equivalents of the commodity futures being used for
+hedging and complete Part II to show the quantities in terms of the actual commodity
+PART II: FIXED-PRICE CASH POSITIONS FOR CROSS HEDGES IN TERMS OF ACTUAL CASH COMMODITY
+FUTURES
+MARKET
+USED FOR
+HEDGING
+CASH COMMODITY
+(Specify Commodity or Product)
+UNITS
+(Specify Tons,
+Cwt., Lbs., Bu.,
+Etc.)
+LONG CASH
+STOCK
+OWNED
+(1)
+PURCHASE
+COMMITMENTS
+(2)
+SHORT CASH
+SALE
+COMMITMENTS
+(3)
+FURTHER EXPLANATION/CORRECTION OF PREVIOUS REPORTS
+CFTC Form 204 (10-00)
+Previous Editions Obsolete

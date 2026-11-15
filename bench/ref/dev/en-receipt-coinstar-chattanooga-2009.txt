@@ -1,0 +1,14 @@
+www.coinstar.com
+eCertificate Receipt
+BI-LO
+14500315
+703 Signal Mtn Rd
+Chattanooga, TN 37405
+Dollars 0
+Half-Dollars 0
+Quarters 25
+Dimes 30
+Nickels 71
+Pennies 1336
+Amt Inserted: $26.16
+eCert Balance: $26.16

@@ -1,0 +1,51 @@
+OMB Control No. 3133-0135
+Expiration Date: 9/30/2026
+National Credit Union Administration
+AUTHORIZATION AGREEMENT FOR ELECTRONIC FUNDS TRANSFER PAYMENTS
+In accordance with the Debt Collection Improvement Act of 1996 (Public Law 104-134), the National Credit Union
+Administration (NCUA) must make payments to credit unions by Electronic Funds Transfer (EFT).
+PART I – MUST BE COMPLETED – Please print
+NCUA CHARTER NUMBER (FCU) OR INSURANCE CERTIFICATE (FISCU)
+CREDIT UNION NAME
+ADDRESS
+CITY STATE ZIP
+EMPLOYER’S ID NO. [TAXPAYER ID NO].
+CONTACT PERSON PHONE NO.
+EMAIL
+FINANCIAL INSTITUTION NAME
+9-DIGIT ROUTING & TRANSIT NO. (RTN)
+ACCOUNT NO.
+(Must be at least 4 digits, and only contain numbers, spaces, or dashes)
+If using a Corporate credit union, please contact them to verify the correct RTN and account numbers for FedACH use.
+PART II – HIGHLY RECOMMEND
+Pursuant to Executive Order 14247, the NCUA no longer accepts checks as a form of payment. Credit unions
+are invited to enroll in the U.S. Department of Treasury Pay.gov direct debit program. Once enrolled, the NCUA
+will automatically debit the invoice amount from your account, ensuring timely payment.
+Yes, please direct debit my credit union’s invoiced amounts through Pay.Gov.
+PART III – MUST BE COMPLETED
+I authorize the NCUA to initiate electronic funds transfer payments to the credit union (and from the credit union if
+direct debit option was elected).
+This authorization replaces all previous authorizations and remains in full force and effect unless NCUA receives a new
+authorization, 30 days prior to the next established payment date.
+NAME OF AUTHORIZED
+REPRESENTATIVE TITLE
+SIGNED DATE
+PLEASE KEEP A COPY FOR YOUR RECORDS.
+Please complete and return to:
+By Fax to:
+703-837-2400
+By Email to:
+ncusifach@ncua.gov
+National Credit Union Administration
+OR
+By Mail to:
+National Credit Union Administration
+Office of the Chief Financial Officer
+1775 Duke Street
+Alexandria, VA 22314-3428
+PAPERWORK REDUCTION ACT STATEMENT: According to the Paperwork Reduction Act of 1995, no persons are required to respond to a collection of information unless it displays a valid OMB control number.
+The time required to complete this collection of information is estimated to average 15 minutes per response. This includes time for reviewing the instructions, gathering needed information, and completing and
+reviewing the information. If you have comments regarding this burden estimate or any other aspect of this collection of information, including suggestions for reducing this burden, send comments to ncusif@ncua.gov.
+PRIVACY NOTICE: The personally identifiable information collected is used for following up with individuals regarding their interactions with federal and federally insured credit unions. NCUA securely maintains all personally
+Identifiable information provided via emails and mail, and only shares it outside of NCUA if required by law or regulation. For additional information, please contact privacy@ncua.gov.
+NCUA 2005

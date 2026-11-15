@@ -1,0 +1,43 @@
+U.S. Department
+of Transportation
+Federal Aviation
+Administration
+Commercial Space Transportation
+800 Independence Ave., S.W., Rm 331
+Washington, DC 20591
+September 7, 2023
+Shana Diez
+Director of Starship Reliability
+Space Exploration Technologies
+1 Rocket Road
+Hawthorne, California 90250
+Dear Ms. Diez,
+On April 20, 2023, Space Exploration Technologies, Inc. (SpaceX) conducted Starship
+Super Heavy launch operations from its Boca Chica, Texas site under Federal Aviation
+Administration (FAA) launch license VOL 23-129. During lift-off, structural failure of the
+launch pad deck foundation occurred, sending debris and sand into the air. On ascent, the
+vehicle deviated from the expected trajectory, resulting in the Autonomous Flight Safety
+System (AFSS) issuing a destruct command. After an unexpected delay following AFSS
+activation, Starship broke up, resulting in the loss of the launch vehicle.
+The FAA classified the Starship Launch as a mishap, as defined in Title 14 Code of Federal
+Regulations (14 CFR) § 401.7 paragraphs (2), (6), and (7).¹
+Following the launch, the FAA, consistent with its statutory authority under Title 51 of the
+U.S. Code and 14 CFR § 450.173(e), required SpaceX to conduct a mishap investigation in
+accordance with its approved mishap plan under FAA oversight. The FAA conducted a final
+review of the mishap report, dated August 21, 2023². The primary focus of this review was
+to ensure operator compliance with 14 CFR § 450.173 – “mishap plan requirements,
+including the identification of root cause(s) and implementation of corrective actions
+[preventative measures] to avoid a recurrence of the event.” The FAA has been provided
+with sufficient information and accepts the root causes and corrective actions described in
+the mishap report. Consequently, the FAA considers the mishap investigation that SpaceX
+was required to complete to be concluded.
+The final mishap investigation report cited a total of sixty-three (63) corrective actions for
+SpaceX to implement. These included actions to address redesigns of vehicle hardware to
+prevent leaks and fires, redesign of the launch pad to increase its robustness, incorporation
+of additional reviews in the design process, additional analysis and testing of safety critical
+¹ Additionally, the FAA granted official observer status to National Aeronautics and Space Administration and
+National Transportation Safety Board representatives. In accordance with the mishap plan, SpaceX established
+an investigation team that utilized a well-established fault tree tool to ascertain the most likely root cause(s) of
+the mishap.
+² SpaceX Starship Orbital Test Flight 1 Final Mishap Investigation Report, August 21, 2023 (“the mishap
+report”).

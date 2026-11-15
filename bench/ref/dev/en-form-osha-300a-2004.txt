@@ -1,0 +1,56 @@
+OSHA’s Form 300A (Rev. 04/2004)
+Summary of Work-Related Injuries and Illnesses
+Note: You can type input into this form and save it.
+Because the forms in this recordkeeping package are “fillable/writable”
+PDF documents, you can type into the input form fields and
+then save your inputs using the free Adobe PDF Reader.
+Year 20
+U.S. Department of Labor
+Occupational Safety and Health Administration
+Form approved OMB no. 1218-0176
+All establishments covered by Part 1904 must complete this Summary page, even if no work-related injuries or illnesses occurred during the year.
+Remember to review the Log to verify that the entries are complete and accurate before completing this summary.
+Using the Log, count the individual entries you made for each category. Then write the totals below, making sure you've added the entries from
+every page of the Log. If you had no cases, write “0.”
+Employees, former employees, and their representatives have the right to review the OSHA Form 300 in its entirety. They also have limited access
+to the OSHA Form 301 or its equivalent. See 29 CFR Part 1904.35, in OSHA’s recordkeeping rule, for further details on the access provisions for
+these forms.
+Number of Cases
+Total number of Total number of Total number of cases Total number of
+deaths cases with days with job transfer or other recordable
+away from work restriction cases
+0 0 0 0
+(G) (H) (I) (J)
+Number of Days
+Total number of days Total number of days of
+away from work job transfer or restriction
+0 0
+(K) (L)
+Injury and Illness Types
+Total number of . . .
+(M)
+(1) Injuries 0 (4) Poisonings 0
+(2) Skin disorders 0 (5) Hearing loss 0
+(3) Respiratory conditions 0 (6) All other illnesses 0
+Post this Summary page from February 1 to April 30 of the year following the year covered by the form.
+Public reporting burden for this collection of information is estimated to average 58 minutes per response, including time to review the instructions, search and gather the data needed, and
+complete and review the collection of information. Persons are not required to respond to the collection of information unless it displays a currently valid OMB control number. If you have any
+comments about these estimates or any other aspects of this data collection, contact: US Department of Labor, OSHA Office of Statistical Analysis, Room N-3644, 200 Constitution Avenue, NW,
+Washington, DC 20210. Do not send the completed forms to this office.
+Establishment information
+Your establishment name
+Street
+City State Zip
+Industry description (e.g., Manufacture of motor truck trailers)
+North American Industrial Classification (NAICS), if known (e.g., 336212)
+Employment information (If you don't have these figures, see the
+Worksheet on the next page to estimate.)
+Annual average number of employees
+Total hours worked by all employees last year
+Sign here
+Knowingly falsifying this document may result in a fine.
+I certify that I have examined this document and that to the best of
+my knowledge the entries are true, accurate, and complete.
+Company executive Title
+Phone Date
+Reset

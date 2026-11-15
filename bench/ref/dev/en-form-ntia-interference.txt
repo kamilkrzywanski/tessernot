@@ -1,0 +1,35 @@
+NTIA Interference Report Form
+Please complete the form with the best available data. Indicate if data is not available with n/a.
+When completed click on the “Submit Form” button below to send the form to NTIA.
+Required Field*:
+1. DATE*: 2. IS NTIA ASSISTANCE REQUIRED*:
+3. CASE STATUS: 4. TYPE OF INTERFERENCE:
+5. AGENCY CONTACT INFORMATION 6. INTERFERENCE SOURCE CONTACT INFORMATION
+Name (Last, First)*: Name (Last, First):
+Agency*: Agency:
+Address*: Address:
+City*: State*: City: State:
+Phone*: Zip Code*: Phone: Zip Code:
+Email*: Email:
+7. STATION AFFECTED BY INTERFERENCE 8. STATION CAUSING INTERFERENCE
+GMF S/N: GMF S/N or Call Sign:
+System Name: System Name:
+Frequency Range: Address:
+Address: City: State:
+City: State: Zip Code:
+Zip Code: Latitude/Longitude:
+Other (e.g. Latitude/Longitude or address where you receive Other (e.g. Antenna Structure Registration No):
+interference that is not co-located with the address above):
+9. DESCRIPTION OF INTERFERENCE
+a. Describe Interference
+b. Date Interference Started f. Time Of Day Interference Is Most Disruptive
+c. Is Interference Harmful To Safety Of Life g. Number Of Affected Users
+d. Severity Of Interference h. Incident Rate
+e. Duration Of An Interference Incident i. Duration Of Overall Interference Problem
+j. Describe Any Mitigation Action Taken
+10. SUPPLEMENTAL DATA (Files can be attached to the email to NTIA after the Submit Form button below is activated)
+a. Attachment(s) of recording (e.g. spectrum analyzer screenshots, sound files, directional finding plot):
+b. Attachment(s) of equipment specifications (e.g. model #, data sheets, SPS #):
+c. Recent changes to equipment:
+d. Other:
+Reset Form Submit Form Save Form Print Form

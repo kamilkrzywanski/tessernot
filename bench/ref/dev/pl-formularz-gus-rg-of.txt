@@ -1,0 +1,43 @@
+RG-OF
+Wniosek o wpis do krajowego rejestru urzędowego podmiotów gospodarki narodowej,
+o zmianę cech objętych wpisem, o skreślenie wpisu
+osoby fizycznej prowadzącej działalność gospodarczą lub jej jednostki lokalnej
+niepodlegających wpisowi do CEIDG
+• We wniosku należy podać dane podmiotu, którego wniosek o wpis, zmianę wpisu albo skreślenie dotyczy, lub jego jednostki lokalnej, której
+wniosek dotyczy; numer identyfikacyjny REGON, o ile został nadany.
+• Informacje odnoszące się do osoby fizycznej są oznaczone literą F, dotyczące jednostki lokalnej ww. podmiotu – literą L.
+• Wniosek należy wypełnić drukowanymi literami, w przypadku pól wyboru należy zaznaczyć właściwe pole.
+01. (F, L) Wniosek dotyczy działalności:
+1 – rolniczej 2 – zakładu leczniczego podmiotu leczniczego 3 – innej niż wym. w inf. 01.1 i 01.2
+02. (F, L) Rodzaj zgłoszenia:
+1 – wpis osoby fizycznej prowadzącej działalność gospodarczą data rozpoczęcia działalności ____-__-__
+(RRRR–MM–DD)
+2 – wpis jednostki lokalnej data rozpoczęcia działalności ____-__-__
+(RRRR–MM–DD)
+3 – zmiana cech objętych wpisem data zaistnienia zmiany ____-__-__
+(RRRR–MM–DD)
+4 – skreślenie wpisu data zakończenia działalności ____-__-__
+(RRRR–MM–DD)
+03. (F, L) Numer identyfikacyjny REGON _________ _____
+04. (F) NIP __________
+05. (F) Dane identyfikacyjne osoby fizycznej prowadzącej działalność gospodarczą
+5.1. Obywatelstwo polskie 5.2. Numer PESEL (o ile posiada)
+tak nie ___________
+5.3. Nazwisko 5.4. Imię pierwsze 5.5. Imię drugie
+06. (F) Adres miejsca zamieszkania
+6.1. Kraj 6.2. Województwo 6.3. Powiat 6.4. Gmina/miasto/dzielnica
+6.5. Miejscowość 6.6. Ulica 6.7. Numer porządkowy 6.8. Numer lokalu
+6.9. Kod pocztowy 6.10. Opis nietypowego miejsca zamieszkania
+__-___
+07. (F, L) Nazwa
+08. (F) Nazwa skrócona (jeśli istnieje)
+09. (F, L) Adres siedziby
+9.1. Województwo 9.2. Powiat 9.3. Gmina/miasto/dzielnica
+9.4. Miejscowość 9.5. Ulica 9.6. Numer porządkowy 9.7. Numer lokalu
+9.8. Kod pocztowy 9.9. Opis nietypowego miejsca lokalizacji
+__-___
+10. (F) Dane kontaktowe (dane fakultatywne)*
+10.1. Numer telefonu siedziby 10.2. Numer faksu siedziby 10.3. Adres e-mail
+10.4. Adres strony internetowej
+* W przypadku wypełnienia pozycji 10.1, 10.2, 10.3, 10.4 informacje w nich podane podlegają udostępnieniu z rejestru REGON zgodnie z art. 45 ust. 1 ustawy z dnia 29 czerwca 1995 r. o statystyce
+publicznej (Dz. U. z 2024 r. poz. 1799).

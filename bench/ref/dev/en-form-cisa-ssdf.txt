@@ -1,0 +1,30 @@
+OMB Control #: 1670-0052
+Expiration Date: 03/31/2027
+Department of Homeland Security
+Cybersecurity and Infrastructure Security Agency (CISA)
+Secure Software Development Attestation Form Instructions
+Read all instructions before completing this form
+Privacy Act Statement
+[NOTE: This Privacy Act Statement is unique to DHS. All agencies using this common form will
+need to provide an agency-unique Privacy Act Statement when they request to use this form.
+Each agency using this common form should provide Privacy Act Statements that conform to its
+applicable agency procedures and requirements.]
+Authority: 44 U.S.C. § 3554, Executive Order (E.O.) 14028, “Improving the Nation’s
+Cybersecurity,” and OMB Memorandum M-22-18, “Enhancing the Security of the Software
+Supply Chain through Secure Software Development Practices,” as amended by OMB
+Memorandum M-23-16, “Update to Memorandum M-22-18, Enhancing the Security of the
+Software Supply Chain through Secure Software Development Practices,” authorize the
+collection of this information.
+Purpose: The purpose of this form is to provide the Federal Government assurances that software
+used by agencies is securely developed.
+Background: This information may be disclosed as generally permitted under Executive Order
+14028, Improving the Nation’s Cybersecurity (E.O. 14028) and Memorandum M-22-18,
+“Enhancing the Security of the Software Supply Chain through Secure Software Development
+Practices” (M-22-18), as amended. This form collects contact information from vendor
+employees who make the attestation. For DHS, information may be disclosed as necessary and
+authorized by the routine uses published in DHS/ALL-002 Department of Homeland Security
+(DHS) Mailing and Other List System, November 25, 2008, 73 FR 71659.
+Failure to provide any of the information requested may result in the agency no longer utilizing
+the software at issue. Willfully providing false or misleading information may constitute a
+violation of 18 U.S.C. § 1001, a criminal statute.
+1
