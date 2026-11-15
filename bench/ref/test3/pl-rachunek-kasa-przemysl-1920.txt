@@ -3,7 +3,7 @@ IV. Rachunek Bilansu
 Przemyskiej Kasy Zaliczkowej Rzemieślników i Rolników
 wedle stanu z dnia 31. grudnia 1920 r.
 Stan bierny: Stan czynny:
-K h k h
+K h K h
 589.495 12 Udziały Pożyczki skryptowe 1,081.965 36
 121 825 95 Fundusz rezerwowy Pożyczki hipoteczne 162 362 24
 112.287 36 Fundusz inwal. i wdów Pożyczki wekslowe 746.405 —
@@ -11,10 +11,10 @@ K h k h
 1.357 35 Rezerwa strat Ruchomości 34 888 05
 2,193 879 11 Wkładki na rach. bierz. Lokacje 66.917 43
 171.428 57 Wierzyciele Zaliczki procesowe 4.914 62
-281 36 Rezerwa kursowa Zaliczki notarialne 188 —
+281 36 Rezerwa kursowa Zaliczki notarjalne 188 —
 13.329 61 Odsetki pobrane na 1921 r. Rachunki różnych 1,031.924 82
 91 666 03 Zysk za rok 1920 Zapasy administr. 4.775 35
-Zaliczki na place 27 488 58
+Zaliczki na płace 27 488 58
 Rk. Tow. ubezp. 402 60
 Rachunek kasy 105 967 19
 3.340.247 24 Razem 3.340 247 24

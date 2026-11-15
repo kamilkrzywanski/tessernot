@@ -4,7 +4,7 @@ CBD Belapur,Navi Mumbai
 Ph: 9653245007, 9082931031
 TAX INVOICE
 Date : 28/01/26 Bill No. : 273
-T.No. : 21 W. No. : 2
+T.No.: 21 W. No. : 2
 Particulars Qty Rate Amount
 VEG BIRYANI 1 152.38 152.38
 TRIPLE SEZ FRIED RICE 1 200 200
@@ -15,8 +15,7 @@ Sub Total : 500.00
 SGST @2.5% : 12.50
 CGST @2.5% : 12.50
 Food Total : 525.00
-Total : 525
-5/5/2
+5/5/2 Total : 525
 GST NO.27AACFH6768G1Z4 (03:11 PM)
-FSSAI NO.11517/01/000531
+FSSAI NO.11517017000531
 E.&O.E. Thank You Visit Again

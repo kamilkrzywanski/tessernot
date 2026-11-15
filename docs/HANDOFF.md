@@ -558,14 +558,42 @@ the e-mail footnotes of both arXiv pages, read after the right column though pri
 left. On the Mennica bill of `test` the rotated margin line is legible (the note says cut
 off) and the typed `28 maja` stands on a line of its own, unlike the other fill-ins.
 
-**624 new documents, 2026-11-15, waiting.** A collecting session pushed 624 business documents
-(351 Polish, 273 English: 178 forms, 177 notices, 116 letters, 86 invoices, 67 receipts)
-straight into `dev`. They were taken out again the same day, unchecked: their references are
-in `bench/ref/todo/`, their manifest rows have the set `todo`, their pictures stay in
-`bench/data`. Nothing has been scored on them and nobody has looked at them. Before they join
-a set: check every reference against its picture (see "Which model checks references"),
-reject what is unfit, and split them by a rule fixed beforehand, per kind and language, into
-`dev` and a new held-out set. `dev` stays at 105 documents until then.
+**624 new documents, 2026-11-15: 45 dealt to the sets, 579 waiting.** A collecting session
+pushed 624 business documents (351 Polish, 273 English: 178 forms, 177 notices, 116 letters, 86
+invoices, 67 receipts) straight into `dev`. They were taken out again the same day, unchecked,
+into `bench/ref/todo` (set `todo` in the manifest; the pictures stay in `bench/data`). Nothing
+has been scored on them.
+
+The owner then asked for 50 of them to be reviewed and dealt to `dev`, `test`, `test2` and
+`test3`. The rule was fixed before any page was opened or read by an engine: eight groups
+(English receipts, invoices, letters, forms; Polish accounts, letters, forms, notices), the
+first six or seven of each in the order of sha256 of the name, the sets dealt inside each group
+in the cycle test3, dev, test2, test3, dev, test, test3. Each reference was checked by a Fable
+checker against crops (the brief of the reference check plus questions on fitness). Taken in:
+45 (`dev` 14, `test` 7, `test2` 7, `test3` 17; the sets have 119, 34, 27 and 114 documents).
+Rejected, with the reason in the manifest note: the Łowicz notice of 1942 (halftone too coarse
+to confirm the small print), the NSLC receipt (a printed jar label beside it, not in the
+reference), the Graham bill of 1966 (230 scattered characters, no order to defend), the KWP
+Lublin letter (two named private persons at what may be a home address), the Watkins-Johnson
+invoice of 1972 (a blurred carbon copy). The held-out sets were given most on purpose: they
+were thin in business documents. This overrides the older rule that nothing joins a set once
+it has been scored; the manifest note of each document carries the date it joined.
+
+Three things the review showed about `todo`: (1) receipts named `en-receipt-…` are often not
+English: of the first twenty in the order of the rule, eleven are German, Swedish, Indonesian,
+Czech, Dutch, Chinese or Thai; they were held back with a note. (2) `pl-rachunek-…` are
+balance sheets and profit-and-loss accounts, not invoices; their kind is still `invoice`. (3)
+Many references were drafted from a PDF text layer (`pdftotext`), some of them from an OCR
+layer; the checked ones agreed with the picture. The collectors' conventions also differ where
+the rules are silent: fill-in dots and underscore masks of blank forms (kept in the GUS form,
+left out in others), the lettering of an electronic-signature widget (left out), wordmarks in
+plain type (now kept: Guggenheim), three-block letterheads of congressional letters read
+line by line across the blocks.
+
+Not done: none of the 45 has been read by any engine, so no table has them. `dev` and `test`
+can be scored again at any time (their tables then need rebuilding for 119 and 34 documents);
+`test2` and `test3` wait for the owner's word, as before. Pace: the owner's usage limits are
+tight; checkers run two at a time at most (one task costs 100 to 180 thousand tokens).
 
 **Which model checks references, 2026-11-15.** Measured on seven documents of the third batch
 with the references as delivered and the same brief: of the 11 corrections that change a
@@ -672,8 +700,8 @@ Sets and their status, see [benchmark.md](benchmark.md):
 | `test2` (20) | Scored three times, last on 2026-11-15. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
 | `test3` (97) | Scored on 2026-11-14 for the box threshold and the dropping of fragments, and on 2026-11-15 with the finished engine, Tesseract and RapidOCR (benchmark.md, "Results on `test3`"). Spent for tuning, like `test2`: its pages have not been looked at and must not be. Known by its score only: the Orzeł Biały of 1831 reads much worse since the rules of 2026-11-15. |
 
-Business documents are thin in every set. `test3` has been scored, so nothing more
-goes into it; new held-out documents make a new set.
+Business documents are thin in every set. New documents may join a held-out set only if no engine has read them and their
+manifest note says when they joined (the owner's decision of 2026-11-15).
 
 ### Collecting documents
 

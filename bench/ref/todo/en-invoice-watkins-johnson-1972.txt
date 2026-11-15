@@ -17,7 +17,7 @@ Suite #220 SHIPMENT:
 Rockville, Maryland 20850 PARTIAL
 COMPLETE
 ITEM NO. QUANTITY DESCRIPTION UNIT PRICE AMOUNT
-- 1 1 Receiving System, Type RS-111-18-12, Ser.#132 - $3500.00
+1 1 Receiving System, Type RS-111-18-12, Ser.#132 $3500.00
 Customer did not receive manual when equipment was sold.
 Ship or mail one manual to the following address:
 Mc Cord Associates

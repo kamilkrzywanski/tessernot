@@ -11,6 +11,17 @@ them. This benchmark uses public documents with references transcribed by hand, 
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below), and a third time on 2026-11-15 with the engine of that day, built on `dev` and `test` only. **The honest number.** Do not tune on it. |
 | `test3` | 97 (47 PL, 50 EN), 245,601 characters | Collected without looking at any engine output and checked a second time against the images. Scored on 2026-11-14 to decide the box threshold and the dropping of fragments, and on 2026-11-15 with the engine of that day and the two other engines (see "Results on `test3`"); three of its pages had been scored by mistake on 2026-11-14. It is spent for tuning: do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups. |
 
+**45 documents joined the sets on 2026-11-15**, after the scoring in this document: 14 went to
+`dev` (119 now), 7 to `test` (34), 7 to `test2` (27) and 17 to `test3` (114). They are business
+documents (receipts, invoices and accounts, letters, forms, notices) taken from 624 newly
+collected ones by a rule fixed beforehand: eight groups by kind and language, the first of each
+in the order of a hash of the name, the sets dealt in a fixed cycle, all before any engine
+read them; each reference was then checked against its picture and five pages were rejected.
+The held-out sets got most of them because they were thin in business documents. **The result
+tables below are for the sets as they were before** (105, 27, 20 and 97 documents); for
+`test2` and `test3` they are also from before the references were checked a third time. The
+document counts and character totals in the table above are those earlier ones as well.
+
 ## Rules for using the sets
 
 - **Find and fix on `dev`, report on a set nobody has tuned on.** A rule or threshold changed
@@ -37,8 +48,8 @@ missing. The references are in `bench/ref/<set>/` and carry the same attribution
 
 | Kind | dev | test | test2 | test3 |
 | --- | --- | --- | --- | --- |
-| invoices, bills, receipts | 15 PL, 16 EN | 6 PL, 2 EN | 2 PL, 2 EN | 6 PL, 9 EN |
-| letters, forms, notices | 27 PL, 23 EN | 4 PL, 4 EN | 1 PL, 1 EN | 2 PL, 1 EN |
+| invoices, bills, receipts | 17 PL, 18 EN | 7 PL, 3 EN | 3 PL, 4 EN | 9 PL, 14 EN |
+| letters, forms, notices | 33 PL, 27 EN | 7 PL, 5 EN | 3 PL, 3 EN | 7 PL, 5 EN |
 | books, dictionaries, encyclopedias | 3 PL, 3 EN | 5 PL | 4 PL, 2 EN | 21 PL, 18 EN |
 | newspapers, journals, papers | 5 PL, 5 EN | 3 EN | 2 PL, 3 EN | 10 PL, 16 EN |
 | gazettes, official journals | 5 PL, 2 EN | 2 PL, 1 EN (other) | 1 PL, 2 EN | 6 PL, 6 EN |
