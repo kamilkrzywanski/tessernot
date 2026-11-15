@@ -4,7 +4,7 @@ These are public documents with references transcribed by hand. Read
 [docs/benchmark.md](../docs/benchmark.md) for the rules, the results and how to reproduce them.
 
 - `manifest.tsv`: source URL, SHA-256, license and author of every document, and its set:
-  - `dev` (70 documents): used to find and fix problems. Numbers on it are not independent.
+  - `dev` (105 documents): used to find and fix problems. Numbers on it are not independent.
   - `test` (27 documents): scored once in the previous round, then used to find the layout
     problems of this one. No longer independent.
   - `test2` (20 documents): scored at the end of this round and again after a change built on

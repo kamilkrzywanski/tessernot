@@ -6,7 +6,7 @@ them. This benchmark uses public documents with references transcribed by hand, 
 
 | Set | Documents | Role |
 | --- | --- | --- |
-| `dev` | 70 (37 PL, 33 EN), 148,127 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, 3 Official Journal pages moved from `test3` on 2026-10-15, and 31 business documents (receipts, invoices, letters, memos, forms) added on 2026-11-14. The tables below are still those of the first 39 documents (110,882 characters). Its numbers are **not independent**. |
+| `dev` | 105 (55 PL, 50 EN), 203,320 characters | Used to find and fix problems: the first 20 documents, 16 multi-column pages added for the reading-order work, 3 Official Journal pages moved from `test3` on 2026-10-15, and 66 business documents (receipts, invoices, letters, memos, forms, notices) added in three batches on 2026-11-14 and 2026-11-15. Its numbers are **not independent**. |
 | `test` | 27 (18 PL, 9 EN), 59,772 characters | Scored once, before the reading-order work. Its failures then pointed at what to fix, so it is **no longer independent** either. |
 | `test2` | 20 (10 PL, 10 EN), 82,338 characters | Collected during the reading-order work, without looking at any engine output, and scored at the end; scored again after the column-gutter change, which was built on `dev` only (see below). **The honest number.** Do not tune on it. |
 | `test3` | 97 (47 PL, 50 EN), 245,601 characters | Collected without looking at any engine output and checked a second time against the images. Scored once, on 2026-11-14, to decide the box threshold and the dropping of fragments (see "Results on `test3`"); three of its pages had been scored by mistake the same day. It is spent for tuning: do not tune on it. 77 of its pages are books, newspapers and gazettes, so its headline number is the mean of the three document groups. |
@@ -37,12 +37,12 @@ missing. The references are in `bench/ref/<set>/` and carry the same attribution
 
 | Kind | dev | test | test2 | test3 |
 | --- | --- | --- | --- | --- |
-| invoices, bills, receipts | 3 PL, 3 EN | 6 PL, 2 EN | 2 PL, 2 EN | 6 PL, 9 EN |
-| letters, forms, notices | 5 PL, 5 EN | 4 PL, 4 EN | 1 PL, 1 EN | 2 PL, 1 EN |
+| invoices, bills, receipts | 15 PL, 16 EN | 6 PL, 2 EN | 2 PL, 2 EN | 6 PL, 9 EN |
+| letters, forms, notices | 27 PL, 23 EN | 4 PL, 4 EN | 1 PL, 1 EN | 2 PL, 1 EN |
 | books, dictionaries, encyclopedias | 3 PL, 3 EN | 5 PL | 4 PL, 2 EN | 21 PL, 18 EN |
 | newspapers, journals, papers | 5 PL, 5 EN | 3 EN | 2 PL, 3 EN | 10 PL, 16 EN |
 | gazettes, official journals | 5 PL, 2 EN | 2 PL, 1 EN (other) | 1 PL, 2 EN | 6 PL, 6 EN |
-| other | | | | 2 PL tickets |
+| other | 1 EN | | | 2 PL tickets |
 
 Most pages of books, newspapers and gazettes have two or more columns: dictionaries and
 encyclopedias, the Official Journal of the EU, Dziennik Ustaw, 19th-century newspapers with three
@@ -104,8 +104,8 @@ move at three decimals (0.0461 to 0.0462). The other ocr-pro columns of those ro
 gray pages of `test2` (Tesco 1994, NSAM 125, Przegląd Tygodniowy 1903) were not rescored.
 
 All engines ran on one laptop: Intel Core i7-1365U (2 performance + 8 efficiency cores,
-12 threads), Linux, OpenJDK 21.0.12, in one session on 2026-10-15 with no other heavy job
-running, so the times can be compared across engines. The page time is the median over the
+12 threads), Linux, OpenJDK 21.0.12. The times of `test2` are from one session on 2026-10-15
+with no other heavy job running, so they can be compared across engines. The page time is the median over the
 documents of the set; what each engine's time includes is under [Reproduce](#reproduce).
 
 Each set has two tables: one for the whole set, and one with the pooled CER of each document
@@ -137,10 +137,10 @@ neither.
 
 ## Results on `test2`
 
-The tables of `test2`, `test` and `dev` below are from before 2026-11-14: box threshold 0.5,
-fragments kept, and none of that day's changes (gray files read as stored, pages turned and
-levelled, the reading-order fixes). On `test` and the first 39 pages of `dev` the new defaults
-alone took the default profile from 5,315 edits to 4,902; the tables have not been rebuilt.
+The tables of `test2` are from before 2026-11-14: box threshold 0.5, fragments kept, and none
+of the changes since (gray files read as stored, pages turned, levelled and laid flat, the
+reading-order rules for blocks side by side). `test2` has not been scored again, so as not to
+spend it; `test` and `dev` below were, on 2026-11-15.
 
 ![Character accuracy on test2 by document kind](benchmark-test2.png)
 
@@ -191,23 +191,31 @@ Per document, CER / word F1:
 
 ## Results on `test`
 
-| Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
-| --- | --- | --- | --- | --- |
-| ocr-pro | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.960 / 0.930 | 3.7 s |
-| ocr-pro + polish | 0.052 / 0.025 / 0.044 | 0.020 | 0.934 / 0.969 / 0.946 | — |
-| ocr-pro, fast (960 px) | 0.068 / 0.028 / 0.056 | 0.029 | 0.893 / 0.960 / 0.915 | 2.6 s |
-| ocr-pro, rows (`--layout rows`) | 0.506 / 0.498 / 0.504 | 0.157 | 0.914 / 0.960 / 0.930 | 3.4 s |
-| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.054 / 0.026 / 0.046 | 0.025 | 0.915 / 0.961 / 0.930 | 3.0 s |
-| RapidOCR (same models) | 0.514 / 0.508 / 0.512 | 0.237 | 0.914 / 0.958 / 0.929 | 3.7 s |
-| Tesseract 5 | 0.237 / 0.148 / 0.210 | 0.149 | 0.840 / 0.883 / 0.854 | 1.5 s |
+Scored on 2026-11-15 with the engine of that day (every change described in this document,
+the defaults since 2026-11-14 among them). Tesseract and RapidOCR were run again the same night
+and give what they gave before. Page times are left out of the tables of `test` and `dev`:
+other jobs ran on the machine, and the times of that night say nothing. The last ones measured
+alone are in "What the numbers say".
+
+![Character accuracy on test by document kind](benchmark-test.png)
+
+| Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) |
+| --- | --- | --- | --- |
+| ocr-pro | 0.048 / 0.022 / 0.041 | 0.021 | 0.915 / 0.964 / 0.932 |
+| ocr-pro + polish | 0.046 / 0.021 / 0.038 | 0.021 | 0.935 / 0.973 / 0.948 |
+| ocr-pro, fast (960 px) | 0.060 / 0.023 / 0.049 | 0.022 | 0.898 / 0.960 / 0.919 |
+| ocr-pro, rows (`--layout rows`) | 0.511 / 0.502 / 0.508 | 0.152 | 0.915 / 0.964 / 0.931 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.049 / 0.022 / 0.041 | 0.021 | 0.915 / 0.964 / 0.932 |
+| RapidOCR (same models) | 0.514 / 0.508 / 0.512 | 0.237 | 0.914 / 0.958 / 0.929 |
+| Tesseract 5 | 0.237 / 0.148 / 0.210 | 0.149 | 0.840 / 0.883 / 0.854 |
 
 | Engine | Invoices, bills, receipts (8) | Letters, forms, notices (9) | Books, newspapers, gazettes (10) | Mean of groups |
 | --- | --- | --- | --- | --- |
-| ocr-pro | 0.123 | 0.066 | 0.014 | 0.068 |
-| ocr-pro + polish | 0.120 | 0.065 | 0.011 | 0.065 |
-| ocr-pro, fast (960 px) | 0.138 | 0.097 | 0.010 | 0.082 |
-| ocr-pro, rows (`--layout rows`) | 0.127 | 0.393 | 0.671 | 0.397 |
-| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.123 | 0.066 | 0.014 | 0.068 |
+| ocr-pro | 0.119 | 0.055 | 0.011 | 0.062 |
+| ocr-pro + polish | 0.116 | 0.054 | 0.008 | 0.059 |
+| ocr-pro, fast (960 px) | 0.129 | 0.079 | 0.010 | 0.073 |
+| ocr-pro, rows (`--layout rows`) | 0.124 | 0.403 | 0.673 | 0.400 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.119 | 0.055 | 0.011 | 0.062 |
 | RapidOCR (same models) | 0.153 | 0.404 | 0.673 | 0.410 |
 | Tesseract 5 | 0.328 | 0.226 | 0.170 | 0.241 |
 
@@ -215,55 +223,62 @@ Per document, CER / word F1:
 
 | Document | ocr-pro | fast | rows | RapidOCR | Tesseract |
 | --- | --- | --- | --- | --- | --- |
-| en-bill-nb-telephone-1932 | 0.195 / 0.843 | 0.220 / 0.876 | 0.195 / 0.843 | 0.282 / 0.852 | 0.464 / 0.642 |
-| en-form-bill-of-sale-reg135 | 0.003 / 0.998 | 0.029 / 0.962 | 0.003 / 0.998 | 0.014 / 0.996 | 0.039 / 0.924 |
-| en-journal-nature-1896-p419 | 0.053 / 0.972 | 0.022 / 0.995 | 0.633 / 0.972 | 0.614 / 0.962 | 0.429 / 0.949 |
-| en-magazine-outing-v45-developers | 0.001 / 0.995 | 0.002 / 0.993 | 0.711 / 0.994 | 0.712 / 0.996 | 0.003 / 0.991 |
-| en-memo-conference-president-1954 | 0.079 / 0.945 | 0.076 / 0.960 | 0.077 / 0.952 | 0.082 / 0.940 | 0.051 / 0.939 |
-| en-newspaper-aparri-news-1900 | 0.014 / 0.933 | 0.013 / 0.935 | 0.744 / 0.933 | 0.750 / 0.925 | 0.197 / 0.774 |
-| en-poster-coalbrookdale-auction-1910 | 0.033 / 0.972 | 0.030 / 0.944 | 0.033 / 0.972 | 0.082 / 0.974 | 0.075 / 0.861 |
+| en-bill-nb-telephone-1932 | 0.189 / 0.862 | 0.218 / 0.870 | 0.189 / 0.862 | 0.282 / 0.852 | 0.464 / 0.642 |
+| en-form-bill-of-sale-reg135 | 0.008 / 0.991 | 0.011 / 0.972 | 0.008 / 0.991 | 0.014 / 0.996 | 0.039 / 0.924 |
+| en-journal-nature-1896-p419 | 0.022 / 0.995 | 0.022 / 0.995 | 0.659 / 0.995 | 0.614 / 0.962 | 0.429 / 0.949 |
+| en-magazine-outing-v45-developers | 0.001 / 0.995 | 0.001 / 0.995 | 0.715 / 0.995 | 0.712 / 0.996 | 0.003 / 0.991 |
+| en-memo-conference-president-1954 | 0.077 / 0.947 | 0.077 / 0.942 | 0.077 / 0.947 | 0.082 / 0.940 | 0.051 / 0.939 |
+| en-newspaper-aparri-news-1900 | 0.013 / 0.936 | 0.013 / 0.936 | 0.745 / 0.936 | 0.750 / 0.925 | 0.197 / 0.774 |
+| en-poster-coalbrookdale-auction-1910 | 0.022 / 0.978 | 0.020 / 0.948 | 0.022 / 0.978 | 0.082 / 0.974 | 0.075 / 0.861 |
 | en-programme-toledo-symphony-1921 | 0.086 / 0.844 | 0.087 / 0.853 | 0.086 / 0.844 | 0.136 / 0.853 | 0.136 / 0.778 |
-| en-receipt-fanzz-2002 | 0.014 / 0.923 | 0.138 / 0.939 | 0.014 / 0.923 | 0.014 / 0.940 | 1.000 / 0.000 |
-| pl-biblia-wujek-1923-s296 | 0.007 / 0.962 | 0.007 / 0.964 | 0.753 / 0.957 | 0.753 / 0.966 | 0.434 / 0.972 |
-| pl-cennik-nr7-poznan-1937-s67 | 0.159 / 0.602 | 0.155 / 0.635 | 0.159 / 0.602 | 0.237 / 0.611 | 0.313 / 0.429 |
-| pl-dziennik-ustaw-1952-s374 | 0.025 / 0.884 | 0.026 / 0.877 | 0.748 / 0.884 | 0.750 / 0.879 | 0.057 / 0.845 |
+| en-receipt-fanzz-2002 | 0.014 / 0.931 | 0.014 / 0.939 | 0.014 / 0.931 | 0.014 / 0.940 | 1.000 / 0.000 |
+| pl-biblia-wujek-1923-s296 | 0.007 / 0.962 | 0.008 / 0.963 | 0.753 / 0.957 | 0.753 / 0.966 | 0.434 / 0.972 |
+| pl-cennik-nr7-poznan-1937-s67 | 0.167 / 0.630 | 0.179 / 0.649 | 0.167 / 0.630 | 0.237 / 0.611 | 0.313 / 0.429 |
+| pl-dziennik-ustaw-1952-s374 | 0.019 / 0.888 | 0.026 / 0.878 | 0.751 / 0.888 | 0.750 / 0.879 | 0.057 / 0.845 |
 | pl-dziennik-ustaw-1994-s302 | 0.002 / 0.995 | 0.002 / 0.995 | 0.727 / 0.995 | 0.732 / 0.994 | 0.001 / 0.991 |
-| pl-encyklopedja-staropolska-1900-s42 | 0.006 / 0.960 | 0.008 / 0.950 | 0.714 / 0.960 | 0.715 / 0.967 | 0.408 / 0.981 |
-| pl-faktura-pge-specyfikacja-2019 | 0.133 / 0.868 | 0.133 / 0.776 | 0.127 / 0.868 | 0.159 / 0.855 | 0.273 / 0.594 |
-| pl-obwieszczenie-stan-wojenny-1981 | 0.095 / 0.913 | 0.164 / 0.824 | 0.619 / 0.913 | 0.619 / 0.919 | 0.493 / 0.849 |
+| pl-encyklopedja-staropolska-1900-s42 | 0.005 / 0.962 | 0.007 / 0.951 | 0.713 / 0.962 | 0.715 / 0.967 | 0.408 / 0.981 |
+| pl-faktura-pge-specyfikacja-2019 | 0.132 / 0.869 | 0.131 / 0.782 | 0.126 / 0.869 | 0.159 / 0.855 | 0.273 / 0.594 |
+| pl-obwieszczenie-stan-wojenny-1981 | 0.075 / 0.899 | 0.129 / 0.836 | 0.649 / 0.899 | 0.619 / 0.919 | 0.493 / 0.849 |
 | pl-odezwa-zhp-lodz-1935 | 0.017 / 0.969 | 0.029 / 0.957 | 0.768 / 0.969 | 0.768 / 0.967 | 0.009 / 0.967 |
-| pl-paragon-castorama-2021 | 0.020 / 0.853 | 0.038 / 0.794 | 0.020 / 0.853 | 0.024 / 0.842 | 0.137 / 0.748 |
+| pl-paragon-castorama-2021 | 0.021 / 0.857 | 0.043 / 0.792 | 0.021 / 0.857 | 0.024 / 0.842 | 0.137 / 0.748 |
 | pl-paragon-inmedio-2024 | 0.033 / 0.831 | 0.035 / 0.821 | 0.033 / 0.831 | 0.041 / 0.800 | 0.149 / 0.495 |
-| pl-pismo-msz-ambasada-palestyny-2010 | 0.162 / 0.904 | 0.147 / 0.906 | 0.125 / 0.904 | 0.142 / 0.903 | 0.105 / 0.819 |
-| pl-pismo-umwp-2026 | 0.008 / 0.988 | 0.028 / 0.962 | 0.008 / 0.988 | 0.007 / 0.990 | 0.013 / 0.975 |
-| pl-rachunek-hurtownia-slupsk-1948 | 0.157 / 0.810 | 0.317 / 0.750 | 0.157 / 0.810 | 0.246 / 0.810 | 0.683 / 0.612 |
-| pl-rachunek-mennica-1931 | 0.470 / 0.777 | 0.467 / 0.747 | 0.461 / 0.777 | 0.490 / 0.758 | 0.683 / 0.489 |
-| pl-slownik-staropolski-arct-s479 | 0.048 / 0.899 | 0.011 / 0.909 | 0.724 / 0.899 | 0.724 / 0.893 | 0.726 / 0.571 |
-| pl-slownik-uczonych-zydow-1905-s11 | 0.009 / 0.961 | 0.007 / 0.973 | 0.009 / 0.961 | 0.010 / 0.957 | 0.010 / 0.980 |
+| pl-pismo-msz-ambasada-palestyny-2010 | 0.111 / 0.920 | 0.097 / 0.927 | 0.111 / 0.920 | 0.142 / 0.903 | 0.105 / 0.819 |
+| pl-pismo-umwp-2026 | 0.007 / 0.990 | 0.010 / 0.962 | 0.007 / 0.990 | 0.007 / 0.990 | 0.013 / 0.975 |
+| pl-rachunek-hurtownia-slupsk-1948 | 0.152 / 0.821 | 0.305 / 0.768 | 0.152 / 0.821 | 0.246 / 0.810 | 0.683 / 0.612 |
+| pl-rachunek-mennica-1931 | 0.444 / 0.785 | 0.442 / 0.757 | 0.444 / 0.785 | 0.490 / 0.758 | 0.683 / 0.489 |
+| pl-slownik-staropolski-arct-s479 | 0.050 / 0.884 | 0.008 / 0.933 | 0.726 / 0.884 | 0.724 / 0.893 | 0.726 / 0.571 |
+| pl-slownik-uczonych-zydow-1905-s11 | 0.009 / 0.961 | 0.010 / 0.971 | 0.009 / 0.961 | 0.010 / 0.957 | 0.010 / 0.980 |
 | pl-statut-zhp-1936-s8 | 0.014 / 0.903 | 0.011 / 0.914 | 0.014 / 0.903 | 0.037 / 0.930 | 0.024 / 0.910 |
-| pl-zaliczka-wspolnota-bialystok-2023 | 0.018 / 0.902 | 0.018 / 0.902 | 0.047 / 0.902 | 0.054 / 0.902 | 0.159 / 0.701 |
+| pl-zaliczka-wspolnota-bialystok-2023 | 0.017 / 0.905 | 0.017 / 0.905 | 0.046 / 0.905 | 0.054 / 0.902 | 0.159 / 0.701 |
 
 ## Results on `dev`
 
-| Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) | Median page time |
-| --- | --- | --- | --- | --- |
-| ocr-pro | 0.021 / 0.025 / 0.023 | 0.018 | 0.940 / 0.968 / 0.956 | 3.5 s |
-| ocr-pro + polish | 0.019 / 0.024 / 0.022 | 0.018 | 0.953 / 0.971 / 0.964 | — |
-| ocr-pro, fast (960 px) | 0.093 / 0.048 / 0.069 | 0.021 | 0.921 / 0.948 / 0.937 | 2.4 s |
-| ocr-pro, rows (`--layout rows`) | 0.526 / 0.605 / 0.569 | 0.120 | 0.940 / 0.968 / 0.957 | 3.5 s |
-| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.021 / 0.025 / 0.023 | 0.018 | 0.940 / 0.968 / 0.957 | 3.3 s |
-| RapidOCR (same models) | 0.530 / 0.605 / 0.571 | 0.174 | 0.943 / 0.967 / 0.957 | 3.7 s |
-| Tesseract 5 | 0.062 / 0.159 / 0.115 | 0.060 | 0.938 / 0.903 / 0.918 | 1.8 s |
+Scored on 2026-11-15, all 105 documents; 66 of them are the business documents added on
+2026-11-14 and 2026-11-15, which is why the pooled CER is higher than the 0.023 this table
+showed for the first 39 documents. Those 39 now read at 0.018 (0.017 with the Polish profile),
+the 66 business documents at 0.087 (0.085).
 
-| Engine | Invoices, bills, receipts (6) | Letters, forms, notices (10) | Books, newspapers, gazettes (23) | Mean of groups |
+![Character accuracy on dev by document kind](benchmark-dev.png)
+
+| Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) |
+| --- | --- | --- | --- |
+| ocr-pro | 0.053 / 0.046 / 0.049 | 0.038 | 0.923 / 0.961 / 0.944 |
+| ocr-pro + polish | 0.050 / 0.046 / 0.048 | 0.037 | 0.942 / 0.964 / 0.955 |
+| ocr-pro, fast (960 px) | 0.100 / 0.058 / 0.078 | 0.057 | 0.902 / 0.951 / 0.930 |
+| ocr-pro, rows (`--layout rows`) | 0.333 / 0.410 / 0.374 | 0.089 | 0.923 / 0.960 / 0.944 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.051 / 0.046 / 0.049 | 0.036 | 0.923 / 0.960 / 0.944 |
+| RapidOCR (same models) | 0.353 / 0.421 / 0.389 | 0.129 | 0.911 / 0.955 / 0.936 |
+| Tesseract 5 | 0.127 / 0.163 / 0.146 | 0.105 | 0.875 / 0.895 / 0.886 |
+
+| Engine | Invoices, bills, receipts (31) | Letters, forms, notices (51) | Books, newspapers, gazettes (23) | Mean of groups |
 | --- | --- | --- | --- | --- |
-| ocr-pro | 0.030 | 0.063 | 0.020 | 0.038 |
-| ocr-pro + polish | 0.028 | 0.061 | 0.019 | 0.036 |
-| ocr-pro, fast (960 px) | 0.028 | 0.069 | 0.070 | 0.056 |
-| ocr-pro, rows (`--layout rows`) | 0.030 | 0.064 | 0.623 | 0.239 |
-| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.029 | 0.063 | 0.020 | 0.038 |
-| RapidOCR (same models) | 0.038 | 0.086 | 0.623 | 0.249 |
-| Tesseract 5 | 0.156 | 0.142 | 0.112 | 0.137 |
+| ocr-pro | 0.178 | 0.063 | 0.014 | 0.085 |
+| ocr-pro + polish | 0.175 | 0.061 | 0.013 | 0.083 |
+| ocr-pro, fast (960 px) | 0.166 | 0.072 | 0.066 | 0.101 |
+| ocr-pro, rows (`--layout rows`) | 0.184 | 0.120 | 0.623 | 0.309 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.177 | 0.062 | 0.014 | 0.084 |
+| RapidOCR (same models) | 0.185 | 0.156 | 0.623 | 0.321 |
+| Tesseract 5 | 0.357 | 0.141 | 0.112 | 0.203 |
 
 ## What changed in this round
 
@@ -297,6 +312,32 @@ On `test`, scored before this round, the pooled CER of ocr-pro fell from 0.214 t
 median from 0.087 to 0.025. Examples: the Bible page 0.433 to 0.007, the 1952 Dziennik Ustaw 0.453
 to 0.026, Arct's dictionary 0.735 to 0.048, the 1981 poster photo 0.669 to 0.095.
 
+## What changed on 2026-11-14 and 2026-11-15
+
+Everything here was built on `dev` and `test`; `test2` and `test3` were not looked at. The
+`test3` table above was scored once, in the middle of it, for the first item.
+
+1. **New defaults:** box threshold 0.4, and short lines the recognizer is unsure of are left
+   out (see "Results on `test3`").
+2. **Pages are set right before they are read** (see "Turning the page" in
+   [internals.md](internals.md)): a page on its side or upside down is turned, a page askew by up
+   to 45 degrees is levelled, a page photographed from the side or from below, whose lines or
+   margins run to a point, is laid flat, a small page with small print is enlarged, and a
+   picture too large for the heap is read smaller. A long line is shown to the orientation
+   classifier by its middle; squeezed whole, it was now and then read upside down.
+3. **Blocks side by side** (steps 7 and 8 of "Reading order"): they are columns only where
+   they stand beside each other, and two small blocks whose lines share baselines are the
+   cells of rows. A line is cut at a gutter the boxes suggest only when the ink does not deny
+   the gutter.
+4. **Sixty-six business documents** joined `dev`: receipts, invoices, letters, memos, forms and
+   notices. They are what item 3 was built on, and why `dev` is now harder than `test`.
+
+On `test` the pooled CER of ocr-pro went from 0.046 to 0.041 and with the Polish profile from
+0.044 to 0.038; on the first 39 documents of `dev` from 0.023 to 0.018. Pages that are not
+upright, level and flat when given gain far more than these sets show, since nearly all of their
+pages are: every page of `dev` and `test` turned by a quarter or a half reads as it does
+upright, where four sample pages went from 94 edits to over 2,200 before.
+
 ## What the numbers say
 
 - **Recognition is the strongest part.** Word F1, which ignores order, is above Tesseract on every
@@ -304,7 +345,9 @@ to 0.026, Arct's dictionary 0.735 to 0.048, the 1981 poster photo 0.669 to 0.095
   Runtime.
 - **Invoices, bills and receipts favor ocr-pro by a wide margin.** On `test2` its character
   accuracy on them is 95 % against 67 % for Tesseract (90 % before the number rule, see above),
-  and Tesseract returns nothing for a 1994 Tesco receipt. On `test` it is 88 % against 67 %.
+  and Tesseract returns nothing for a 1994 Tesco receipt. On `test` it is 88 % against 67 %, and
+  on the 31 of `dev` 82 % against 64 %. Letters, forms and notices: 94 % against 86 % on the 51
+  of `dev`.
 - **Reading order is far ahead of RapidOCR**, which reads the same models row by row: pooled CER
   0.079 against 0.656 on `test2`. `--layout rows` gives the same row order inside ocr-pro (0.654);
   on invoices and receipts it equals the automatic layout, and everywhere else it loses.
@@ -322,7 +365,12 @@ to 0.026, Arct's dictionary 0.735 to 0.048, the 1981 poster photo 0.669 to 0.095
   0.001). These pages are spent: a fix based on them needs new test documents.
 - **Detection at 2048 px wins on every set**, by a wide margin on English pages of `test2` (0.107
   against 0.310 at 960 px); on its Polish pages the two tie (0.031). 960 px is the fast setting.
-- **Speed.** Median page time on `test2` / `test` / `dev`: ocr-pro 6.7 / 3.7 / 3.5 s, RapidOCR
+- **Row order is no longer better on business documents.** On the invoices and receipts of
+  `dev` the layout analysis and `--layout rows` are level (0.178 and 0.184), and on its letters,
+  forms and notices the analysis is at 0.063 against 0.120; before the rules of 2026-11-15 rows
+  won on fourteen of its 66 business documents.
+- **Speed** (measured on 2026-10-15, on the first 39 documents of `dev`; not measured again).
+  Median page time on `test2` / `test` / `dev`: ocr-pro 6.7 / 3.7 / 3.5 s, RapidOCR
   on ONNX Runtime with the same models 5.2 / 3.7 / 3.7 s, Tesseract 3.5 / 1.5 / 1.8 s. Dense
   newspaper pages with a hundred lines and more take longest (Scientific American 1850: 19.6 s).
   `--limit 960` takes 15–31 % less time (5.7 / 2.6 / 2.4 s). `--alphabet latin` takes 8–18 %

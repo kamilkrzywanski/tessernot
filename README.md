@@ -181,13 +181,16 @@ the round before and then pointed at what to fix.
 
 | Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | 0.079 / **0.033** | 0.951 | **0.046 / 0.025** | **0.930** | 6.7 s / 3.7 s |
-| ocr-pro, `--limit 960` | 0.205 / 0.037 | 0.935 | 0.056 / 0.029 | 0.915 | 5.7 s / 2.6 s |
-| ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.504 / 0.157 | 0.930 | about the same |
+| **ocr-pro** | 0.079 / **0.033** | 0.951 | **0.041 / 0.021** | **0.932** | 6.7 s / 3.7 s |
+| ocr-pro, `--limit 960` | 0.205 / 0.037 | 0.935 | 0.049 / 0.022 | 0.919 | 5.7 s / 2.6 s |
+| ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.508 / 0.152 | 0.931 | about the same |
 | RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.2 s / 3.7 s |
 | Tesseract 5 (`pol` / `eng`) | **0.070 / 0.033** | 0.934 | 0.210 / 0.149 | 0.854 | 3.5 s / 1.5 s |
 
-CER counts reading order; word F1 does not. The test machine was an Intel i7-1365U laptop with
+CER counts reading order; word F1 does not. The `test` columns of ocr-pro are from 2026-11-15;
+`test2` has not been scored since October 2026, so as to keep it unspent, and the times are
+from 2026-10-15.
+The test machine was an Intel i7-1365U laptop with
 12 threads; all engines ran in one session with nothing else heavy running. `--layout rows` reads row by row like RapidOCR: it matches the automatic layout on
 invoices and receipts and loses on everything with columns.
 

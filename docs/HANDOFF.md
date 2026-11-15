@@ -444,7 +444,36 @@ gutter fix and the flattening):
   374. Since that day `ro.sh dump` reads all pages with one engine and fragments kept
   (`RoDump`), the cache carries the score of every line (`<name>.score`), and `score` and
   `jitter` drop the fragments after ordering, as the engine does. A cache from before has no
-  scores and is ordered as before; empty `bench/out/ro/json` and dump again.
+  scores and is ordered as before; empty `bench/out/ro/json` and dump again. With the new
+  cache the workbench gives the engine's edits on every page of `dev` and `test` to within
+  rounding (0.0495 and 0.0406 pooled against 0.0493 and 0.0406), but for one: the Helios cinema
+  ticket, 17 degrees askew, 64 against 24. The engine orders such a page on the levelled
+  picture and after a second detection; the cache has its boxes as they lie on the picture
+  as given. The same holds for any page the engine turns level or lays flat.
+
+**The benchmark tables, rebuilt on 2026-11-15 for `dev` and `test`.** docs/benchmark.md and the
+README have the engine of that morning (commit `ac3809c`) in five variants on both sets, with
+Tesseract and RapidOCR run again on all 105 and 27 documents, and a chart for each set
+(`docs/benchmark-dev.png`, `docs/benchmark-test.png`).
+
+| | `dev` (105) | `test` (27) |
+| --- | --- | --- |
+| ocr-pro | 0.049 | 0.041 |
+| ocr-pro + polish | 0.048 | 0.038 |
+| ocr-pro, `--limit 960` | 0.078 | 0.049 |
+| ocr-pro, `--layout rows` | 0.374 | 0.508 |
+| RapidOCR, same models | 0.389 | 0.512 |
+| Tesseract 5 | 0.146 | 0.210 |
+
+- **Not scored: `test2` and `test3`.** Their tables are from before 2026-11-14 and from
+  2026-11-14. Scoring them again spends them once more; that is the owner's call. Tesseract
+  was run over `test3` that night (`bench/out/test3-tesseract`, 97 outputs) and its output was
+  not scored or looked at; RapidOCR was not run on `test3`.
+- **No page times.** Other jobs ran on the machine all night (load 20 to 50 on twelve
+  threads), so the times of these runs mean nothing and the tables of `dev` and `test` leave
+  them out. The last times measured alone are those of 2026-10-15.
+- The scores are in `bench/out/<set>-<variant>.tsv` (not in git), the earlier ones in the
+  scratch directory of that session only.
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
@@ -494,7 +523,7 @@ Sets and their status, see [benchmark.md](benchmark.md):
 
 | Set | Use |
 | --- | --- |
-| `dev` (70) | Look at it, debug on it, tune on it. 31 of them are the business documents of 2026-11-14; the published tables are still those of the first 39. |
+| `dev` (105) | Look at it, debug on it, tune on it. 66 of them are the business documents of 2026-11-14 and 2026-11-15. |
 | `test` (27) | Spent: its failures drove the last round. Use it as a regression check, like `dev`. |
 | `test2` (20) | Scored once. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
 | `test3` (97) | Scored once, on 2026-11-14, for the box threshold and the dropping of fragments (benchmark.md, "Results on `test3`"). Spent for tuning, like `test2`: its pages have not been looked at and must not be. Tesseract and RapidOCR have not been run on it. |
