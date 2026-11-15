@@ -123,6 +123,9 @@ UTF-8, trailing newline.
   - figure captions where they sit in their column.
 - Leave out handwriting, signatures, stamps, logos, illustrations and any text inside them,
   ornaments, library stamps, bleed-through, redacted areas. Say so in the manifest notes.
+- Leave out dotted leaders (the dots that lead from an entry to its number or price) and printed
+  rules. A point that ends the entry is kept; the first dot of a leader is not such a point. A
+  row of hyphens or dots typed on a typewriter is text.
 - Whitespace runs and typographic quotes and dashes are normalized by the scorer; all other
   characters count.
 - **Work method:** make zoomed crops with Pillow (column by column, strip by strip, 2× for small

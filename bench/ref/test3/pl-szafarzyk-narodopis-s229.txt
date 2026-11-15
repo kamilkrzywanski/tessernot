@@ -13,7 +13,7 @@ Bytom, pol. = Beuthen.
 Cawtat, serb. = Ragusa vec-
 chia.
 Celje, ksł. = Cilli.
-Celjowiec, ksł. = Klagenfurt.
+Celjowec, ksł. = Klagenfurt.
 Ceswejne, lot. = Seswegen.
 Cres ostrow, serb. = Cherso.
 Czakowec, chorw. = Tscha-
@@ -35,7 +35,7 @@ Drzewnjow, st. cz. = Tuchau.
 Dubrownik, serb. = Ragusa.
 Dworec, cz. = Hof.
 Działdowo, pol. = Soldau.
-Elblag, pol. = Elbing.
+Elbląg, pol. = Elbing.
 Ergle, lot. = Erlau.
 Flein, strus, = Marienhaus.
 Gauja rzeka, lot. = Aa Fluss.

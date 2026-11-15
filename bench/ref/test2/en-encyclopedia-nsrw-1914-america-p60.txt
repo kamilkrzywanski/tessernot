@@ -38,12 +38,12 @@ everywhere, except in the British dominions.
 The areas and population are as follows:
 Area, sq. miles Pop.
 British America (including
-Newfoundland)........ 3,729,665 7,319,400
+Newfoundland) 3,729,665 7,319,400
 United States (including
-Alaska)............... 3,617,673 92,036,622
-Mexico................. 767,005 15,063,207
-Central American States.. 207,474 4,803,487
-West Indies............. 94,400 6,451,237
+Alaska) 3,617,673 92,036,622
+Mexico 767,005 15,063,207
+Central American States 207,474 4,803,487
+West Indies 94,400 6,451,237
 8,416,217 125,673,953
 History. The history of America begins
 in 1492, when Christopher Columbus sighted

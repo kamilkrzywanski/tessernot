@@ -484,21 +484,49 @@ runs were pushed one after another and only the last one was looked at. The Wind
 passed three runs in a row and now fails the run like the others (`continue-on-error` is gone).
 
 **References checked again, 2026-11-15.** The owner said the older references had been
-written and checked by a weaker model and asked for a second check by Fable checkers, up to a
-share of his weekly allowance. Done, each line against crops of the picture, no OCR tool and no
-engine output: the first 39 documents of `dev`, all 27 of `test`, and of `test2` Scientific
-American 1850, Britannica 1911, the arXiv page and Przegląd Tygodniowy 1903 (40 of 95 tasks;
-the task list, the brief and every report are in that session's scratchpad and were not kept,
-the findings are here). Not done: the other 16 documents of `test2` and all of `test3`. The 66
-business documents of `dev` had Fable checkers when they came in.
+written and checked by a weaker model and asked for a second check by Fable checkers. Done for
+all 183 of them, each line against crops of the picture, no OCR tool and no engine output: the
+first 39 documents of `dev`, the 27 of `test`, the 20 of `test2`, the 97 of `test3` (95 tasks;
+the task list, the brief and every report were in that session's scratchpad and are not kept,
+the findings are here and in the manifest notes, which say for each changed reference how many
+lines moved). The 66 business documents of `dev` had Fable checkers when they came in. The
+624 documents in `bench/ref/todo` have had no check at all.
+
+How the changes were handled: a checker changed the file and reported each word; the main
+session looked at the picture for every change of `dev`, `test` and `test2` and, on `test3`,
+for a sample of each report with many changes (about 110 words seen in all, every one as the
+checker said). Changes a checker itself called uncertain were taken back (about twenty), and
+so were changes of convention: spaces before `;` `:` `!` `?` or inside quotation marks where
+the collector's note does not ask for them.
 
 What it found, each change looked at by the main session on the picture: `dev`, Volumina Legum
 `Kòła` (grave) for `Kóła`; the Szałas receipt `EAV` for `EAU`; the ZPS diploma without `U.E.P.`,
 which is lettering inside a logo. `test`, the reading order of the Encyklopedja staropolska
 (below). `test2`, Scientific American 1850: `pnt` as printed for `put`, and a line break at
 `lower-`/`ed`. Four changes the checkers themselves called uncertain were taken back, and a fifth
-that the main session did not get to look at (Mennica 1931, line 37: `5.000.` may be `5.000-`). So the
-letters of these references were sound: five characters in 86 documents.
+that the main session did not get to look at (Mennica 1931, line 37: `5.000.` may be `5.000-`). So the letters of
+`dev`, `test` and the first four pages of `test2` were sound: five characters in 86 documents.
+
+The rest of `test2` and `test3` were not. 44 references changed, 180 lines, most of them on
+old Polish newspapers, where the first writer had modernised the spelling and guessed at worn
+words: the Gazeta Polska of Chicago 1877 (43 lines: `chrześciańsk-` for `chrześcijańsk-`,
+`armji`, `być` for `bydź`, `Darfuru` for `Darturu`, `podrównikowych` for `podróżnikowych`, a
+pencilled page number taken for print), the Gazeta of Poznań 1846 (19: `prowincyalne`,
+`pojmują` for `pojmą`, `przytacza` for `przyłącza`), Rozmaitości Warszawskie 1825 (15:
+`uprawiaią`, `sieią`, `swóy`, `Poznańskiém`), Przegląd Polityczny 1858 (10: `gospodarskiego`
+for `gospodarczego`, `zgnilec` for `gniliec`), Orzeł Biały 1831 (8: `rewolucjinym`,
+`Francji`, `śrzodki`), Gazeta Przemysłowa 1872 (7: `zaczernienie` for `zaczerpnienie`,
+`chropowacenia` for `chropowania`). On receipts: accents the first writer had dropped or
+added (Empik `DZIESIĘCIN`, Pepco `kąpieli`, Butik `ILOŚĆ ARTYKUŁÓW`), a `1` faded by the print
+head (Biedronka), `Z` for ounces read as `2` (Alexander). On four billheads the printed
+digits of the year (`188`, `185`) had been left out with the handwritten last one. Modern
+and English pages (arXiv, the Official Journal, encyclopedias) had nothing or a comma.
+Dotted leaders are now left out everywhere they were found, and the collecting rules say so.
+
+`test2` and `test3` have not been scored since: their tables in docs/benchmark.md and the
+numbers of the README are from the references before this check. Scoring the kept outputs
+against the corrected references (`score --hyp`, no engine run) is the owner's to allow, as
+any scoring of those sets is.
 
 The one finding that matters is the reading order of `pl-encyklopedja-staropolska-1900-s42`:
 its photograph sits across both columns and the columns run on below it, and the reference
@@ -509,7 +537,18 @@ from the same engine outputs; `dev` did not move at three decimals; `test2` was 
 again (three characters). This is the first open item now: a figure across columns must not
 end a band when the lines above and below it belong to one sentence or one column.
 
-Left for the owner, because the rules do not settle them: a space before `;` `:` `!` `?` in old
+Left for the owner, because the rules do not settle them (the checkers met each of these on
+several pages; none was changed across the board): thin spaces before `;` `:` `!` `?` and
+after opening quotation marks in print before about 1930, written with a space on some pages
+(Dublin University Magazine, Blackwood's, New Monthly, Court Magazine, Betham) and without on
+others (Jacob's Room, Nursery Rhymes, Bristol Mercury, Alice), often unevenly inside one
+page; letter-spaced words, kept spaced in some references and closed in others (Rozmaitości
+Warszawskie has both); a letter that did not print (`oświet a` written `oświetla`, `wyc ętą`
+kept with its gap); a broken `f` that reads `t` (DNB writes `of`, the Scotsmen dictionary
+`ot`); footnotes printed under the left column and read after the right one (both arXiv
+pages, three Official Journal pages); two cc lists side by side joined row by row (NSAM 125);
+display lettering beside a logo (TPN, Tesco, the zoo ticket, Ashton `FOR LOCOMOTIVE,`). And
+from the first part: a space before `;` `:` `!` `?` in old
 print (Bristol Mercury, Alice, about twenty a page, written closed up); turned sorts (`pnt`
 kept as printed, Arct's `suknia` printed `sukuia` left alone); the wordmark of the TPN receipt
 (lettering of a logo, in the reference); the rotated side tab "Spis treści" of the Sejm page
