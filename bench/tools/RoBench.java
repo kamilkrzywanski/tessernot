@@ -45,8 +45,10 @@ public class RoBench {
                 }
                 String text = ReadingOrder.join(rows);
                 if (check) {
+                    // The cached text is the engine's with its fragments kept, as the cache is.
                     String old = Files.readString(tsv.resolve(name + ".txt"));
-                    if (!old.equals(text)) System.out.println("DIFFERS from engine: " + name);
+                    String kept = ReadingOrder.join(ReadingOrder.group(lines, !Boolean.getBoolean("rows")));
+                    if (!old.equals(kept)) System.out.println("DIFFERS from engine: " + name);
                 }
                 if (System.getProperty("dump") != null) Files.writeString(Path.of(System.getProperty("dump"), name + ".txt"), text);
                 String r = Metrics.normalize(Files.readString(ref));

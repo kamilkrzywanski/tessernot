@@ -5,6 +5,7 @@ import io.github.kamilkrzywanski.ocr.OcrJson;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
  * RoDump &lt;json-dir&gt; &lt;ref-dir&gt;... : reads the image of every reference once, with one engine,
  * and writes its JSON. Fragments are kept: the engine finds the reading order with them and
  * drops them afterwards, and the workbench has to do the same. A page that already has its JSON
- * is skipped.
+ * is skipped, and one that cannot be read is named and passed over.
  */
 public class RoDump {
     public static void main(String[] args) throws Exception {
@@ -42,8 +43,14 @@ public class RoDump {
                         System.err.println("no image for " + name);
                         continue;
                     }
-                    Files.writeString(json, OcrJson.page(engine.recognize(OcrImages.read(image))));
-                    System.err.println(name);
+                    try {
+                        Path part = out.resolve(name + ".json.part");
+                        Files.writeString(part, OcrJson.page(engine.recognize(OcrImages.read(image))));
+                        Files.move(part, json, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                        System.err.println(name);
+                    } catch (RuntimeException | java.io.IOException e) {
+                        System.err.println("fail " + name + ": " + e.getMessage());
+                    }
                 }
             }
         }

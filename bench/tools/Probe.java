@@ -53,7 +53,11 @@ public class Probe {
                 default -> variants.add(a[i]);
             }
         }
+        if (dump != null) {
+            Files.createDirectories(dump);
+        }
         long[] total = new long[variants.size()];
+        int done = 0;
         long chars = 0;
         StringBuilder log = new StringBuilder("set\tname\tchars\t" + String.join("\t", variants) + "\n");
         try (OcrEngine engine = OcrEngine.create(b.build())) {
@@ -62,7 +66,6 @@ public class Probe {
                 try (Stream<Path> s = Files.list(root.resolve("bench/ref/" + set))) {
                     refs = s.filter(p -> p.toString().endsWith(".txt")).sorted().collect(Collectors.toList());
                 }
-                int done = 0;
                 for (Path ref : refs) {
                     String name = ref.getFileName().toString().replaceAll("\\.txt$", "");
                     if (only != null && !only.contains(name)) continue;
@@ -71,6 +74,10 @@ public class Probe {
                     for (String ext : new String[] {"png", "jpg", "jpeg", "tif", "tiff"}) {
                         Path p = root.resolve("bench/data/" + name + "." + ext);
                         if (Files.isRegularFile(p)) { file = p; break; }
+                    }
+                    if (file == null) {
+                        System.out.println("  no image for " + name);
+                        continue;
                     }
                     BufferedImage im = OcrImages.read(file);
                     String reference = Metrics.normalize(Files.readString(ref));

@@ -8,11 +8,15 @@ public class RoCuts {
         try (var s = Files.list(Path.of(args[0]))) {
             for (Path f : s.filter(p -> p.toString().endsWith(".tsv")).sorted().toList()) {
                 List<TextLine> lines = new ArrayList<>();
+                Path scoreFile = Path.of(f.toString().replaceAll("\\.tsv$", ".score"));
+                List<String> scores = Files.exists(scoreFile) ? Files.readAllLines(scoreFile) : List.of();
                 for (String row : Files.readAllLines(f)) {
                     String[] p = row.split("\t", 9);
                     float[] q = new float[8];
                     for (int i = 0; i < 8; i++) q[i] = Float.parseFloat(p[i]);
-                    lines.add(new TextLine(p.length > 8 ? p[8] : "", 1f, 1f, q, null));
+                    // With its score a fragment is known for one, as in the engine.
+                    float score = lines.size() < scores.size() ? Float.parseFloat(scores.get(lines.size())) : 1f;
+                    lines.add(new TextLine(p.length > 8 ? p[8] : "", score, 1f, q, null));
                 }
                 Map<TextLine, Float> cuts = ReadingOrder.cuts(lines);
                 for (var e : cuts.entrySet()) {
