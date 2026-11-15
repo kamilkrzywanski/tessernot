@@ -31,6 +31,10 @@ profile against the plain pipeline, CER pooled over the Polish pages and Polish 
 | `test` (27) | 0.054 → 0.052 | 0.915 → 0.934 | 16 / 1 |
 | `test2` (20) | 0.031 → 0.028 | 0.912 → 0.932 | 9 / 2 |
 
+With the engine of 2026-11-15, on the two sets nobody tuned on: `test2` 0.029 → 0.026 and
+0.917 → 0.935, 7 Polish pages better and 2 worse; `test3` (97) 0.167 → 0.159 and 0.827 → 0.878,
+35 better and 5 worse.
+
 English pages gain too (the Aparri News 1900 by 30 edits, Britannica 1911 by 11), because the
 search uses both lists. What still hurts, and why:
 

@@ -7,10 +7,11 @@ These are public documents with references transcribed by hand. Read
   - `dev` (105 documents): used to find and fix problems. Numbers on it are not independent.
   - `test` (27 documents): scored once in the previous round, then used to find the layout
     problems of this one. No longer independent.
-  - `test2` (20 documents): scored at the end of this round and again after a change built on
-    `dev` only. Do not tune on it.
-  - `test3` (97 documents: 47 PL, 50 EN): held out. Not scored. Do not tune on it. Report it
-    with `report.py --manifest`: the mean over document groups is its headline number.
+  - `test2` (20 documents): scored at the end of the round it was collected in, after a change
+    built on `dev` only, and on 2026-11-15. Do not tune on it.
+  - `test3` (97 documents: 47 PL, 50 EN): held out. Scored on 2026-11-14 and 2026-11-15. Do
+    not tune on it and do not look at its pages. Report it with `report.py --manifest`: the
+    mean over document groups is its headline number.
 - `ref/dev/`, `ref/test/`, `ref/test2/`, `ref/test3/`: reference transcriptions (`pl-*`, `en-*`)
 - `data/`: the page images (about 350 MB) and the PDF and DjVu originals of rendered pages (about
   860 MB), kept in their own repository [ocr-pro-bench](https://github.com/kamilkrzywanski/ocr-pro-bench)

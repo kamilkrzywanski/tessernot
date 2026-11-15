@@ -135,8 +135,8 @@ rose from 0.930 to 0.945 on `test` (Polish pages 0.915 to 0.933) and from 0.956 
 pooled CER on `test` went from 0.046 to 0.044. Searching costs under 1 % of a page's time; a large
 list that is already sorted, lowercase and NFC loads in about half a second, any other is sorted
 on load.
-`test2` and `test3` have not been scored with lists yet. `Corrections.POLISH` adds these two lists
-on its own.
+`test2` and `test3` have been scored with the lists only as part of the Polish profile (below).
+`Corrections.POLISH` adds these two lists on its own.
 
 ### Fragments and the box threshold
 
@@ -173,28 +173,30 @@ post-processing) is public only for technical reasons. It may change in any rele
 
 Public documents with references transcribed by hand, in Polish and English: invoices,
 receipts, letters, forms, and multi-column books, dictionaries, newspapers and official
-gazettes. `test2` was collected for the latest round and scored at its end, then once more
-after a column-gutter change built on `dev` only; nobody tuned on it. `test` was scored once in
+gazettes. `test2` was collected for an earlier round and scored at its end, then after a
+column-gutter change and again on 2026-11-15, each time after work on `dev` and `test` only;
+nobody tuned on it. `test` was scored once in
 the round before and then pointed at what to fix.
 
 ![Character accuracy on test2 by document kind](docs/benchmark-test2.png)
 
 | Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | 0.079 / **0.033** | 0.951 | **0.041 / 0.021** | **0.931** | 6.7 s / 3.7 s |
-| ocr-pro, `--limit 960` | 0.205 / 0.037 | 0.935 | 0.049 / 0.022 | 0.918 | 5.7 s / 2.6 s |
-| ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.508 / 0.152 | 0.931 | about the same |
+| **ocr-pro** | **0.062 / 0.031** | **0.952** | **0.041 / 0.021** | **0.931** | 6.7 s / 3.7 s |
+| ocr-pro, `--limit 960` | 0.168 / 0.032 | 0.937 | 0.049 / 0.022 | 0.918 | 5.7 s / 2.6 s |
+| ocr-pro, `--layout rows` | 0.653 / 0.657 | 0.952 | 0.508 / 0.152 | 0.931 | about the same |
 | RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.2 s / 3.7 s |
-| Tesseract 5 (`pol` / `eng`) | **0.070 / 0.033** | 0.934 | 0.210 / 0.149 | 0.854 | 3.5 s / 1.5 s |
+| Tesseract 5 (`pol` / `eng`) | 0.070 / 0.033 | 0.934 | 0.210 / 0.149 | 0.854 | 3.5 s / 1.5 s |
 
-CER counts reading order; word F1 does not. The `test` columns of ocr-pro are from 2026-11-15;
-`test2` has not been scored since October 2026, so as to keep it unspent, and the times are
-from 2026-10-15.
+CER counts reading order; word F1 does not. The columns of ocr-pro are from 2026-11-15; the times
+are from 2026-10-15, before the changes of November (the benchmark notes have what was
+measured since). On the largest held-out set, `test3` (97 pages, 77 of them books and old
+newspapers), the pooled CER is 0.130 against 0.158 for Tesseract and 0.478 for RapidOCR.
 The test machine was an Intel i7-1365U laptop with
 12 threads; all engines ran in one session with nothing else heavy running. `--layout rows` reads row by row like RapidOCR: it matches the automatic layout on
 invoices and receipts and loses on everything with columns.
 
-- **Invoices, bills and receipts:** 95 % character accuracy against 67 % for Tesseract on
+- **Invoices, bills and receipts:** 94 % character accuracy against 67 % for Tesseract on
   `test2` (90 % before a fix that one of its receipts prompted), and 88 % against 67 % on
   `test`. Tesseract returns nothing for some thermal and
   dot-matrix receipts.
@@ -205,8 +207,8 @@ invoices and receipts and loses on everything with columns.
   where the detector merged lines across the gutters. RapidOCR reads the same models row by row
   and loses most of those pages.
 - **Where Tesseract still wins:** a few complex pages, such as a 1910 magazine page, an 1836
-  gazette and a typed memo, put it slightly ahead on `test2` as a whole (pooled CER 0.070
-  against 0.079; the median is the same). It is also faster.
+  gazette and a typed memo. On `test2` as a whole it is no longer ahead (pooled CER 0.070
+  against 0.062). It is faster.
 
 Method, the `dev` set, per-document results and how to reproduce them are in
 [docs/benchmark.md](docs/benchmark.md).
@@ -222,8 +224,9 @@ adds:
 - second reads of a line crop for invoice details
 
 The second reads and CTC swaps were tuned on three scans and checked on the `dev` set. With the
-word-list search the profile gives word F1 0.964 on `dev`, 0.946 on `test` and 0.960 on `test2`,
-against 0.956, 0.930 and 0.951 for the plain pipeline. It is **off by default**. See
+word-list search the profile gives word F1 0.955 on `dev`, 0.947 on `test`, 0.961 on `test2` and
+0.902 on `test3`, against 0.945, 0.931, 0.952 and 0.872 for the plain pipeline. It is **off by
+default**. See
 [docs/corrections.md](docs/corrections.md) for the rules and what they get wrong.
 
 ## Not in scope

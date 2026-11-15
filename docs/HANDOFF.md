@@ -7,16 +7,18 @@ and the working method.
 **Where things stand on the morning of 2026-11-15** (the dated paragraphs below have the detail):
 
 - `dev` has 105 documents, 66 of them business documents; `test` 27. Default profile: `dev`
-  0.049, `test` 0.041 (Tesseract 0.146 and 0.210). The tables of docs/benchmark.md are rebuilt
-  for these two sets; `test2` and `test3` were not scored again.
+  0.049, `test` 0.041 (Tesseract 0.146 and 0.210). `test2` 0.062 (Tesseract 0.070), `test3`
+  0.130 (0.158). All four sets were scored with the engine of db94086 and the tables of
+  docs/benchmark.md are rebuilt.
 - A page is set right before it is read: turned, levelled, laid flat when photographed from
   the side, enlarged when small, shrunk when too large for the heap.
 - Blocks side by side are columns, rows of cells or neither by two rules built on the business
   documents; plain rows now beat the layout analysis by ten edits or more on three pages.
 - Open, in the order it would pay: the 1859 note and other rows that would read better as
   blocks ("Blocks side by side"), small print lost to blur and low resolution ("Pages as a
-  phone photographs them"), pages photographed from below (tried and dropped), and `test2` and
-  `test3`, which wait for the owner's word before they are scored again.
+  phone photographs them"), pages photographed from below (tried and dropped), and a multi-column
+  newspaper page the new rules read worse, known only from `test3` ("The held-out sets,
+  2026-11-15").
 - Tools: `bench/tools/ro.sh` (reading order on cached lines, now faithful to the engine),
   `bench/tools/probe.sh` (pages turned, askew, photographed), `ocr.sh score`.
 
@@ -478,6 +480,20 @@ end-to-end tests pass (170 s and 70 s). These failures went unnoticed during the
 runs were pushed one after another and only the last one was looked at. The Windows leg had
 passed three runs in a row and now fails the run like the others (`continue-on-error` is gone).
 
+**The held-out sets, 2026-11-15.** The owner allowed `test2` and `test3` to be scored with the
+finished engine (db94086), once, in the five variants; RapidOCR ran on `test3` for the first
+time and the Tesseract output of the night was scored. Nothing was changed afterwards.
+`test2`: 0.079 to 0.062 pooled (6,468 edits to 5,071), ahead of Tesseract (0.070) for the first
+time; Scientific American 1850 has 1,257 of the 1,397 edits gained. `test3`: 0.124 to 0.130
+(30,547 edits to 31,847), Tesseract 0.158, RapidOCR 0.478; 85 pages as before, 7 better, 5
+worse, and the Orzeł Biały of 1831 has 1,285 of the 1,300 edits lost (0.164 to 0.417), an
+Official Journal page of 2006 another 170. So on pages nobody tuned on the work of the two
+days is level but for one multi-column newspaper page each way. Which change turned the Orzeł
+Biały is not known and must not be found out on that page: the candidates are the ink consent
+on cuts and the two rules for blocks side by side, and the way to tell is an old newspaper
+page with narrow ruled columns in `dev`. The old outputs of `test2` are in
+`bench/out/prev-2026-11-14`.
+
 **Page times, morning of 2026-11-15.** Measured for `dev` and `test` only, one engine at a
 time, but with another session's short jobs on the machine (and the laptop seems to have slept
 for half an hour in the middle of one run, which the engine's clock does not count). They are
@@ -499,10 +515,9 @@ Tesseract and RapidOCR run again on all 105 and 27 documents, and a chart for ea
 | RapidOCR, same models | 0.389 | 0.512 |
 | Tesseract 5 | 0.146 | 0.210 |
 
-- **Not scored: `test2` and `test3`.** Their tables are from before 2026-11-14 and from
-  2026-11-14. Scoring them again spends them once more; that is the owner's call. Tesseract
-  was run over `test3` that night (`bench/out/test3-tesseract`, 97 outputs) and its output was
-  not scored or looked at; RapidOCR was not run on `test3`.
+- **`test2` and `test3` were not part of that night.** Tesseract was run over `test3` then
+  without the owner's word (`bench/out/test3-tesseract`); its output was left unscored until
+  the owner allowed the scoring below.
 - **No page times.** Other jobs ran on the machine all night (load 20 to 50 on twelve
   threads), so the times of these runs mean nothing and the tables of `dev` and `test` leave
   them out. The last times measured alone are those of 2026-10-15.
@@ -559,11 +574,11 @@ Sets and their status, see [benchmark.md](benchmark.md):
 | --- | --- |
 | `dev` (105) | Look at it, debug on it, tune on it. 66 of them are the business documents of 2026-11-14 and 2026-11-15. |
 | `test` (27) | Spent: its failures drove the last round. Use it as a regression check, like `dev`. |
-| `test2` (20) | Scored once. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
-| `test3` (97) | Scored once, on 2026-11-14, for the box threshold and the dropping of fragments (benchmark.md, "Results on `test3`"). Spent for tuning, like `test2`: its pages have not been looked at and must not be. Tesseract and RapidOCR have not been run on it. |
+| `test2` (20) | Scored three times, last on 2026-11-15. These pages were looked at when reporting and are spent for tuning: Smyk receipt, Scientific American 1850, The Crisis 1910, kalendarz Ungra 1878, London Gazette 1836, NSAM 125 memo. Do not tune on any `test2` page. |
+| `test3` (97) | Scored on 2026-11-14 for the box threshold and the dropping of fragments, and on 2026-11-15 with the finished engine, Tesseract and RapidOCR (benchmark.md, "Results on `test3`"). Spent for tuning, like `test2`: its pages have not been looked at and must not be. Known by its score only: the Orzeł Biały of 1831 reads much worse since the rules of 2026-11-15. |
 
-Business documents are thin in every set. More invoices, receipts, letters and forms can still go
-into `test3` before it is scored for the first time, never after.
+Business documents are thin in every set. `test3` has been scored, so nothing more
+goes into it; new held-out documents make a new set.
 
 ### Collecting documents
 
