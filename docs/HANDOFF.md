@@ -520,6 +520,12 @@ The English dev agent listed spots worth a look in `en-newspaper-bristol-mercury
   groups from `bench/kinds.py`.
 - `bench/tools/tessline.py`: reads the `ro.sh` line cache with Tesseract, for comparing
   recognizers on identical lines (see "Tried and dropped").
+- **`bench/tools/probe.sh`: the robustness probe** (in the repository since 2026-11-15; the
+  rounds of 2026-11-14 ran a scratch copy). It reads every page of `dev` and `test` again after
+  a change that should not matter (`rot90`, `skew3`, `half`, `jpeg30`) or as a camera changes a
+  page (`persx12`, `keyy12`, `blur15`, `shade55`) and writes the edits of each page for each
+  variant: `bench/tools/probe.sh bench/out/probe.tsv none skew3 persx12`. The variants are
+  listed in `Probe.java`. One pass over the 132 pages takes ten to fifteen minutes a variant.
 - **`bench/tools/ro.sh`: the reading-order workbench.** `dump` runs OCR once per page and caches
   the lines with their boxes; `score` recompiles only the reading-order sources and scores every cached
   page in seconds; `cuts` lists merged lines it would split; `show <name>` draws a page's boxes
