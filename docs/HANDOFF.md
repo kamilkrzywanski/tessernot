@@ -7,14 +7,17 @@ and the working method.
 **Where things stand on the morning of 2026-11-15** (the dated paragraphs below have the detail):
 
 - `dev` has 105 documents, 66 of them business documents; `test` 27. Default profile: `dev`
-  0.049, `test` 0.041 (Tesseract 0.146 and 0.210). `test2` 0.062 (Tesseract 0.070), `test3`
+  0.049, `test` 0.054 (Tesseract 0.146 and 0.198; `test` was 0.041 and 0.210 until one of its
+  references was corrected, see "References checked again"). `test2` 0.062 (Tesseract 0.070), `test3`
   0.130 (0.158). All four sets were scored with the engine of db94086 and the tables of
   docs/benchmark.md are rebuilt.
 - A page is set right before it is read: turned, levelled, laid flat when photographed from
   the side, enlarged when small, shrunk when too large for the heap.
 - Blocks side by side are columns, rows of cells or neither by two rules built on the business
   documents; plain rows now beat the layout analysis by ten edits or more on three pages.
-- Open, in the order it would pay: the 1859 note and other rows that would read better as
+- Open, in the order it would pay: a figure set across two columns, which the engine takes
+  for the end of a band where the columns run on below it (Encyklopedja staropolska in `test`,
+  0.408; "References checked again"), the 1859 note and other rows that would read better as
   blocks ("Blocks side by side"), small print lost to blur and low resolution ("Pages as a
   phone photographs them"), pages photographed from below (tried and dropped), and a multi-column
   newspaper page the new rules read worse, known only from `test3` ("The held-out sets,
@@ -479,6 +482,42 @@ depending on the runner, and a limit of 180 s failed on the slower ones. The tim
 end-to-end tests pass (170 s and 70 s). These failures went unnoticed during the night: the
 runs were pushed one after another and only the last one was looked at. The Windows leg had
 passed three runs in a row and now fails the run like the others (`continue-on-error` is gone).
+
+**References checked again, 2026-11-15.** The owner said the older references had been
+written and checked by a weaker model and asked for a second check by Fable checkers, up to a
+share of his weekly allowance. Done, each line against crops of the picture, no OCR tool and no
+engine output: the first 39 documents of `dev`, all 27 of `test`, and of `test2` Scientific
+American 1850, Britannica 1911, the arXiv page and Przegląd Tygodniowy 1903 (40 of 95 tasks;
+the task list, the brief and every report are in that session's scratchpad and were not kept,
+the findings are here). Not done: the other 16 documents of `test2` and all of `test3`. The 66
+business documents of `dev` had Fable checkers when they came in.
+
+What it found, each change looked at by the main session on the picture: `dev`, Volumina Legum
+`Kòła` (grave) for `Kóła`; the Szałas receipt `EAV` for `EAU`; the ZPS diploma without `U.E.P.`,
+which is lettering inside a logo. `test`, the reading order of the Encyklopedja staropolska
+(below). `test2`, Scientific American 1850: `pnt` as printed for `put`, and a line break at
+`lower-`/`ed`. Four changes the checkers themselves called uncertain were taken back, and a fifth
+that the main session did not get to look at (Mennica 1931, line 37: `5.000.` may be `5.000-`). So the
+letters of these references were sound: five characters in 86 documents.
+
+The one finding that matters is the reading order of `pl-encyklopedja-staropolska-1900-s42`:
+its photograph sits across both columns and the columns run on below it, and the reference
+read it in two bands. Put right, ocr-pro reads the page at 0.408 (0.005 before) and Tesseract
+at 0.036 (0.408): the engine splits the columns at the picture as the old reference did. `test`
+is 0.054 for ocr-pro, not 0.041. The tables and chart of `test` and the README are rebuilt
+from the same engine outputs; `dev` did not move at three decimals; `test2` was not scored
+again (three characters). This is the first open item now: a figure across columns must not
+end a band when the lines above and below it belong to one sentence or one column.
+
+Left for the owner, because the rules do not settle them: a space before `;` `:` `!` `?` in old
+print (Bristol Mercury, Alice, about twenty a page, written closed up); turned sorts (`pnt`
+kept as printed, Arct's `suknia` printed `sukuia` left alone); the wordmark of the TPN receipt
+(lettering of a logo, in the reference); the rotated side tab "Spis treści" of the Sejm page
+and the vertical arXiv stamp of the `test2` arXiv page (printed, not in the references, the
+second not named in the notes); seven full stops of Britannica 1911 that the 1-bit scan lost;
+the e-mail footnotes of both arXiv pages, read after the right column though printed under the
+left. On the Mennica bill of `test` the rotated margin line is legible (the note says cut
+off) and the typed `28 maja` stands on a line of its own, unlike the other fill-ins.
 
 **624 new documents, 2026-11-15, waiting.** A collecting session pushed 624 business documents
 (351 Polish, 273 English: 178 forms, 177 notices, 116 letters, 86 invoices, 67 receipts)

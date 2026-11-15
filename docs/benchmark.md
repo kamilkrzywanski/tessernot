@@ -226,6 +226,18 @@ Per document, CER / word F1:
 
 ## Results on `test`
 
+**One reference of `test` was wrong until 2026-11-15, and the numbers below are from after its
+correction.** On page 42 of the Encyklopedja staropolska a photograph is set across both
+columns and both columns run on below it; the reference read the upper halves of the two
+columns, the caption, then the lower halves, which cuts three sentences. The rules say a figure
+across the columns does not split them. With the lines in the order of the columns, ocr-pro
+reads that page at 0.408 where it scored 0.005, because it too splits the columns at the
+photograph, and Tesseract at 0.036 where it scored 0.408. The pooled CER of ocr-pro on `test`
+is therefore 0.054 and not 0.041 (Polish profile 0.051, not 0.038), and Tesseract's 0.198, not
+0.210. Sentences elsewhere in this document that give 0.041 for `test` were written before the
+correction. The engine's outputs are the ones of that morning; only the references changed
+(this page, and on `dev` three small corrections that leave its pooled CER at 0.049).
+
 Scored on 2026-11-15 with the engine of that day (every change described in this document,
 the defaults since 2026-11-14 among them). Tesseract and RapidOCR were run again the same night
 and give what they gave before. Page times are left out of the tables of `test` and `dev`:
@@ -236,23 +248,23 @@ at a time but not on an idle machine; those numbers are under "Speed" in "What t
 
 | Engine | CER pooled (pl / en / all) | CER median | Word F1 pooled (pl / en / all) |
 | --- | --- | --- | --- |
-| ocr-pro | 0.048 / 0.023 / 0.041 | 0.021 | 0.915 / 0.963 / 0.931 |
-| ocr-pro + polish | 0.046 / 0.021 / 0.038 | 0.021 | 0.935 / 0.972 / 0.947 |
-| ocr-pro, fast (960 px) | 0.060 / 0.023 / 0.049 | 0.022 | 0.897 / 0.960 / 0.918 |
-| ocr-pro, rows (`--layout rows`) | 0.511 / 0.502 / 0.508 | 0.152 | 0.915 / 0.963 / 0.931 |
-| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.049 / 0.023 / 0.041 | 0.021 | 0.915 / 0.963 / 0.931 |
-| RapidOCR (same models) | 0.514 / 0.508 / 0.512 | 0.237 | 0.914 / 0.958 / 0.929 |
-| Tesseract 5 | 0.237 / 0.148 / 0.210 | 0.149 | 0.840 / 0.883 / 0.854 |
+| ocr-pro | 0.067 / 0.023 / 0.054 | 0.022 | 0.915 / 0.963 / 0.931 |
+| ocr-pro + polish | 0.064 / 0.021 / 0.051 | 0.022 | 0.935 / 0.972 / 0.947 |
+| ocr-pro, fast (960 px) | 0.079 / 0.023 / 0.062 | 0.026 | 0.897 / 0.960 / 0.918 |
+| ocr-pro, rows (`--layout rows`) | 0.513 / 0.502 / 0.510 | 0.152 | 0.915 / 0.963 / 0.931 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.067 / 0.023 / 0.054 | 0.022 | 0.915 / 0.963 / 0.931 |
+| RapidOCR (same models) | 0.516 / 0.508 / 0.513 | 0.237 | 0.914 / 0.958 / 0.929 |
+| Tesseract 5 | 0.219 / 0.148 / 0.198 | 0.137 | 0.839 / 0.883 / 0.854 |
 
 | Engine | Invoices, bills, receipts (8) | Letters, forms, notices (9) | Books, newspapers, gazettes (10) | Mean of groups |
 | --- | --- | --- | --- | --- |
-| ocr-pro | 0.119 | 0.055 | 0.011 | 0.062 |
-| ocr-pro + polish | 0.116 | 0.054 | 0.008 | 0.059 |
-| ocr-pro, fast (960 px) | 0.129 | 0.079 | 0.010 | 0.073 |
-| ocr-pro, rows (`--layout rows`) | 0.124 | 0.403 | 0.673 | 0.400 |
-| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.119 | 0.055 | 0.011 | 0.062 |
-| RapidOCR (same models) | 0.153 | 0.404 | 0.673 | 0.410 |
-| Tesseract 5 | 0.328 | 0.226 | 0.170 | 0.241 |
+| ocr-pro | 0.119 | 0.055 | 0.036 | 0.070 |
+| ocr-pro + polish | 0.116 | 0.054 | 0.033 | 0.068 |
+| ocr-pro, fast (960 px) | 0.129 | 0.079 | 0.035 | 0.081 |
+| ocr-pro, rows (`--layout rows`) | 0.125 | 0.403 | 0.676 | 0.401 |
+| ocr-pro, Latin alphabet (`--alphabet latin`) | 0.119 | 0.055 | 0.036 | 0.070 |
+| RapidOCR (same models) | 0.153 | 0.404 | 0.675 | 0.411 |
+| Tesseract 5 | 0.328 | 0.226 | 0.147 | 0.234 |
 
 Per document, CER / word F1:
 
@@ -271,7 +283,7 @@ Per document, CER / word F1:
 | pl-cennik-nr7-poznan-1937-s67 | 0.167 / 0.630 | 0.179 / 0.649 | 0.167 / 0.630 | 0.237 / 0.611 | 0.313 / 0.429 |
 | pl-dziennik-ustaw-1952-s374 | 0.019 / 0.888 | 0.026 / 0.878 | 0.751 / 0.888 | 0.750 / 0.879 | 0.057 / 0.845 |
 | pl-dziennik-ustaw-1994-s302 | 0.002 / 0.995 | 0.002 / 0.995 | 0.727 / 0.995 | 0.732 / 0.994 | 0.001 / 0.991 |
-| pl-encyklopedja-staropolska-1900-s42 | 0.005 / 0.962 | 0.007 / 0.951 | 0.713 / 0.962 | 0.715 / 0.967 | 0.408 / 0.981 |
+| pl-encyklopedja-staropolska-1900-s42 | 0.408 / 0.962 | 0.410 / 0.951 | 0.752 / 0.962 | 0.752 / 0.967 | 0.036 / 0.981 |
 | pl-faktura-pge-specyfikacja-2019 | 0.132 / 0.869 | 0.131 / 0.782 | 0.126 / 0.869 | 0.159 / 0.855 | 0.273 / 0.594 |
 | pl-obwieszczenie-stan-wojenny-1981 | 0.075 / 0.899 | 0.129 / 0.836 | 0.649 / 0.899 | 0.619 / 0.919 | 0.493 / 0.849 |
 | pl-odezwa-zhp-lodz-1935 | 0.017 / 0.969 | 0.029 / 0.957 | 0.768 / 0.969 | 0.768 / 0.967 | 0.009 / 0.967 |
@@ -280,7 +292,7 @@ Per document, CER / word F1:
 | pl-pismo-msz-ambasada-palestyny-2010 | 0.111 / 0.920 | 0.097 / 0.927 | 0.111 / 0.920 | 0.142 / 0.903 | 0.105 / 0.819 |
 | pl-pismo-umwp-2026 | 0.007 / 0.990 | 0.010 / 0.962 | 0.007 / 0.990 | 0.007 / 0.990 | 0.013 / 0.975 |
 | pl-rachunek-hurtownia-slupsk-1948 | 0.152 / 0.821 | 0.305 / 0.768 | 0.152 / 0.821 | 0.246 / 0.810 | 0.683 / 0.612 |
-| pl-rachunek-mennica-1931 | 0.444 / 0.785 | 0.442 / 0.757 | 0.444 / 0.785 | 0.490 / 0.758 | 0.683 / 0.489 |
+| pl-rachunek-mennica-1931 | 0.445 / 0.778 | 0.443 / 0.750 | 0.445 / 0.778 | 0.491 / 0.752 | 0.684 / 0.482 |
 | pl-slownik-staropolski-arct-s479 | 0.050 / 0.884 | 0.011 / 0.906 | 0.726 / 0.884 | 0.724 / 0.893 | 0.726 / 0.571 |
 | pl-slownik-uczonych-zydow-1905-s11 | 0.009 / 0.961 | 0.010 / 0.971 | 0.009 / 0.961 | 0.010 / 0.957 | 0.010 / 0.980 |
 | pl-statut-zhp-1936-s8 | 0.014 / 0.903 | 0.011 / 0.914 | 0.014 / 0.903 | 0.037 / 0.930 | 0.024 / 0.910 |

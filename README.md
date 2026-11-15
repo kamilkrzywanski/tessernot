@@ -182,13 +182,15 @@ the round before and then pointed at what to fix.
 
 | Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | **0.062 / 0.031** | **0.952** | **0.041 / 0.021** | **0.931** | 6.7 s / 3.7 s |
-| ocr-pro, `--limit 960` | 0.168 / 0.032 | 0.937 | 0.049 / 0.022 | 0.918 | 5.7 s / 2.6 s |
-| ocr-pro, `--layout rows` | 0.653 / 0.657 | 0.952 | 0.508 / 0.152 | 0.931 | about the same |
-| RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.2 s / 3.7 s |
-| Tesseract 5 (`pol` / `eng`) | 0.070 / 0.033 | 0.934 | 0.210 / 0.149 | 0.854 | 3.5 s / 1.5 s |
+| **ocr-pro** | **0.062 / 0.031** | **0.952** | **0.054 / 0.022** | **0.931** | 6.7 s / 3.7 s |
+| ocr-pro, `--limit 960` | 0.168 / 0.032 | 0.937 | 0.062 / 0.026 | 0.918 | 5.7 s / 2.6 s |
+| ocr-pro, `--layout rows` | 0.653 / 0.657 | 0.952 | 0.510 / 0.152 | 0.931 | about the same |
+| RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.513 / 0.237 | 0.929 | 5.2 s / 3.7 s |
+| Tesseract 5 (`pol` / `eng`) | 0.070 / 0.033 | 0.934 | 0.198 / 0.137 | 0.854 | 3.5 s / 1.5 s |
 
-CER counts reading order; word F1 does not. The columns of ocr-pro are from 2026-11-15; the times
+CER counts reading order; word F1 does not. The columns of ocr-pro are from 2026-11-15, the `test` ones after the
+reading order of one of its references was corrected that day (0.041 before, see the benchmark
+notes); the times
 are from 2026-10-15, before the changes of November (the benchmark notes have what was
 measured since). On the largest held-out set, `test3` (97 pages, 77 of them books and old
 newspapers), the pooled CER is 0.130 against 0.158 for Tesseract and 0.478 for RapidOCR.

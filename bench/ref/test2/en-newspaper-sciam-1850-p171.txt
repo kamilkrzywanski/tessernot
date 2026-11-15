@@ -274,7 +274,7 @@ Wine-Vinegar.
 The following is the plan of making vinegar
 at present practised in Paris The wine desti-
 ned for vinegar is mixed in a large ton With a
-quantity of wine lees, and the whole being put
+quantity of wine lees, and the whole being pnt
 into sacks, placed within a large iron bound
 the liquid matter is pressed out.
 What passes through is put into large casks,
@@ -283,8 +283,8 @@ top. In these it is exposed to the heat of the
 sun in summer, or to the heat of a stove in
 winter.
 Fermentation comes on in a few days. If
-the heat should then rise too high, it is low-
-ered by cool air, and the addition of fresh wine.
+the heat should then rise too high, it is lower-
+ed by cool air, and the addition of fresh wine.
 In summer the process is generally completed
 in a fortnight; in winter double the time is re-
 quisite. The vinegar is then run off into bar-
