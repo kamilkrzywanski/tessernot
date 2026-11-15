@@ -4,16 +4,16 @@ These are public documents with references transcribed by hand. Read
 [docs/benchmark.md](../docs/benchmark.md) for the rules, the results and how to reproduce them.
 
 - `manifest.tsv`: source URL, SHA-256, license and author of every document, and its set:
-  - `dev` (119 documents): used to find and fix problems. Numbers on it are not independent.
-  - `test` (34 documents): scored once in the previous round, then used to find the layout
+  - `dev` (122 documents): used to find and fix problems. Numbers on it are not independent.
+  - `test` (35 documents): scored once in the previous round, then used to find the layout
     problems of this one. No longer independent.
-  - `test2` (27 documents): scored at the end of the round it was collected in, after a change
+  - `test2` (30 documents): scored at the end of the round it was collected in, after a change
     built on `dev` only, and on 2026-11-15. Do not tune on it.
-  - `test3` (114 documents: 55 PL, 59 EN): held out. Scored on 2026-11-14 and 2026-11-15, when it
+  - `test3` (120 documents: 59 PL, 61 EN): held out. Scored on 2026-11-14 and 2026-11-15, when it
     had 97. Do
     not tune on it and do not look at its pages. Report it with `report.py --manifest`: the
     mean over document groups is its headline number.
-  - `todo` (574 business documents left of the 624 delivered on 2026-11-15; 45 were checked and
+  - `todo` (561 business documents left of the 624 delivered on 2026-11-15; 58 were checked and
     dealt to the sets that day): not part of any set yet. Their
     references are in `ref/todo/` as the collectors wrote them and have not been checked
     against the pictures. Do not score them and do not tune on them; they are split into sets

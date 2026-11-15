@@ -597,6 +597,15 @@ can be scored again at any time (their tables then need rebuilding for 119 and 3
 `test2` and `test3` wait for the owner's word, as before. Pace: the owner's usage limits are
 tight; checkers run two at a time at most (one task costs 100 to 180 thousand tokens).
 
+**A second lot from todo, 2026-11-15, stopped part way.** The owner asked for another 50 by
+the same rule (the next of each group in the same order, the same cycle of sets). 13 were
+checked before he stopped the reviews for the day to save his usage limit; all 13 were fit and
+none needed a change, and they joined their sets: `dev` 122, `test` 35, `test2` 30, `test3` 120
+documents now. Six more receipts were held back as not English. The other 37 of that lot were
+not checked and are still `todo` like the rest (561); the next lot starts again from the rule,
+which will pick the same documents first. The kinds table of docs/benchmark.md counts the
+first 45 only.
+
 **Which model checks references, 2026-11-15.** Measured on seven documents of the third batch
 with the references as delivered and the same brief: of the 11 corrections that change a
 score, a Fable checker found 11, an Opus 5.5 checker 9 (it missed the two misplaced column
