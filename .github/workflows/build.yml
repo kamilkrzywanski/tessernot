@@ -9,8 +9,6 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    # The Windows leg tells whether the build works there; it does not fail the run yet.
-    continue-on-error: ${{ matrix.experimental }}
     defaults:
       run:
         shell: bash
@@ -22,22 +20,18 @@ jobs:
             os: ubuntu-latest
             java: '21'
             modules: --add-modules jdk.incubator.vector
-            experimental: false
           - name: JDK 25, Vector API
             os: ubuntu-latest
             java: '25'
             modules: --add-modules jdk.incubator.vector
-            experimental: false
           - name: JDK 21, scalar kernels
             os: ubuntu-latest
             java: '21'
             modules: ''
-            experimental: false
           - name: JDK 21, Windows
             os: windows-latest
             java: '21'
             modules: --add-modules jdk.incubator.vector
-            experimental: true
     steps:
       # No submodules: the tests read models/ and do not need the benchmark documents in bench/data.
       - uses: actions/checkout@v4

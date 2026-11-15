@@ -475,8 +475,8 @@ was cut off (the gate past 520 s, the end-to-end tests 92 s against 53). Between
 depending on the runner, and a limit of 180 s failed on the slower ones. The timeout is now
 600 s; it is there to end a hang. Locally on the scalar kernels the quality gate and the
 end-to-end tests pass (170 s and 70 s). These failures went unnoticed during the night: the
-runs were pushed one after another and only the last one was looked at. The Windows leg has
-passed three runs in a row and is still `continue-on-error`.
+runs were pushed one after another and only the last one was looked at. The Windows leg had
+passed three runs in a row and now fails the run like the others (`continue-on-error` is gone).
 
 **Page times, morning of 2026-11-15.** Measured for `dev` and `test` only, one engine at a
 time, but with another session's short jobs on the machine (and the laptop seems to have slept
