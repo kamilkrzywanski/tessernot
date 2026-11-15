@@ -466,6 +466,14 @@ gutter fix and the flattening):
   with fragments, a null score became 0, the dump stopped at a page that fails, the probe did
   not make its dump directory and counted `--limit` per set. All fixed.
 
+**CI, 2026-11-15.** The push of that night (`0039750`) failed on the scalar leg: two tests of
+`QualityGateTest` were cut off at their 180 seconds. Nothing was wrong with what they read:
+that runner was about twice as slow as the ones before (the end-to-end tests took 131 s
+against 53), and on the scalar kernels one of these tests takes about 100 s on a usual runner.
+Their timeout is now 600 s; it is there to end a hang. Locally on the scalar kernels the
+quality gate and the end-to-end tests pass (170 s and 70 s). The Windows leg has passed three
+runs in a row and is still `continue-on-error`.
+
 **The benchmark tables, rebuilt on 2026-11-15 for `dev` and `test`.** docs/benchmark.md and the
 README have the engine of that morning in five variants on both sets, with
 Tesseract and RapidOCR run again on all 105 and 27 documents, and a chart for each set

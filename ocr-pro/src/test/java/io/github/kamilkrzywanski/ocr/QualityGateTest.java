@@ -29,6 +29,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Ruled cells are checked on the same result and do not change that count.
  */
 class QualityGateTest {
+    /**
+     * The timeouts are there to end a hang, not to time the engine. One of these tests reads
+     * three scans; on the scalar kernels a CI runner takes about 100 seconds for that, and a
+     * runner twice as slow as the others has been seen (2026-11-14: two tests cut off at 180).
+     */
+    private static final int SCAN_TIMEOUT_SECONDS = 600;
+
     /** Typed letter, read exactly. The signature and the blue time stamp are not scored. */
     private static final int NIXON_MAX_EDITS = 0;
     /**
@@ -180,7 +187,7 @@ class QualityGateTest {
     }
 
     @Test
-    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    @Timeout(value = SCAN_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     void realPrintDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         // The rules were measured on crops from detection at 960 px, and the counts below describe
@@ -210,7 +217,7 @@ class QualityGateTest {
      * in the runtime or pre-processing that costs characters fails here.
      */
     @Test
-    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    @Timeout(value = SCAN_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     void plainPipelineDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         try (OcrEngine engine = OcrEngine.create(OcrConfig.defaults(Path.of("models")))) {
@@ -222,7 +229,7 @@ class QualityGateTest {
 
     /** The plain pipeline with the recognizer's last layer cut to Latin script stays within the same ceilings. */
     @Test
-    @Timeout(value = 180, unit = TimeUnit.SECONDS)
+    @Timeout(value = SCAN_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     void latinAlphabetDoesNotRegress() throws Exception {
         assumeTrue(modelsPresent(), "models/ is missing");
         OcrConfig latin = OcrConfig.defaults(Path.of("models")).toBuilder().alphabet(Alphabet.LATIN).build();
