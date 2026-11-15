@@ -502,7 +502,7 @@ public final class OcrEngine implements AutoCloseable {
             fan = PageTurn.fan(boxes, bgr.width(), bgr.height());
             if (fan != null) {
                 source = bgr;
-                bgr = Images.flatten(bgr, fan.distance(), fan.left(), fan.top(), fan.flatWidth(), fan.flatHeight());
+                bgr = Images.flatten(bgr, fan.distance(), fan.fall(), fan.left(), fan.top(), fan.flatWidth(), fan.flatHeight());
                 boxes = detect(bgr, lineParallel);
             }
             double skew = PageTurn.skew(boxes);

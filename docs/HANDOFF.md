@@ -345,8 +345,23 @@ newest pages were read by the engine here for the first time):
   - The flat page is cut to the text of the first detection and three line heights around
     it: a line that detection missed and that lies further out than that is lost. Not seen
     on these pages; a real photo with a small note far out in the margin could show it.
-  - Not done: a page photographed from below (`keyy12`, 6,541 before and after). Its lines
-    stay level; the point has to be found from the lean of margins and gutters.
+  - A page photographed from below (`keyy12`, 6,541 before and after this change) came the
+    same night, see the next paragraph.
+- **A page photographed from below or above is laid flat too** (`PageTurn.marginsMeet`,
+  `Fan.fall`), see "Seen from below or above" in internals.md. Its lines stay level; the point
+  is found from the lean of the margins, which grows across the page. On the 66 pages as photos
+  from below: 6,541 edits to 5,845 (that also holds the day's reading-order rules, about 150
+  of it); Wisła 778 to 56, Bristol Mercury 461 to 385. As given, `dev` 10,039 to 10,021 and
+  `test` 2,430 to 2,425: Bristol Mercury and the Aparri News, which have a real lean of a
+  twentieth, and nothing else.
+  - Worse as photos from below: the arXiv page 92 to 255 (the page `ro.sh jitter` already
+    shows hanging on a threshold), the 1981 notice 598 to 673, Monthly Weather Review 83 to
+    121. As photos from the side, Bristol Mercury 428 to 519: it is taken for seen from below
+    as well, as it is when given, and the two together do it no good.
+  - Not helped: the 1923 Bible page from below (1,058 before and after). Its margins are found
+    and it is laid flat; the marginal references between its columns still end the rows.
+  - A page in one column is never taken for seen from below: two margins are not enough to
+    tell, and its lines are level, so nothing is lost.
 
 **Third batch of `dev` documents, 2026-11-15.** Twelve Polish documents: five blank forms
 (ZAW-FA, ZUS ZUA and ZCNA, the KOWR alcohol register, the Blue Card), two printed accounts of

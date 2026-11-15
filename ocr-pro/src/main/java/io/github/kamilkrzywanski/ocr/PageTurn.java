@@ -314,9 +314,37 @@ final class PageTurn {
      * slope changes by enough to move the end of a line of median length by more than a line
      * height, and when the boxes follow the fit.
      *
-     * @return the fan, or null for a page whose lines run side by side
+     * <p>
+     * A page photographed from below or from above is the same thing turned by a quarter: its
+     * lines stay level and its margins and gutters run to a point far above or below it, see
+     * {@link #marginsMeet}. Either way, or both, the page is laid flat by one map.
+     *
+     * @return the fan, or null for a page whose lines run side by side and whose margins do too
      */
     static Fan fan(List<DbPost.Box> boxes, int width, int height) {
+        double distance = linesMeet(boxes, width, height);
+        double fall = marginsMeet(boxes, width, height);
+        if (Double.isInfinite(distance) && Double.isInfinite(fall)) {
+            return null;
+        }
+        return Fan.of(width, height, distance, fall, boxes, FAN_MARGIN * medianLineHeight(boxes));
+    }
+
+    private static float medianLineHeight(List<DbPost.Box> boxes) {
+        float[] heights = new float[boxes.size()];
+        for (int i = 0; i < heights.length; i++) {
+            float[] q = boxes.get(i).quad();
+            heights[i] = Math.min(width(q), height(q));
+        }
+        Arrays.sort(heights);
+        return heights.length == 0 ? 0f : heights[heights.length / 2];
+    }
+
+    /**
+     * How far from the middle of the page, along x, the lines of the page meet; infinite when
+     * they run side by side.
+     */
+    static double linesMeet(List<DbPost.Box> boxes, int width, int height) {
         int count = 0;
         double[] slope = new double[boxes.size()];
         double[] cy = new double[boxes.size()];
@@ -338,7 +366,7 @@ final class PageTurn {
             }
         }
         if (count < FAN_VOTERS) {
-            return null;
+            return Double.POSITIVE_INFINITY;
         }
         double lineHeight = median(tall, count);
         // Slopes between pairs of lines well apart: lines close together say nothing about a fan.
@@ -353,7 +381,7 @@ final class PageTurn {
             }
         }
         if (n < FAN_VOTERS) {
-            return null;
+            return Double.POSITIVE_INFINITY;
         }
         double b = median(pairs, n);
         double[] rest = new double[count];
@@ -370,14 +398,178 @@ final class PageTurn {
         }
         double spread = Math.abs(b) * (bottom - top);
         if (spread * median(length, count) <= lineHeight || median(rest, count) > FAN_FIT * spread) {
-            return null;
+            return Double.POSITIVE_INFINITY;
         }
         // The line that crosses the middle of the page at height y has the slope a + b y there:
         // all of them meet 1 / b to the left of the middle, where y drops out.
         if (1 / Math.abs(b) < FAN_NEAREST * width) {
-            return null;
+            return Double.POSITIVE_INFINITY;
         }
-        return Fan.of(width, height, width * 0.5 - 1 / b, boxes, (float) (FAN_MARGIN * lineHeight));
+        return -1 / b;
+    }
+
+    /** A margin is followed down at least this many lines... */
+    static final int MARGIN_LINES = 6;
+    /** ...over at least this many line heights... */
+    static final float MARGIN_SPAN = 8f;
+    /** ...from one line to the next within this many line heights down and this many across. */
+    static final float MARGIN_STEP = 3f;
+    static final float MARGIN_NEAR = 0.4f;
+    /** The ends of its lines lie on the margin: half of them within this share of a line height. */
+    static final float MARGIN_FIT = 0.15f;
+    /** A lean that grows across the page shows on three margins; two may differ for any reason. */
+    static final int MARGINS = 3;
+
+    /**
+     * How far from the middle of the page, along y, its margins meet; infinite when they run
+     * side by side. A page photographed from below keeps its lines level, but its left margins
+     * lean one way and its right margins the other, the more the further out they are: a gutter
+     * is no longer a vertical strip. The margins are found from the boxes: the left ends, and
+     * the right ends, of long lines that follow one another down the page on one straight
+     * line. The lean of each margin is fitted against where it stands across the page (the
+     * median over pairs of margins), and the page is taken for seen from below when the lean
+     * changes, from the leftmost margin to the rightmost, by enough to move a margin by more
+     * than a line height over the height of the page, and the margins follow the fit.
+     */
+    static double marginsMeet(List<DbPost.Box> boxes, int width, int height) {
+        float lineHeight = medianLineHeight(boxes);
+        if (boxes.size() < FAN_VOTERS || lineHeight <= 0f) {
+            return Double.POSITIVE_INFINITY;
+        }
+        List<double[]> margins = new ArrayList<>();
+        for (int side = 0; side < 2; side++) {
+            List<double[]> ends = new ArrayList<>();
+            for (DbPost.Box box : boxes) {
+                float[] q = box.quad();
+                float dx = (q[2] - q[0] + q[4] - q[6]) * 0.5f;
+                if (dx >= VOTER * height(q)) {
+                    double x = side == 0 ? (q[0] + q[6]) * 0.5 : (q[2] + q[4]) * 0.5;
+                    double y = side == 0 ? (q[1] + q[7]) * 0.5 : (q[3] + q[5]) * 0.5;
+                    ends.add(new double[] {x, y});
+                }
+            }
+            ends.sort((a, b) -> Double.compare(a[1], b[1]));
+            margins.addAll(marginsOf(ends, lineHeight, height));
+        }
+        if (margins.size() < MARGINS) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double leftmost = Double.POSITIVE_INFINITY;
+        double rightmost = Double.NEGATIVE_INFINITY;
+        for (double[] margin : margins) {
+            leftmost = Math.min(leftmost, margin[0]);
+            rightmost = Math.max(rightmost, margin[0]);
+        }
+        // Lean against place: the slopes between pairs of margins that stand well apart.
+        double[] pairs = new double[margins.size() * (margins.size() - 1) / 2];
+        int n = 0;
+        for (int i = 0; i < margins.size(); i++) {
+            for (int j = i + 1; j < margins.size(); j++) {
+                double apart = margins.get(j)[0] - margins.get(i)[0];
+                if (Math.abs(apart) >= 0.1 * width) {
+                    pairs[n++] = (margins.get(j)[1] - margins.get(i)[1]) / apart;
+                }
+            }
+        }
+        if (n == 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double c = median(pairs, n);
+        double[] rest = new double[margins.size()];
+        for (int i = 0; i < rest.length; i++) {
+            rest[i] = margins.get(i)[1] - c * margins.get(i)[0];
+        }
+        double common = median(rest, rest.length);
+        for (int i = 0; i < rest.length; i++) {
+            rest[i] = Math.abs(margins.get(i)[1] - common - c * margins.get(i)[0]);
+        }
+        double spread = Math.abs(c) * (rightmost - leftmost);
+        if (spread * height <= lineHeight || median(rest, rest.length) > FAN_FIT * spread) {
+            return Double.POSITIVE_INFINITY;
+        }
+        if (1 / Math.abs(c) < FAN_NEAREST * height) {
+            return Double.POSITIVE_INFINITY;
+        }
+        // The margin at x leans by common + c x: all of them meet 1 / c above the middle.
+        return -1 / c;
+    }
+
+    /**
+     * The margins among {@code ends}, the left or the right ends of lines sorted down the page:
+     * each as where it crosses the middle height of the page and its lean, x per y.
+     */
+    private static List<double[]> marginsOf(List<double[]> ends, float lineHeight, int height) {
+        List<double[]> margins = new ArrayList<>();
+        boolean[] used = new boolean[ends.size()];
+        for (int first = 0; first < ends.size(); first++) {
+            if (used[first]) {
+                continue;
+            }
+            List<double[]> chain = new ArrayList<>();
+            chain.add(ends.get(first));
+            used[first] = true;
+            int last = first;
+            while (true) {
+                double[] from = ends.get(last);
+                // Where the chain is heading, once it has a few points.
+                double heading = 0;
+                if (chain.size() >= 4) {
+                    double[] back = chain.get(chain.size() - 4);
+                    if (from[1] > back[1]) {
+                        heading = (from[0] - back[0]) / (from[1] - back[1]);
+                    }
+                }
+                int next = -1;
+                for (int j = last + 1; j < ends.size(); j++) {
+                    if (used[j]) {
+                        continue;
+                    }
+                    double down = ends.get(j)[1] - from[1];
+                    if (down < 0.5 * lineHeight) {
+                        continue;
+                    }
+                    if (down > MARGIN_STEP * lineHeight) {
+                        break;
+                    }
+                    if (Math.abs(ends.get(j)[0] - (from[0] + heading * down)) <= MARGIN_NEAR * lineHeight) {
+                        next = j;
+                        break;
+                    }
+                }
+                if (next < 0) {
+                    break;
+                }
+                chain.add(ends.get(next));
+                used[next] = true;
+                last = next;
+            }
+            double span = chain.get(chain.size() - 1)[1] - chain.get(0)[1];
+            if (chain.size() < MARGIN_LINES || span < MARGIN_SPAN * lineHeight) {
+                continue;
+            }
+            // Least squares: x against y.
+            double meanX = 0;
+            double meanY = 0;
+            for (double[] point : chain) {
+                meanX += point[0] / chain.size();
+                meanY += point[1] / chain.size();
+            }
+            double up = 0;
+            double down = 0;
+            for (double[] point : chain) {
+                up += (point[1] - meanY) * (point[0] - meanX);
+                down += (point[1] - meanY) * (point[1] - meanY);
+            }
+            double lean = up / down;
+            double[] off = new double[chain.size()];
+            for (int i = 0; i < off.length; i++) {
+                off[i] = Math.abs(chain.get(i)[0] - meanX - lean * (chain.get(i)[1] - meanY));
+            }
+            if (median(off, off.length) <= MARGIN_FIT * lineHeight) {
+                margins.add(new double[] {meanX + lean * (height * 0.5 - meanY), lean});
+            }
+        }
+        return margins;
     }
 
     /**
@@ -396,12 +588,16 @@ final class PageTurn {
     }
 
     /**
-     * A page whose lines run to one point, laid flat: the map that sends that point to infinity,
-     * so that the lines come out parallel, with the scale of the page kept at its middle. The
-     * flat page holds the text of the page and a margin, see {@link #FAN_MARGIN}. Its lines
-     * still share one slope, that of the line through the middle; levelling takes it out.
+     * A page whose lines run to one point, or whose margins do, or both, laid flat: the map that
+     * sends those points to infinity, so that lines and margins come out parallel, with the
+     * scale of the page kept at its middle. The flat page holds the text of the page and a
+     * margin, see {@link #FAN_MARGIN}. Its lines still share one slope, that of the line through
+     * the middle; levelling takes it out.
      *
-     * @param distance from the middle of the page to the point, along x, signed
+     * @param distance from the middle of the page to the point the lines run to, along x,
+     *     signed; infinite when they run side by side
+     * @param fall from the middle of the page to the point the margins run to, along y, signed;
+     *     infinite when they run side by side
      * @param width width of the page before
      * @param height height of the page before
      * @param left x of the flat page's left edge, from the middle of the page
@@ -409,22 +605,21 @@ final class PageTurn {
      * @param flatWidth width of the flat page
      * @param flatHeight height of the flat page
      */
-    record Fan(double distance, int width, int height, double left, double top, int flatWidth, int flatHeight) {
+    record Fan(double distance, double fall, int width, int height, double left, double top, int flatWidth, int flatHeight) {
         /**
-         * For a page of this size whose lines run to a point at {@code pointX}; the flat page
-         * holds {@code boxes} with {@code margin} around them, and nothing beyond the picture.
+         * For a page of this size; the flat page holds {@code boxes} with {@code margin} around
+         * them, and nothing beyond the picture.
          */
-        static Fan of(int width, int height, double pointX, List<DbPost.Box> boxes, float margin) {
-            double distance = pointX - width * 0.5;
+        static Fan of(int width, int height, double distance, double fall, List<DbPost.Box> boxes, float margin) {
             double[] frame = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
             for (int corner = 0; corner < 4; corner++) {
-                widen(frame, (corner & 1) == 0 ? 0 : width, (corner & 2) == 0 ? 0 : height, width, height, distance);
+                widen(frame, (corner & 1) == 0 ? 0 : width, (corner & 2) == 0 ? 0 : height, width, height, distance, fall);
             }
             double[] text = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
             for (DbPost.Box box : boxes) {
                 float[] q = box.quad();
                 for (int i = 0; i < 8; i += 2) {
-                    widen(text, q[i], q[i + 1], width, height, distance);
+                    widen(text, q[i], q[i + 1], width, height, distance, fall);
                 }
             }
             if (boxes.isEmpty()) {
@@ -434,14 +629,14 @@ final class PageTurn {
             double right = Math.min(frame[1], text[1] + margin);
             double top = Math.max(frame[2], text[2] - margin);
             double bottom = Math.min(frame[3], text[3] + margin);
-            return new Fan(distance, width, height, left, top, (int) Math.ceil(right - left), (int) Math.ceil(bottom - top));
+            return new Fan(distance, fall, width, height, left, top, (int) Math.ceil(right - left), (int) Math.ceil(bottom - top));
         }
 
         /** Takes the point {@code (x, y)} of the page into the bounds {@code u0, u1, v0, v1} of the flat page, from its middle. */
-        private static void widen(double[] bounds, double x, double y, int width, int height, double distance) {
+        private static void widen(double[] bounds, double x, double y, int width, int height, double distance, double fall) {
             double dx = x - width * 0.5;
             double dy = y - height * 0.5;
-            double den = 1 - dx / distance;
+            double den = 1 - dx / distance - dy / fall;
             bounds[0] = Math.min(bounds[0], dx / den);
             bounds[1] = Math.max(bounds[1], dx / den);
             bounds[2] = Math.min(bounds[2], dy / den);
@@ -452,7 +647,7 @@ final class PageTurn {
         float[] back(float x, float y) {
             double u = x + left;
             double v = y + top;
-            double den = 1 + u / distance;
+            double den = 1 + u / distance + v / fall;
             return new float[] {(float) (u / den + width * 0.5), (float) (v / den + height * 0.5)};
         }
 
@@ -460,7 +655,7 @@ final class PageTurn {
         float[] forward(float x, float y) {
             double dx = x - width * 0.5;
             double dy = y - height * 0.5;
-            double den = 1 - dx / distance;
+            double den = 1 - dx / distance - dy / fall;
             return new float[] {(float) (dx / den - left), (float) (dy / den - top)};
         }
 
