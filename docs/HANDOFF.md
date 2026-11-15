@@ -4,6 +4,22 @@ State on 2026-10-14, after the reading-order round and the column-gutter change.
 [internals.md](internals.md) and [benchmark.md](benchmark.md) first; this file is the to-do list
 and the working method.
 
+**Where things stand on the morning of 2026-11-15** (the dated paragraphs below have the detail):
+
+- `dev` has 105 documents, 66 of them business documents; `test` 27. Default profile: `dev`
+  0.049, `test` 0.041 (Tesseract 0.146 and 0.210). The tables of docs/benchmark.md are rebuilt
+  for these two sets; `test2` and `test3` were not scored again.
+- A page is set right before it is read: turned, levelled, laid flat when photographed from
+  the side or from below, enlarged when small, shrunk when too large for the heap.
+- Blocks side by side are columns, rows of cells or neither by two rules built on the business
+  documents; plain rows now beat the layout analysis by ten edits or more on three pages.
+- Open, in the order it would pay: the 1859 note and other rows that would read better as
+  blocks ("Blocks side by side"), small print lost to blur and low resolution ("Pages as a
+  phone photographs them"), the pages that read worse as photos from below, and `test2` and
+  `test3`, which wait for the owner's word before they are scored again.
+- Tools: `bench/tools/ro.sh` (reading order on cached lines, now faithful to the engine),
+  `bench/tools/probe.sh` (pages turned, askew, photographed), `ocr.sh score`.
+
 ## Review round, 2026-11-14
 
 A code review of the whole project and the fixes that followed. None of it changes what a page
