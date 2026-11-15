@@ -9,8 +9,7 @@ These are public documents with references transcribed by hand. Read
     problems of this one. No longer independent.
   - `test2` (30 documents): scored at the end of the round it was collected in, after a change
     built on `dev` only, and on 2026-11-15. Do not tune on it.
-  - `test3` (120 documents: 59 PL, 61 EN): held out. Scored on 2026-11-14 and 2026-11-15, when it
-    had 97. Do
+  - `test3` (120 documents: 59 PL, 61 EN): held out. Scored on 2026-11-14 and twice on 2026-11-15. Do
     not tune on it and do not look at its pages. Report it with `report.py --manifest`: the
     mean over document groups is its headline number.
   - `todo` (561 business documents left of the 624 delivered on 2026-11-15; 58 were checked and

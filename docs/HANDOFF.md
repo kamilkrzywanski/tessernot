@@ -6,11 +6,11 @@ and the working method.
 
 **Where things stand on the morning of 2026-11-15** (the dated paragraphs below have the detail):
 
-- `dev` has 105 documents, 66 of them business documents; `test` 27. Default profile: `dev`
-  0.049, `test` 0.054 (Tesseract 0.146 and 0.198; `test` was 0.041 and 0.210 until one of its
-  references was corrected, see "References checked again"). `test2` 0.062 (Tesseract 0.070), `test3`
-  0.130 (0.158). All four sets were scored with the engine of db94086 and the tables of
-  docs/benchmark.md are rebuilt.
+- The sets, after 58 new business documents joined them on 2026-11-15: `dev` 122 documents,
+  `test` 35, `test2` 30, `test3` 120. Default profile, engine `80b049b`: `dev` 0.047, `test`
+  0.039, `test2` 0.087, `test3` 0.120 (Tesseract 0.138, 0.176, 0.082, 0.152). Every table and
+  chart of docs/benchmark.md and the README is from that night's scoring; the outputs are in
+  `bench/out`, the ones before in `bench/out/prev-2026-11-15b`.
 - A page is set right before it is read: turned, levelled, laid flat when photographed from
   the side, enlarged when small, shrunk when too large for the heap.
 - Blocks side by side are columns, rows of cells or neither by two rules built on the business
@@ -19,7 +19,9 @@ and the working method.
   columns run on past it in the middle of a sentence (Encyklopedja staropolska in `test`,
   0.408 to 0.005; docs/internals.md, reading order, step 9). It is a rule from one page; a
   second page of the kind would say whether "both columns" is too strict.
-- Open, in the order it would pay: the 1859 note and other rows that would read better as
+- Open, in the order it would pay: forms (the ten documents that joined `test2` read at 0.200,
+  behind Tesseract's 0.135; the cause is not known and must be looked for on forms of `dev`,
+  where reading order of cells side by side is the likely place), the 1859 note and other rows that would read better as
   blocks ("Blocks side by side"), small print lost to blur and low resolution ("Pages as a
   phone photographs them"), pages photographed from below (tried and dropped), and a multi-column
   newspaper page the new rules read worse, known only from `test3` ("The held-out sets,
@@ -525,10 +527,8 @@ digits of the year (`188`, `185`) had been left out with the handwritten last on
 and English pages (arXiv, the Official Journal, encyclopedias) had nothing or a comma.
 Dotted leaders are now left out everywhere they were found, and the collecting rules say so.
 
-`test2` and `test3` have not been scored since: their tables in docs/benchmark.md and the
-numbers of the README are from the references before this check. Scoring the kept outputs
-against the corrected references (`score --hyp`, no engine run) is the owner's to allow, as
-any scoring of those sets is.
+`test2` and `test3` were scored again on the night of 2026-11-15, on the owner's word, with
+the corrected references and the new documents; their tables are from that scoring.
 
 The one finding that matters is the reading order of `pl-encyklopedja-staropolska-1900-s42`:
 its photograph sits across both columns and the columns run on below it, and the reference
@@ -594,9 +594,8 @@ left out in others), the lettering of an electronic-signature widget (left out),
 plain type (now kept: Guggenheim), three-block letterheads of congressional letters read
 line by line across the blocks.
 
-Not done: none of the 45 has been read by any engine, so no table has them. `dev` and `test`
-can be scored again at any time (their tables then need rebuilding for 119 and 34 documents);
-`test2` and `test3` wait for the owner's word, as before. Pace: the owner's usage limits are
+All four sets were scored that night with the new documents in them, on the owner's word.
+Pace: the owner's usage limits are
 tight; checkers run two at a time at most (one task costs 100 to 180 thousand tokens).
 
 **A second lot from todo, 2026-11-15, stopped part way.** The owner asked for another 50 by

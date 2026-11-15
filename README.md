@@ -173,35 +173,30 @@ post-processing) is public only for technical reasons. It may change in any rele
 
 Public documents with references transcribed by hand, in Polish and English: invoices,
 receipts, letters, forms, and multi-column books, dictionaries, newspapers and official
-gazettes. `test2` was collected for an earlier round and scored at its end, then after a
-column-gutter change and again on 2026-11-15, each time after work on `dev` and `test` only;
-nobody tuned on it. `test` was scored once in
-the round before and then pointed at what to fix.
+gazettes. `test3` (120 documents) and `test2` (30) are held out: nobody tunes on them and their
+pages are not looked at. `test` (35) was scored once in an earlier round and then pointed at
+what to fix. All three were scored on 2026-11-15, after every reference had been checked
+against its picture again.
 
-![Character accuracy on test2 by document kind](docs/benchmark-test2.png)
+![Character accuracy on test3 by document kind](docs/benchmark-test3.png)
 
-| Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | **0.062 / 0.031** | **0.952** | **0.054 / 0.022** | **0.931** | 6.7 s / 3.7 s |
-| ocr-pro, `--limit 960` | 0.168 / 0.032 | 0.937 | 0.062 / 0.026 | 0.918 | 5.7 s / 2.6 s |
-| ocr-pro, `--layout rows` | 0.653 / 0.657 | 0.952 | 0.510 / 0.152 | 0.931 | about the same |
-| RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.513 / 0.237 | 0.929 | 5.2 s / 3.7 s |
-| Tesseract 5 (`pol` / `eng`) | 0.070 / 0.033 | 0.934 | 0.198 / 0.137 | 0.854 | 3.5 s / 1.5 s |
+| Engine | `test3` CER pooled / median | `test3` word F1 | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **ocr-pro** | **0.120** / 0.030 | **0.884** | 0.087 / 0.043 | **0.953** | **0.039** / 0.022 | **0.941** |
+| ocr-pro, `--limit 960` | 0.174 / 0.024 | 0.849 | 0.177 / 0.044 | 0.939 | 0.048 / 0.021 | 0.928 |
+| ocr-pro, `--layout rows` | 0.422 / 0.045 | 0.884 | 0.575 / 0.552 | 0.953 | 0.438 / 0.126 | 0.940 |
+| RapidOCR, same models on ONNX Runtime | 0.425 / 0.058 | 0.884 | 0.578 / 0.556 | 0.953 | 0.443 / 0.159 | 0.938 |
+| Tesseract 5 (`pol` / `eng`) | 0.152 / 0.038 | 0.821 | **0.082** / 0.059 | 0.926 | 0.176 / 0.130 | 0.864 |
 
-CER counts reading order; word F1 does not. The columns of ocr-pro are from 2026-11-15, the `test` ones after the
-reading order of one of its references was corrected that day (0.041 before, see the benchmark
-notes); the times
-are from 2026-10-15, before the changes of November (the benchmark notes have what was
-measured since). On the largest held-out set, `test3` (97 pages, 77 of them books and old
-newspapers), the pooled CER is 0.130 against 0.158 for Tesseract and 0.478 for RapidOCR.
-The test machine was an Intel i7-1365U laptop with
-12 threads; all engines ran in one session with nothing else heavy running. `--layout rows` reads row by row like RapidOCR: it matches the automatic layout on
-invoices and receipts and loses on everything with columns.
+CER counts reading order; word F1 does not. `--layout rows` reads row by row like RapidOCR: it
+matches the automatic layout on invoices and receipts and loses on everything with columns.
+A page takes a few seconds: on an Intel i7-1365U laptop with 12 threads the median was 3.5 to
+4.4 s for ocr-pro, 4.1 s for RapidOCR and 1.7 s for Tesseract (the benchmark notes have the
+measurements and their caveats).
 
-- **Invoices, bills and receipts:** 94 % character accuracy against 67 % for Tesseract on
-  `test2` (90 % before a fix that one of its receipts prompted), and 88 % against 67 % on
-  `test`. Tesseract returns nothing for some thermal and
-  dot-matrix receipts.
+- **Invoices, bills and receipts:** 87 % character accuracy against 70 % for Tesseract on
+  `test3`, 84 % against 51 % on `test2` and 89 % against 69 % on `test`. Tesseract returns
+  nothing for some thermal and dot-matrix receipts.
 - **Recognition:** word F1 is above Tesseract on every set and matches ONNX Runtime running the
   same models, so the pure-Java runtime gives up nothing.
 - **Layout:** multi-column dictionaries, legal gazettes, the EU Official Journal, journal
@@ -209,8 +204,9 @@ invoices and receipts and loses on everything with columns.
   where the detector merged lines across the gutters. RapidOCR reads the same models row by row
   and loses most of those pages.
 - **Where Tesseract still wins:** a few complex pages, such as a 1910 magazine page, an 1836
-  gazette and a typed memo. On `test2` as a whole it is no longer ahead (pooled CER 0.070
-  against 0.062). It is faster.
+  gazette and a typed memo, and the forms and letters that joined `test2` in November 2026: on
+  its eight letters, forms and notices ocr-pro has 0.175 against 0.066, which puts Tesseract
+  slightly ahead on that set as a whole. It is faster.
 
 Method, the `dev` set, per-document results and how to reproduce them are in
 [docs/benchmark.md](docs/benchmark.md).
@@ -226,8 +222,8 @@ adds:
 - second reads of a line crop for invoice details
 
 The second reads and CTC swaps were tuned on three scans and checked on the `dev` set. With the
-word-list search the profile gives word F1 0.955 on `dev`, 0.947 on `test`, 0.961 on `test2` and
-0.902 on `test3`, against 0.945, 0.931, 0.952 and 0.872 for the plain pipeline. It is **off by
+word-list search the profile gives word F1 0.957 on `dev`, 0.954 on `test`, 0.961 on `test2` and
+0.911 on `test3`, against 0.948, 0.941, 0.953 and 0.884 for the plain pipeline. It is **off by
 default**. See
 [docs/corrections.md](docs/corrections.md) for the rules and what they get wrong.
 
