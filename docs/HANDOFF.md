@@ -607,6 +607,34 @@ not checked and are still `todo` like the rest (561); the next lot starts again 
 which will pick the same documents first. The kinds table of docs/benchmark.md counts the
 first 45 only.
 
+**Forms, 2026-11-16: looked for on dev, not found there.** The ten documents that joined
+`test2` read at 0.200 against Tesseract's 0.135, and the owner asked for forms to be worked on
+in `dev`. The forms of `dev` and `test` do not show it: ocr-pro is ahead of Tesseract on 20 of
+23 (behind on the W-4 by 59 edits, the Navy 5512 by 72 against plain rows, the NLS form by 11).
+The scores of the held-out pages, read without opening the pages, point elsewhere: three
+documents carry `test2` (a two-column census questionnaire 0.456, a bilingual notice in two
+columns 0.671, an account over a spread 0.681, the first two read in rows or nearly) and in
+`test3` the letters with a three-block letterhead and an accident form. The page of `dev` with
+the same symptom is the 1859 note (0.673, Tesseract 0.135): three blocks side by side, two of
+them centred text on shared baselines, which the rows-of-cells rule reads as rows and the
+margin test would refuse as columns anyway.
+
+To get more pages of these kinds, 40 unchecked `todo` documents (16 notices, 18 forms, 6
+letters, the next in the order of the rule after the second lot) were read by the engine
+once; their manifest notes now say they may join `dev` only. Pooled 0.058, no page above
+0.23. Worth taking into `dev` after a check of their references: `pl-obwieszczenie-informujemy-1920`
+(display type boxed word by word; a river of word spaces in a paragraph is taken for a gutter,
+0.199 against 0.043 in rows), `en-form-bis-621p` (0.222), `en-form-sec-144` (0.215),
+`en-form-dol-wh347-2025` (0.163), `pl-obwieszczenie-schwender-rolnicy` (0.138).
+
+Tried and dropped the same day: refusing a gutter no wider than twice the median gap between
+neighbouring boxes of a row (a river). On pages of three columns the neighbours of a row are
+the other columns, so the rule refused real gutters: `dev` went from 0.050 to 0.167 and the
+page it was written for did not move. A rule for rivers has to measure word spaces inside one
+column only. Not tried: reading two sides as blocks when both are running prose (lines ending
+open and the next beginning with a small letter), which is what the 1859 note needs besides a
+test of centred lines.
+
 **Which model checks references, 2026-11-15.** Measured on seven documents of the third batch
 with the references as delivered and the same brief: of the 11 corrections that change a
 score, a Fable checker found 11, an Opus 5.5 checker 9 (it missed the two misplaced column
