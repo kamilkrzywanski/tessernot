@@ -448,10 +448,23 @@ gutter fix and the flattening):
   `jitter` drop the fragments after ordering, as the engine does. A cache from before has no
   scores and is ordered as before; empty `bench/out/ro/json` and dump again. With the new
   cache the workbench gives the engine's edits on every page of `dev` and `test` to within
-  rounding (0.0495 and 0.0406 pooled against 0.0493 and 0.0406), but for one: the Helios cinema
+  rounding (0.0496 and 0.0407 pooled against 0.0494 and 0.0407), but for one: the Helios cinema
   ticket, 17 degrees askew, 64 against 24. The engine orders such a page on the levelled
   picture and after a second detection; the cache has its boxes as they lie on the picture
   as given. The same holds for any page the engine turns level or lays flat.
+
+**A review of the night's code, 2026-11-15.** A fresh reviewer read the commits of that night
+(the two reading-order rules, the fragments, the margins, the tools) and reported ten things.
+
+- The margin estimate could be carried by one margin read from too few lines. Making it
+  stricter is what showed that it does not pay, see "Laying flat a page photographed from
+  below" under "Tried and dropped".
+- `rowsOfCells` is asked for sides of any size that are not text columns, not only for small
+  blocks, so two address blocks set on one grid read row by row. That is what the data
+  chose (twelve blocks better, one worse), and the Javadoc now says so and names the price.
+- The tools: `ro.sh show` and `cuts` ignored the scores, `-Dcheck` compared against a text
+  with fragments, a null score became 0, the dump stopped at a page that fails, the probe did
+  not make its dump directory and counted `--limit` per set. All fixed.
 
 **The benchmark tables, rebuilt on 2026-11-15 for `dev` and `test`.** docs/benchmark.md and the
 README have the engine of that morning in five variants on both sets, with

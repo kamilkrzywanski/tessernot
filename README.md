@@ -181,8 +181,8 @@ the round before and then pointed at what to fix.
 
 | Engine | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 | Median time (`test2` / `test`) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | 0.079 / **0.033** | 0.951 | **0.041 / 0.021** | **0.932** | 6.7 s / 3.7 s |
-| ocr-pro, `--limit 960` | 0.205 / 0.037 | 0.935 | 0.049 / 0.022 | 0.919 | 5.7 s / 2.6 s |
+| **ocr-pro** | 0.079 / **0.033** | 0.951 | **0.041 / 0.021** | **0.931** | 6.7 s / 3.7 s |
+| ocr-pro, `--limit 960` | 0.205 / 0.037 | 0.935 | 0.049 / 0.022 | 0.918 | 5.7 s / 2.6 s |
 | ocr-pro, `--layout rows` | 0.654 / 0.659 | 0.951 | 0.508 / 0.152 | 0.931 | about the same |
 | RapidOCR, same models on ONNX Runtime | 0.656 / 0.662 | 0.951 | 0.512 / 0.237 | 0.929 | 5.2 s / 3.7 s |
 | Tesseract 5 (`pol` / `eng`) | **0.070 / 0.033** | 0.934 | 0.210 / 0.149 | 0.854 | 3.5 s / 1.5 s |
