@@ -466,13 +466,24 @@ gutter fix and the flattening):
   with fragments, a null score became 0, the dump stopped at a page that fails, the probe did
   not make its dump directory and counted `--limit` per set. All fixed.
 
-**CI, 2026-11-15.** The push of that night (`0039750`) failed on the scalar leg: two tests of
-`QualityGateTest` were cut off at their 180 seconds. Nothing was wrong with what they read:
-that runner was about twice as slow as the ones before (the end-to-end tests took 131 s
-against 53), and on the scalar kernels one of these tests takes about 100 s on a usual runner.
-Their timeout is now 600 s; it is there to end a hang. Locally on the scalar kernels the
-quality gate and the end-to-end tests pass (170 s and 70 s). The Windows leg has passed three
-runs in a row and is still `continue-on-error`.
+**CI, 2026-11-15.** The scalar leg failed on three of the last five pushes (`a1181e2`,
+`80f7c11`, `0039750`), each time the same way: two tests of `QualityGateTest` cut off at their
+180 seconds. Nothing was wrong with what they read. The runners differ: `d58e634` passed with
+the quality gate at 320 s, and `a1181e2`, pushed four minutes later with only documents added,
+was cut off (the gate past 520 s, the end-to-end tests 92 s against 53). Between them is
+`a41de1e`, which passed at 433 s. So on the scalar kernels one of these tests takes 100 to 200 s
+depending on the runner, and a limit of 180 s failed on the slower ones. The timeout is now
+600 s; it is there to end a hang. Locally on the scalar kernels the quality gate and the
+end-to-end tests pass (170 s and 70 s). These failures went unnoticed during the night: the
+runs were pushed one after another and only the last one was looked at. The Windows leg has
+passed three runs in a row and is still `continue-on-error`.
+
+**Page times, morning of 2026-11-15.** Measured for `dev` and `test` only, one engine at a
+time, but with another session's short jobs on the machine (and the laptop seems to have slept
+for half an hour in the middle of one run, which the engine's clock does not count). They are
+in `docs/benchmark.md` under "Speed of the engine of 2026-11-15", as approximate numbers and
+not in the tables. To put a time column back into the tables, run the three `score` commands
+and the two baseline scripts on an idle machine.
 
 **The benchmark tables, rebuilt on 2026-11-15 for `dev` and `test`.** docs/benchmark.md and the
 README have the engine of that morning in five variants on both sets, with

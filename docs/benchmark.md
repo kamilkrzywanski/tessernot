@@ -194,8 +194,8 @@ Per document, CER / word F1:
 Scored on 2026-11-15 with the engine of that day (every change described in this document,
 the defaults since 2026-11-14 among them). Tesseract and RapidOCR were run again the same night
 and give what they gave before. Page times are left out of the tables of `test` and `dev`:
-other jobs ran on the machine, and the times of that night say nothing. The last ones measured
-alone are in "What the numbers say".
+other jobs ran on the machine that night. They were measured again the next morning, one engine
+at a time but not on an idle machine; those numbers are under "Speed" in "What the numbers say".
 
 ![Character accuracy on test by document kind](benchmark-test.png)
 
@@ -369,13 +369,23 @@ upright, where four sample pages went from 94 edits to over 2,200 before.
   `dev` the layout analysis and `--layout rows` are level (0.178 and 0.184), and on its letters,
   forms and notices the analysis is at 0.063 against 0.120; before the rules of 2026-11-15 rows
   won on fourteen of its 66 business documents.
-- **Speed** (measured on 2026-10-15, on the first 39 documents of `dev`; not measured again).
-  Median page time on `test2` / `test` / `dev`: ocr-pro 6.7 / 3.7 / 3.5 s, RapidOCR
-  on ONNX Runtime with the same models 5.2 / 3.7 / 3.7 s, Tesseract 3.5 / 1.5 / 1.8 s. Dense
-  newspaper pages with a hundred lines and more take longest (Scientific American 1850: 19.6 s).
+- **Speed.** Measured on 2026-10-15 on an idle machine (`dev` then had 39 documents), median
+  page time on `test2` / `test` / `dev`: ocr-pro 6.7 / 3.7 / 3.5 s, RapidOCR on ONNX Runtime
+  with the same models 5.2 / 3.7 / 3.7 s, Tesseract 3.5 / 1.5 / 1.8 s. Dense newspaper pages
+  with a hundred lines and more take longest (Scientific American 1850: 19.6 s).
   `--limit 960` takes 15–31 % less time (5.7 / 2.6 / 2.4 s). `--alphabet latin` takes 8–18 %
   less time over a whole set, up to a quarter on pages with a lot of text, at the same accuracy.
   Repeated runs vary by about ±20 %, so treat the times as an order of magnitude.
+- **Speed of the engine of 2026-11-15.** Measured that morning on `test` / `dev` (105
+  documents), one engine at a time, while another session ran short jobs on the machine:
+  ocr-pro 3.5 / 4.4 s, `--limit 960` 2.7 / 2.5 s, `--alphabet latin` 3.2 / 3.7 s, RapidOCR
+  4.1 / 4.1 s, Tesseract 1.7 / 1.7 s. On the 39 documents `dev` had in October: ocr-pro 4.8 s
+  against 3.5 s then, RapidOCR 4.3 against 3.7, Tesseract 2.0 against 1.8. The two other
+  engines were 9–16 % slower than in October on the same pages, which is what the machine
+  cost that morning; what remains of ocr-pro's 37 % is the price of the steps added since
+  (small print enlarged, a page turned level and detected again), and on `test` no such price
+  shows (3.5 s against 3.7). The slowest page is the Congressional Record of 2008 (19.8 s).
+  The accuracy of these runs is the accuracy in the tables, document by document.
 
 ## Reproduce
 
