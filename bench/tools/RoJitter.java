@@ -1,5 +1,6 @@
 import io.github.kamilkrzywanski.ocr.TextLine;
 import io.github.kamilkrzywanski.ocr.internal.eval.Metrics;
+import io.github.kamilkrzywanski.ocr.internal.post.Fragments;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
 
 import java.nio.file.*;
@@ -33,6 +34,8 @@ public class RoJitter {
                 if (!Files.exists(f)) { System.out.println("missing " + name); continue; }
                 List<float[]> quads = new ArrayList<>();
                 List<String> texts = new ArrayList<>();
+                Path scoreFile = tsv.resolve(name + ".score");
+                SCORES = Files.exists(scoreFile) ? Files.readAllLines(scoreFile) : List.of();
                 for (String row : Files.readAllLines(f)) {
                     String[] p = row.split("\t", 9);
                     float[] q = new float[8];
@@ -73,8 +76,18 @@ public class RoJitter {
                 q[0] += left; q[6] += left; q[2] += right; q[4] += right;
                 q[1] += top; q[3] += top; q[5] += bottom; q[7] += bottom;
             }
-            lines.add(new TextLine(texts.get(i), 1f, 1f, q, null));
+            lines.add(new TextLine(texts.get(i), i < SCORES.size() ? Float.parseFloat(SCORES.get(i)) : 1f, 1f, q, null));
         }
-        return Metrics.levenshtein(Metrics.normalize(ReadingOrder.join(ReadingOrder.group(lines))), reference);
+        // As the engine does: the order is found with the fragments, then they are left out.
+        List<List<TextLine>> rows = new ArrayList<>();
+        for (List<TextLine> row : ReadingOrder.group(lines)) {
+            List<TextLine> kept = new ArrayList<>(row);
+            kept.removeIf(Fragments::is);
+            if (!kept.isEmpty()) rows.add(kept);
+        }
+        return Metrics.levenshtein(Metrics.normalize(ReadingOrder.join(rows)), reference);
     }
+
+    /** The scores of the page at work, in the order of its lines; empty for a cache without them. */
+    private static List<String> SCORES = List.of();
 }

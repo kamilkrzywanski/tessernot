@@ -423,11 +423,13 @@ gutter fix and the flattening):
   the 1855 institution account (41). Each fails a different test; none was changed.
 - The references do not agree on cells with rules around them: PIT-11 and ZAW-FA read them by
   visual rows, the W-9 and the head of the ZUS forms cell by cell. No rule satisfies both.
-- **The workbench does not see fragments.** `ro.sh dump` caches the engine's result, which has
-  dropped them, while the engine orders the lines with them. Two `test` pages scored
-  differently on the cache and in the engine for that reason. To mirror the engine, the cache
-  would have to be dumped with `--keep-fragments`, carry the scores, and `RoBench` drop the
-  fragments after ordering. Until then, confirm a layout change with `ocr.sh score`.
+- **The workbench did not see fragments, and now does.** `ro.sh dump` cached the engine's
+  result, which has dropped them, while the engine orders the lines with them; two `test` pages
+  scored differently on the cache and in the engine for that reason, and ZUS ZUA 348 against
+  374. Since that day `ro.sh dump` reads all pages with one engine and fragments kept
+  (`RoDump`), the cache carries the score of every line (`<name>.score`), and `score` and
+  `jitter` drop the fragments after ordering, as the engine does. A cache from before has no
+  scores and is ordered as before; empty `bench/out/ro/json` and dump again.
 
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
@@ -527,7 +529,7 @@ The English dev agent listed spots worth a look in `en-newspaper-bristol-mercury
   variant: `bench/tools/probe.sh bench/out/probe.tsv none skew3 persx12`. The variants are
   listed in `Probe.java`. One pass over the 132 pages takes ten to fifteen minutes a variant.
 - **`bench/tools/ro.sh`: the reading-order workbench.** `dump` runs OCR once per page and caches
-  the lines with their boxes; `score` recompiles only the reading-order sources and scores every cached
+  the lines with their boxes and scores, fragments included; `score` recompiles only the reading-order sources and scores every cached
   page in seconds; `cuts` lists merged lines it would split; `show <name>` draws a page's boxes
   in reading order. Workflow for any layout change:
   1. `ro.sh dump bench/ref/dev bench/ref/test` (once, about 10 minutes; re-dump after changing

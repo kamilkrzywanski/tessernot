@@ -1,6 +1,8 @@
 #!/bin/sh
 # Reading-order workbench. Run from the repo root after `./mvnw -DskipTests package`.
-#   bench/tools/ro.sh dump <ref-dir>...   OCR every reference's image once, cache lines in bench/out/ro/tsv
+#   bench/tools/ro.sh dump <ref-dir>...   OCR every reference's image once, with one engine and fragments kept,
+#                                         cache lines and their scores in bench/out/ro/tsv; a page already
+#                                         cached is skipped, so empty bench/out/ro/json to read all again
 #   bench/tools/ro.sh score <ref-dir>...  order the cached lines with the current ReadingOrder source, print CER
 #                                         (RO_OPTS=-Drows=true reads row by row, as Layout.ROWS)
 #   bench/tools/ro.sh cuts                lines ReadingOrder.cuts would split on the cached pages
@@ -8,7 +10,9 @@
 #                                         as two reads of one page differ: which pages hang on a threshold
 #                                         (RO_OPTS=-Dtrials=N)
 #   bench/tools/ro.sh show <name>         picture of the current order in bench/out/ro/viz/<name>.png
-# The cache holds the engine's lines (text and quads). Only the reading-order sources are recompiled
+# The cache holds the engine's lines (text, quads and scores) with the fragments it would drop: score and
+# jitter order the lines with them and drop them afterwards, as the engine does (RO_OPTS=-Dkeep=true keeps
+# them). Only the reading-order sources are recompiled
 # (ReadingOrder and the classes it is split into), so a change to them is scored on every page in
 # seconds. Merged-line cuts need the engine: re-dump after changing them.
 set -eu
@@ -28,14 +32,8 @@ cmd=$1
 shift
 case $cmd in
   dump)
-    for dir in "$@"; do
-      for ref in "$dir"/*.txt; do
-        name=$(basename "$ref" .txt)
-        [ -s "$W/json/$name.json" ] && continue
-        for ext in jpg jpeg png tif tiff; do img=bench/data/$name.$ext; [ -f "$img" ] && break; done
-        ./ocr.sh ocr "$img" --json > "$W/json/$name.json" 2>/dev/null || echo "fail $name" >&2
-      done
-    done
+    "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro-cli/target/ocr-pro-cli.jar "$T/RoDump.java"
+    "$J/java" --add-modules jdk.incubator.vector -cp "ocr-pro-cli/target/ocr-pro-cli.jar:$W/classes" RoDump "$W/json" "$@"
     python3 -I "$T/totsv.py" "$W/json" "$W/tsv" ;;
   score) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
   cuts) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoCuts "$W/tsv" ;;
