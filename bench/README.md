@@ -12,7 +12,12 @@ These are public documents with references transcribed by hand. Read
   - `test3` (97 documents: 47 PL, 50 EN): held out. Scored on 2026-11-14 and 2026-11-15. Do
     not tune on it and do not look at its pages. Report it with `report.py --manifest`: the
     mean over document groups is its headline number.
-- `ref/dev/`, `ref/test/`, `ref/test2/`, `ref/test3/`: reference transcriptions (`pl-*`, `en-*`)
+  - `todo` (624 business documents, delivered on 2026-11-15): not part of any set yet. Their
+    references are in `ref/todo/` as the collectors wrote them and have not been checked
+    against the pictures. Do not score them and do not tune on them; they are split into sets
+    after the check.
+- `ref/dev/`, `ref/test/`, `ref/test2/`, `ref/test3/`: reference transcriptions (`pl-*`, `en-*`);
+  `ref/todo/`: references not checked yet
 - `data/`: the page images (about 350 MB) and the PDF and DjVu originals of rendered pages (about
   860 MB), kept in their own repository [ocr-pro-bench](https://github.com/kamilkrzywanski/ocr-pro-bench)
   and mounted here as a submodule: `git submodule update --init bench/data`. Licenses and authors

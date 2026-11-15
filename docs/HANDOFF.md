@@ -480,6 +480,23 @@ end-to-end tests pass (170 s and 70 s). These failures went unnoticed during the
 runs were pushed one after another and only the last one was looked at. The Windows leg had
 passed three runs in a row and now fails the run like the others (`continue-on-error` is gone).
 
+**624 new documents, 2026-11-15, waiting.** A collecting session pushed 624 business documents
+(351 Polish, 273 English: 178 forms, 177 notices, 116 letters, 86 invoices, 67 receipts)
+straight into `dev`. They were taken out again the same day, unchecked: their references are
+in `bench/ref/todo/`, their manifest rows have the set `todo`, their pictures stay in
+`bench/data`. Nothing has been scored on them and nobody has looked at them. Before they join
+a set: check every reference against its picture (see "Which model checks references"),
+reject what is unfit, and split them by a rule fixed beforehand, per kind and language, into
+`dev` and a new held-out set. `dev` stays at 105 documents until then.
+
+**Which model checks references, 2026-11-15.** Measured on seven documents of the third batch
+with the references as delivered and the same brief: of the 11 corrections that change a
+score, a Fable checker found 11, an Opus 5.5 checker 9 (it missed the two misplaced column
+headings of the 1855 account) and a Sonnet 5.5 checker none, each without a false correction.
+Opus used as many tokens as Fable. So: Fable or Opus for the letters, the main session for
+the reading order of tables and forms, never Sonnet. One run per model; the copies are in
+the scratchpad of that session and were not kept.
+
 **The held-out sets, 2026-11-15.** The owner allowed `test2` and `test3` to be scored with the
 finished engine (db94086), once, in the five variants; RapidOCR ran on `test3` for the first
 time and the Tesseract output of the night was scored. Nothing was changed afterwards.
