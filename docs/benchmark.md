@@ -321,8 +321,8 @@ Everything here was built on `dev` and `test`; `test2` and `test3` were not look
    out (see "Results on `test3`").
 2. **Pages are set right before they are read** (see "Turning the page" in
    [internals.md](internals.md)): a page on its side or upside down is turned, a page askew by up
-   to 45 degrees is levelled, a page photographed from the side or from below, whose lines or
-   margins run to a point, is laid flat, a small page with small print is enlarged, and a
+   to 45 degrees is levelled, a page photographed from the side, whose lines run to a point,
+   is laid flat, a small page with small print is enlarged, and a
    picture too large for the heap is read smaller. A long line is shown to the orientation
    classifier by its middle; squeezed whole, it was now and then read upside down.
 3. **Blocks side by side** (steps 7 and 8 of "Reading order"): they are columns only where

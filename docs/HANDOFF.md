@@ -10,12 +10,12 @@ and the working method.
   0.049, `test` 0.041 (Tesseract 0.146 and 0.210). The tables of docs/benchmark.md are rebuilt
   for these two sets; `test2` and `test3` were not scored again.
 - A page is set right before it is read: turned, levelled, laid flat when photographed from
-  the side or from below, enlarged when small, shrunk when too large for the heap.
+  the side, enlarged when small, shrunk when too large for the heap.
 - Blocks side by side are columns, rows of cells or neither by two rules built on the business
   documents; plain rows now beat the layout analysis by ten edits or more on three pages.
 - Open, in the order it would pay: the 1859 note and other rows that would read better as
   blocks ("Blocks side by side"), small print lost to blur and low resolution ("Pages as a
-  phone photographs them"), the pages that read worse as photos from below, and `test2` and
+  phone photographs them"), pages photographed from below (tried and dropped), and `test2` and
   `test3`, which wait for the owner's word before they are scored again.
 - Tools: `bench/tools/ro.sh` (reading order on cached lines, now faithful to the engine),
   `bench/tools/probe.sh` (pages turned, askew, photographed), `ocr.sh score`.
@@ -361,23 +361,9 @@ newest pages were read by the engine here for the first time):
   - The flat page is cut to the text of the first detection and three line heights around
     it: a line that detection missed and that lies further out than that is lost. Not seen
     on these pages; a real photo with a small note far out in the margin could show it.
-  - A page photographed from below (`keyy12`, 6,541 before and after this change) came the
-    same night, see the next paragraph.
-- **A page photographed from below or above is laid flat too** (`PageTurn.marginsMeet`,
-  `Fan.fall`), see "Seen from below or above" in internals.md. Its lines stay level; the point
-  is found from the lean of the margins, which grows across the page. On the 66 pages as photos
-  from below: 6,541 edits to 5,845 (that also holds the day's reading-order rules, about 150
-  of it); Wisła 778 to 56, Bristol Mercury 461 to 385. As given, `dev` 10,039 to 10,021 and
-  `test` 2,430 to 2,425: Bristol Mercury and the Aparri News, which have a real lean of a
-  twentieth, and nothing else.
-  - Worse as photos from below: the arXiv page 92 to 255 (the page `ro.sh jitter` already
-    shows hanging on a threshold), the 1981 notice 598 to 673, Monthly Weather Review 83 to
-    121. As photos from the side, Bristol Mercury 428 to 519: it is taken for seen from below
-    as well, as it is when given, and the two together do it no good.
-  - Not helped: the 1923 Bible page from below (1,058 before and after). Its margins are found
-    and it is laid flat; the marginal references between its columns still end the rows.
-  - A page in one column is never taken for seen from below: two margins are not enough to
-    tell, and its lines are level, so nothing is lost.
+  - Not done: a page photographed from below (`keyy12`, 6,541 before and after). Its lines
+    stay level; the point has to be found from the lean of margins and gutters. That was
+    built the next night and taken out again, see "Tried and dropped".
 
 **Third batch of `dev` documents, 2026-11-15.** Twelve Polish documents: five blank forms
 (ZAW-FA, ZUS ZUA and ZCNA, the KOWR alcohol register, the Blue Card), two printed accounts of
@@ -468,7 +454,7 @@ gutter fix and the flattening):
   as given. The same holds for any page the engine turns level or lays flat.
 
 **The benchmark tables, rebuilt on 2026-11-15 for `dev` and `test`.** docs/benchmark.md and the
-README have the engine of that morning (commit `ac3809c`) in five variants on both sets, with
+README have the engine of that morning in five variants on both sets, with
 Tesseract and RapidOCR run again on all 105 and 27 documents, and a chart for each set
 (`docs/benchmark-dev.png`, `docs/benchmark-test.png`).
 
@@ -725,6 +711,30 @@ failures come down to one share just under its threshold.
    in `ModelFiles`, so a bundle from another release fails at load time.
 
 ## Tried and dropped
+
+- **Laying flat a page photographed from below** (2026-11-15; the code is in commit `ac3809c`
+  and was reverted the same morning). Such a page keeps its lines level, and its margins and
+  gutters run to a point far above it. The point was found from the boxes: the left ends, and
+  the right ends, of long lines that follow one another down the page on a straight line are a
+  margin; the lean of each margin was fitted against where it stands across the page; the
+  point went into the map that lays a fanned page flat (`Fan` got a second distance). The
+  estimate was right: on pages made into such photos it gave 0.12 to 0.13 for a true 0.128,
+  and in its last form it took no page of `dev` or `test` as given for one. Three forms, edits
+  on the 66 established pages as photos from below, 6,484 before:
+  - margins of six lines, three or more of them, half following the fit: 5,788, and Wisła 1912
+    778 to 56; but it also took two pages as given for seen from below (Bristol Mercury and the
+    Aparri News, which have a real lean of a twentieth, and read 18 and 5 edits better), and a
+    review showed that one margin read from too few lines could carry the fit on a flat page;
+  - margins of ten lines over fifteen line heights, three quarters following the fit: no page
+    as given, and Wisła back at 778, because the first detection draws its lines across the
+    gutters and only the two outer margins of the page are left;
+  - the same, with two long opposite margins allowed: 6,769. Wisła 778 to 53 and the 1952
+    Dziennik Ustaw 115 to 89, but the arXiv page 92 to 255 and the Bible page, which reads as
+    rows either way, 1,058 to 1,996.
+  The pages that lose are the two that already hang on a threshold: laid flat they are the
+  page as given, a tenth smaller and resampled, and that is enough to tip them. A page in one
+  column needs none of this. What it would take: those two pages made steady first (the
+  marginal references of the Bible page, the arXiv page under `ro.sh jitter`).
 
 - **Keeping the lines of a sideways label together** (2026-11-15). The section headings that
   the ZUS forms print up their left margin, in two or three lines, are vertical words to the

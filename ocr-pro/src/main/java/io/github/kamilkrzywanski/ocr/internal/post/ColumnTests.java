@@ -149,13 +149,17 @@ final class ColumnTests {
     }
 
     /**
-     * Two small blocks side by side are the cells of rows, not blocks to read one after the
-     * other, when their lines stand on the same baselines: more than this share of the lines
+     * Two blocks side by side that are not text columns (see {@link #columnsHold}; text columns
+     * are decided before, by {@link #textSplit}, and often share a baseline grid too) are the
+     * cells of rows, not blocks to read one after the other, when their lines stand on the same
+     * baselines: more than this share of the lines
      * of the side with fewer lines have a line across the gutter whose top and bottom lie
      * within {@link #BASELINE} of a line height of their own. Fields of a form, a label and
      * its value, a name and a title, the address and the telephone numbers of a footer are set
      * like that. Two blocks set each for itself, a note beside a paragraph or two parts of a
-     * letterhead, have their own line pitch and their lines pass each other.
+     * letterhead, have their own line pitch and their lines pass each other. The price: two
+     * address blocks set on one grid, a seller beside a buyer, are read row by row as well.
+     * On dev and test twelve blocks gained by this and one lost.
      */
     static final float SHARED_ROWS = 0.5f;
     static final float BASELINE = 0.25f;

@@ -874,14 +874,13 @@ public final class Images {
     }
 
     /**
-     * A page whose lines or margins run to a point, laid flat on a white canvas of {@code width}
-     * by {@code height}: the output pixel at {@code (u, v)} from the middle of the page, with
+     * A page whose lines run to one point, laid flat on a white canvas of {@code width} by
+     * {@code height}: the output pixel at {@code (u, v)} from the middle of the page, with
      * {@code u = x + left} and {@code v = y + top}, shows the input at
-     * {@code (u, v) / (1 + u / distance + v / fall)} from its own middle. An infinite
-     * {@code distance} or {@code fall} leaves that direction alone. Bilinear; what lies outside
+     * {@code (u, v) / (1 + u / distance)} from its own middle. Bilinear; what lies outside
      * the input is white.
      */
-    public static Bgr flatten(Bgr image, double distance, double fall, double left, double top, int width, int height) {
+    public static Bgr flatten(Bgr image, double distance, double left, double top, int width, int height) {
         int w = image.width();
         int h = image.height();
         byte[] in = image.data();
@@ -890,7 +889,7 @@ public final class Images {
             double v = y + 0.5 + top;
             for (int x = 0; x < width; x++) {
                 double u = x + 0.5 + left;
-                double den = 1 + u / distance + v / fall;
+                double den = 1 + u / distance;
                 float sx = (float) (u / den + w * 0.5 - 0.5);
                 float sy = (float) (v / den + h * 0.5 - 0.5);
                 int o = (y * width + x) * 3;

@@ -256,68 +256,6 @@ class PageTurnTest {
         assertEquals(null, PageTurn.fan(fanned(0.12, 0).subList(0, 5), 2000, 3000));
     }
 
-    /**
-     * A 2000 by 3000 page in {@code columns} columns of thirty lines, photographed from below:
-     * its margins run to a point {@code fall} from its middle, along y; infinite for a flat page.
-     * {@code lean} leans every margin by that much more, as a page askew does.
-     */
-    private static List<DbPost.Box> seenFromBelow(int columns, double fall, double lean) {
-        List<DbPost.Box> boxes = new ArrayList<>();
-        double columnWidth = 1800.0 / columns;
-        for (int column = 0; column < columns; column++) {
-            double left = 100 + column * columnWidth;
-            double right = left + columnWidth - 100;
-            for (int i = 0; i < 30; i++) {
-                double[][] corners = {{left, 150 + 90 * i}, {right, 150 + 90 * i}, {right, 190 + 90 * i}, {left, 190 + 90 * i}};
-                float[] quad = new float[8];
-                for (int k = 0; k < 4; k++) {
-                    double x = corners[k][0] - 1000 + lean * (corners[k][1] - 1500);
-                    double y = corners[k][1] - 1500;
-                    double den = 1 + y / fall;
-                    quad[k * 2] = (float) (x / den + 1000);
-                    quad[k * 2 + 1] = (float) (y / den + 1500);
-                }
-                boxes.add(new DbPost.Box(quad, 1f));
-            }
-        }
-        return boxes;
-    }
-
-    @Test
-    void marginsThatRunToOnePointAreLaidFlat() {
-        // Three columns; the margins meet 12,000 px above the middle of the page, so the top
-        // of the page is narrower: an eighth less from the top line to the bottom one.
-        List<DbPost.Box> boxes = seenFromBelow(3, -12_000, 0);
-        assertEquals(-12_000, PageTurn.marginsMeet(boxes, 2000, 3000), 600);
-        PageTurn.Fan fan = PageTurn.fan(boxes, 2000, 3000);
-        assertTrue(Double.isInfinite(fan.distance()), "the lines run side by side");
-        // On the flat page the left ends of a column stand over one another again.
-        for (int column = 0; column < 3; column++) {
-            float least = Float.POSITIVE_INFINITY;
-            float most = Float.NEGATIVE_INFINITY;
-            for (int i = 0; i < 30; i++) {
-                float[] q = boxes.get(column * 30 + i).quad();
-                float x = fan.forward(q[0], q[1])[0];
-                least = Math.min(least, x);
-                most = Math.max(most, x);
-            }
-            assertEquals(0, most - least, 6f, "column " + column);
-        }
-        // The same page askew as well: every margin leans a little more, and the point holds.
-        assertEquals(-12_000, PageTurn.marginsMeet(seenFromBelow(3, -12_000, 0.01), 2000, 3000), 900);
-    }
-
-    @Test
-    void marginsSideBySideAreLeftAlone() {
-        assertTrue(Double.isInfinite(PageTurn.marginsMeet(seenFromBelow(3, Double.POSITIVE_INFINITY, 0), 2000, 3000)));
-        assertTrue(Double.isInfinite(PageTurn.marginsMeet(seenFromBelow(3, Double.POSITIVE_INFINITY, 0.03), 2000, 3000)), "askew");
-        // One column has two margins: they may differ for any reason, a ragged right edge for one.
-        assertTrue(Double.isInfinite(PageTurn.marginsMeet(seenFromBelow(1, -12_000, 0), 2000, 3000)));
-        // Too weak to move a margin by a line height over the height of the page.
-        assertTrue(Double.isInfinite(PageTurn.marginsMeet(seenFromBelow(3, -400_000, 0), 2000, 3000)));
-        assertEquals(null, PageTurn.fan(seenFromBelow(3, Double.POSITIVE_INFINITY, 0), 2000, 3000));
-    }
-
     @Test
     void aQuadOfTheFlatPageGoesBackToThePixelsItWasLaidFlatFrom() {
         int width = 300;
@@ -329,8 +267,8 @@ class PageTurnTest {
         for (int c = 0; c < 3; c++) {
             data[(dotY * width + dotX) * 3 + c] = 0;
         }
-        PageTurn.Fan fan = PageTurn.Fan.of(width, height, 900, -700, List.of(), 0);
-        Bgr flat = Images.flatten(new Bgr(data, width, height), fan.distance(), fan.fall(), fan.left(), fan.top(), fan.flatWidth(), fan.flatHeight());
+        PageTurn.Fan fan = PageTurn.Fan.of(width, height, 150 + 900, List.of(), 0);
+        Bgr flat = Images.flatten(new Bgr(data, width, height), fan.distance(), fan.left(), fan.top(), fan.flatWidth(), fan.flatHeight());
         int[] darkest = darkest(flat);
         float[] before = fan.before(new float[] {darkest[0], darkest[1]});
         assertEquals(dotX, before[0], 1f);

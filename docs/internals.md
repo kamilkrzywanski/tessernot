@@ -126,27 +126,9 @@ by reflection.
     Measured on the 66 pages of `dev` and `test` made into photos from the side, one edge 12 %
     shorter in true perspective (4,570 edits as given): 19,914 edits before, 7,088 with the
     page laid flat, 38 pages better and 11 worse. As given, no page of `dev` or `test` is
-    taken for a fan.
-  - **Seen from below or above:** the same thing turned by a quarter. The lines stay level;
-    the margins and gutters run to a point far above or below the page, and a gutter is no
-    longer a vertical strip. The margins are found from the boxes (`PageTurn.marginsMeet`): the
-    left ends, and the right ends, of long lines that follow one another down the page on one
-    straight line, at least six lines over eight line heights, half of the ends within 0.15
-    line heights of the line. The lean of each margin is fitted against where it stands across
-    the page (the median over pairs of margins a tenth of the page apart), and the page is
-    taken for seen from below when the lean changes, from the leftmost margin to the rightmost,
-    by enough to move a margin by more than a line height over the height of the page, half of
-    the margins follow the fit within a quarter of that change, and there are at least three
-    margins: a page in one column has two, which may differ for any reason, and does not need
-    it, since its lines are level. The point goes into the same map as the fan
-    (`Fan.fall`), so a page seen from the side and from below is laid flat once.
-    Measured on the 66 pages made into photos from below, the top edge 12 % shorter and the
-    lines level: 6,541 edits before the day's changes, 5,845 with them; the three-column Wisła
-    weekly 778 to 56, Bristol Mercury 461 to 385, the 1952 Dziennik Ustaw 115 to 92, and three
-    pages worse (an arXiv page 92 to 255, the 1981 notice 598 to 673, Monthly Weather Review 83
-    to 121). As given, two pages of `dev` and `test` are taken for seen from below, both real
-    photos or scans of newspapers with a twentieth of such a lean, and both read better
-    (Bristol Mercury 387 to 369, the Aparri News 69 to 64); no other page changes.
+    taken for a fan. A page photographed from below, whose lines stay level while its margins
+    lean in, is not helped: its point has to come from the margins, and laying such a page
+    flat was tried and dropped (HANDOFF.md, "Tried and dropped").
   - **Askew:** the median angle of the long boxes, up to 45 degrees, moves a vertical gutter
     sideways by more than a line height between the top and the bottom of the page. The picture
     is turned level (bilinear, on a larger white canvas). Below that, `PageSkew` levels the
