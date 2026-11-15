@@ -577,7 +577,9 @@ reference), the Graham bill of 1966 (230 scattered characters, no order to defen
 Lublin letter (two named private persons at what may be a home address), the Watkins-Johnson
 invoice of 1972 (a blurred carbon copy). The held-out sets were given most on purpose: they
 were thin in business documents. This overrides the older rule that nothing joins a set once
-it has been scored; the manifest note of each document carries the date it joined.
+it has been scored; the manifest note of each document carries the date it joined. The five
+rejected documents were then removed from both repositories at the owner's word (references,
+pictures, manifest rows); `todo` has 574.
 
 Three things the review showed about `todo`: (1) receipts named `en-receipt-…` are often not
 English: of the first twenty in the order of the rule, eleven are German, Swedish, Indonesian,

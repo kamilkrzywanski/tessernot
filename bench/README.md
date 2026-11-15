@@ -13,7 +13,7 @@ These are public documents with references transcribed by hand. Read
     had 97. Do
     not tune on it and do not look at its pages. Report it with `report.py --manifest`: the
     mean over document groups is its headline number.
-  - `todo` (579 business documents left of the 624 delivered on 2026-11-15; 45 were checked and
+  - `todo` (574 business documents left of the 624 delivered on 2026-11-15; 45 were checked and
     dealt to the sets that day): not part of any set yet. Their
     references are in `ref/todo/` as the collectors wrote them and have not been checked
     against the pictures. Do not score them and do not tune on them; they are split into sets
