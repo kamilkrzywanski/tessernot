@@ -24,7 +24,9 @@ import static io.github.kamilkrzywanski.ocr.internal.post.LineBoxes.medianHeight
  * one gutter at a time. Without text columns the block splits at blank rows, and each piece may
  * still split into two sides when both read like columns: lines that share a left edge and stand
  * alone on their rows. A form with scattered fields stays in rows. A right-aligned price stays on
- * the item's row. A grid of three or more short cells stays row by row.
+ * the item's row. A grid of three or more short cells stays row by row. Two sides are columns
+ * only where they stand beside each other, and two small blocks whose lines share baselines are
+ * the cells of rows.
  * <p>
  * This class holds the entry points and the recursion over blocks, sections and columns. The
  * steps are in {@link PageSkew} (leveling), {@link LineRows} (rows and blank-row blocks),

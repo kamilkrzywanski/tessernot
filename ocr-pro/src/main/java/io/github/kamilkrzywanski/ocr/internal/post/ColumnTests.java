@@ -62,7 +62,8 @@ final class ColumnTests {
     /** Whether the two sides of a section are columns to read one after the other. */
     static boolean columnsHold(List<TextLine> leftBoxes, List<TextLine> rightBoxes,
                                        List<List<TextLine>> rows, float medianH) {
-        if (leftBoxes.size() < 2 || rightBoxes.size() < 2) {
+        if (leftBoxes.size() < 2 || rightBoxes.size() < 2
+                || !beside(leftBoxes, rightBoxes) || rowsOfCells(leftBoxes, rightBoxes)) {
             return false;
         }
         float leftWidth = medianWidth(leftBoxes);
@@ -87,7 +88,7 @@ final class ColumnTests {
      */
     static boolean textSplit(List<TextLine> leftBoxes, List<TextLine> rightBoxes,
                                      List<List<TextLine>> rows, float medianH, int depth, boolean clean) {
-        if (leftBoxes.size() < NARROW_LINES || rightBoxes.size() < NARROW_LINES) {
+        if (leftBoxes.size() < NARROW_LINES || rightBoxes.size() < NARROW_LINES || !beside(leftBoxes, rightBoxes)) {
             return false;
         }
         float leftWidth = medianWidth(leftBoxes);
@@ -102,6 +103,83 @@ final class ColumnTests {
         float minFill = clean ? OPEN_FILL : NARROW_FILL;
         return columnLike(leftBoxes, rows, medianH, depth, minFill)
                 && columnLike(rightBoxes, rows, medianH, depth, minFill);
+    }
+
+    /**
+     * Columns stand beside each other: at least this share of the lines of one side have a line
+     * of the other side at their height. The letterhead at the top left of a letter and the
+     * date and the addressee further down on the right are on two sides of a gutter and not
+     * beside each other; read as columns, the greeting under both came before the date.
+     */
+    static final float BESIDE = 0.5f;
+
+    static boolean beside(List<TextLine> leftBoxes, List<TextLine> rightBoxes) {
+        return Math.max(facing(leftBoxes, rightBoxes), facing(rightBoxes, leftBoxes)) >= BESIDE;
+    }
+
+    /**
+     * Share of the lines of {@code side} with a line of {@code other} over at least half the
+     * lower of the two heights. Fragments, which the engine drops from its result, are on
+     * neither side: a stamp read as a few unsure characters beside a letterhead does not make
+     * the block across the gutter its neighbour.
+     */
+    static float facing(List<TextLine> side, List<TextLine> other) {
+        int lines = 0;
+        int facing = 0;
+        for (TextLine line : side) {
+            if (weak(line)) {
+                continue;
+            }
+            lines++;
+            for (TextLine across : other) {
+                float shared = Math.min(line.bottom(), across.bottom()) - Math.max(line.top(), across.top());
+                if (!weak(across)
+                        && shared >= LineRows.ROW_OVERLAP * Math.min(line.bottom() - line.top(), across.bottom() - across.top())) {
+                    facing++;
+                    break;
+                }
+            }
+        }
+        return lines == 0 ? 0f : facing / (float) lines;
+    }
+
+    /** A fragment that was read: with recognition off every line has an empty text and none is weak. */
+    private static boolean weak(TextLine line) {
+        return !line.text().isEmpty() && Fragments.is(line);
+    }
+
+    /**
+     * Two small blocks side by side are the cells of rows, not blocks to read one after the
+     * other, when their lines stand on the same baselines: more than this share of the lines
+     * of the side with fewer lines have a line across the gutter whose top and bottom lie
+     * within {@link #BASELINE} of a line height of their own. Fields of a form, a label and
+     * its value, a name and a title, the address and the telephone numbers of a footer are set
+     * like that. Two blocks set each for itself, a note beside a paragraph or two parts of a
+     * letterhead, have their own line pitch and their lines pass each other.
+     */
+    static final float SHARED_ROWS = 0.5f;
+    static final float BASELINE = 0.25f;
+
+    static boolean rowsOfCells(List<TextLine> leftBoxes, List<TextLine> rightBoxes) {
+        List<TextLine> fewer = leftBoxes.size() <= rightBoxes.size() ? leftBoxes : rightBoxes;
+        List<TextLine> more = fewer == leftBoxes ? rightBoxes : leftBoxes;
+        int lines = 0;
+        int shared = 0;
+        for (TextLine line : fewer) {
+            if (weak(line)) {
+                continue;
+            }
+            lines++;
+            float near = BASELINE * (line.bottom() - line.top());
+            for (TextLine across : more) {
+                if (!weak(across)
+                        && Math.abs(line.top() - across.top()) <= near && Math.abs(line.bottom() - across.bottom()) <= near) {
+                    shared++;
+                    break;
+                }
+            }
+        }
+        return shared > SHARED_ROWS * lines;
     }
 
     /** One text column, or a side that splits again into text columns. */

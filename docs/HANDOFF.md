@@ -395,6 +395,40 @@ gutter fix and the flattening):
 - Not looked into: the two ZUS forms (pink print, rotated margin labels, boxes) and the 1855
   institution account, which lose as much row by row; the police letter (111 either way).
 
+**Blocks side by side: columns, rows of cells, or neither, 2026-11-15.** See steps 7 and 8 of
+"Reading order" in internals.md.
+
+- A scratch tool (`Flip`, not in the repository; it needs a hook in `ColumnSection.of`) turned
+  every columns-or-rows decision of the reading order over, one at a time, on the cached
+  lines of all 132 pages of `dev` and `test`, and scored the page again. That gives, for every
+  decision, whether it was right, and the numbers the sides had when it was made.
+- **Columns must stand beside each other** (`ColumnTests.beside`). The three largest wrong
+  decisions were columns whose lines never face each other: a letterhead, then a date and an
+  addressee further down on the other side. Right column decisions have 0.77 or more of
+  their lines facing a line across the gutter; these had none.
+- **Small blocks on shared baselines are rows of cells** (`ColumnTests.rowsOfCells`). Of 32
+  small blocks read as columns, 14 were wrong and 8 right, and whether the lines of the two
+  sides stand on the same baselines told them apart but for three.
+- **Fragments are on neither side** of those two tests (`Fragments`).
+- Edits, default profile, with the engine: `dev` (105 pages) 11,305 to 10,039, CER 0.0556 to
+  0.0494: PIT-11 446 to 33, the Ivey Steel memo 238 to 41, the Ombudsman's letter 172 to 0,
+  ZAW-FA 180 to 35, OJ L91 176 to 60 (the page item 1 below gave up on), the President's
+  office letter 148 to 32, five more pages by 10 to 38; ZUS ZCNA 509 to 526. `test` 2,479 to
+  2,430: the 2010 embassy letter 156 to 118, the Mennica receipt 417 to 406.
+- Plain rows now beat the analysis by ten edits or more on three pages only (69 edits in
+  all, on the cached lines). What is left the other way, rows where blocks would read
+  better: the 1859 note (three blocks side by side with centred lines, 444 edits), the
+  Mennica letterhead beside its addressee with pen scribbles between them (196), part I of
+  the W-9 (114), the QR box of the I-9 (94), the JFK telegram header (81), the two tables of
+  the 1855 institution account (41). Each fails a different test; none was changed.
+- The references do not agree on cells with rules around them: PIT-11 and ZAW-FA read them by
+  visual rows, the W-9 and the head of the ZUS forms cell by cell. No rule satisfies both.
+- **The workbench does not see fragments.** `ro.sh dump` caches the engine's result, which has
+  dropped them, while the engine orders the lines with them. Two `test` pages scored
+  differently on the cache and in the engine for that reason. To mirror the engine, the cache
+  would have to be dumped with `--keep-fragments`, carry the scores, and `RoBench` drop the
+  fragments after ordering. Until then, confirm a layout change with `ocr.sh score`.
+
 **A breach of the benchmark rules, 2026-11-14.** The first gray comparison in the review ran on
 every gray file of `bench/data`, with the default profile. That scored three `test3` pages
 (`en-invoice-idlewild-dairy`, `en-invoice-sells-floto-1913`, `en-invoice-terry-hay-1913`) and
@@ -504,7 +538,9 @@ failures come down to one share just under its threshold.
 
 ## What to improve next, in order
 
-1. **False column splits on receipts and memos.** Partly done: a side made mostly of numbers is
+1. **False column splits on receipts and memos.** Largely done on 2026-11-15, with the business
+   documents this item asked for: see "Blocks side by side" above; the rest of this item is
+   the state before that day. Partly done: a side made mostly of numbers is
    never a column now (the Castorama totals on `test`, 0.061 to 0.020), and `Layout.ROWS`
    (`--layout rows`) turns the analysis off for one-column streams. Still open: the Smyk case
    itself is a `test2` page, so its fix cannot be confirmed there. At 2048 px the Smyk receipt (`test2`) had its
@@ -621,6 +657,31 @@ failures come down to one share just under its threshold.
    in `ModelFiles`, so a bundle from another release fails at load time.
 
 ## Tried and dropped
+
+- **Keeping the lines of a sideways label together** (2026-11-15). The section headings that
+  the ZUS forms print up their left margin, in two or three lines, are vertical words to the
+  reading order: each is placed by its top among the rows, so one label comes out apart and
+  by length. A step that chained neighbouring lines whose words are rotated and put them at
+  the place of the first, in reading order (left to right for text that runs up the page),
+  got the labels right and moved the score little: ZUS ZUA 374 edits to 349, ZUS ZCNA 526 to
+  529, W-9 unchanged. The labels repeat the headings beside them and where they go relative
+  to those is a convention; 130 lines for 22 edits were not kept. One thing to know from it:
+  the quad of a line read on its side is its box as the detector drew it, not turned with the
+  text; only the quads of its words have their corners in the order of the text.
+
+- **Leaving out stamps and pen writing by ink colour or by score** (2026-11-15; item 6 of
+  "What to improve next" until then). Every line the engine read on `dev` and `test` (7,985
+  lines, 256,426 characters) was matched against its page's reference, as the fewest edits that
+  turn it into some stretch of the reference. Lines that are not in the reference at all (more
+  than half of their characters wrong) are 196, with 2,339 characters: less than a fifth of
+  the edits of those pages. They cannot be told from print. By score, 1,458 of those characters
+  are in lines read at 0.9 or better. By colour, taken as the distance of a line's ink from
+  the ink of the page's matched lines, a filter loses more print than it saves: at a distance
+  of 60 it would drop 881 wrong characters and 4,648 right ones, because coloured print
+  (letterheads, forms, red numbers) is commoner than coloured stamps. The best of sixteen
+  pairs of colour and score thresholds nets 56 edits in 12,000 and loses 170 printed
+  characters. Stamps and handwriting cost less than they look: on the receipts the errors are
+  in the print the pen runs over and in ornamental type, not in extra lines.
 
 - **Detecting a tall page in bands** (2026-11-14). A portrait page larger than the detector's
   limit is scaled down by its height; detected again in bands across its full width, each as

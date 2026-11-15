@@ -6,6 +6,7 @@ import io.github.kamilkrzywanski.ocr.internal.image.Images;
 import io.github.kamilkrzywanski.ocr.internal.post.Charset;
 import io.github.kamilkrzywanski.ocr.internal.post.Ctc;
 import io.github.kamilkrzywanski.ocr.internal.post.DbPost;
+import io.github.kamilkrzywanski.ocr.internal.post.Fragments;
 import io.github.kamilkrzywanski.ocr.internal.post.InkGutters;
 import io.github.kamilkrzywanski.ocr.internal.post.ReadingOrder;
 import io.github.kamilkrzywanski.ocr.internal.post.RunnerUps;
@@ -629,11 +630,6 @@ public final class OcrEngine implements AutoCloseable {
         }
     }
 
-    /** {@link OcrConfig.Builder#dropFragments}: a fragment is at most this many characters... */
-    private static final int FRAGMENT_CHARS = 10;
-    /** ...and its mean character probability is below this. */
-    private static final float FRAGMENT_SCORE = 0.8f;
-
     /**
      * Without short, unsure lines. On the dev and test sets these were mostly stamps, CJK
      * characters read from ornaments, and stray marks; the result barely moved between 0.7 and 0.9.
@@ -643,7 +639,7 @@ public final class OcrEngine implements AutoCloseable {
         for (List<TextLine> row : rows) {
             List<TextLine> kept = new ArrayList<>(row.size());
             for (TextLine line : row) {
-                if (line.text().strip().length() > FRAGMENT_CHARS || line.score() >= FRAGMENT_SCORE) {
+                if (!Fragments.is(line)) {
                     kept.add(line);
                 }
             }

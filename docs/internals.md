@@ -250,12 +250,37 @@ step 6), `ColumnGutter` (step 3), `ColumnSection` (step 4), `ColumnTests` (steps
      its rows holding one box on that side. The fare fields of a train ticket fail this; the
      seller and buyer blocks of an invoice pass.
    - **A narrower gutter** needs two full text columns, as in step 5.
+   - **Rows of cells:** two sides whose lines stand on the same baselines are the cells of rows
+     and are read row by row: more than half of the lines of the side with fewer lines have a
+     line across the gutter whose top and bottom lie within a quarter of a line height of
+     their own. Fields of a form, a label and its value, a name and a title, the address and
+     the telephone numbers of a footer are set like that. Two blocks set each for itself, a
+     note beside a paragraph or the two parts of a letterhead, have their own line pitch.
    - **Never a column:** a side whose lines are less than a quarter as wide as the lines beside
      it (list numbers, bullets), a rail of short right-aligned values next to longer names
      (receipt prices), a side where 60 % of the boxes are numbers (at least three digits, more
      digits than letters: the totals of a receipt, even when the total is printed larger and the
      amounts do not share an edge), and a block whose median row holds three or more boxes (a
      grid). The number rule applies to text columns (step 5) too.
+8. **Beside each other.** In steps 5 and 7 alike, two sides are columns only where they stand
+   beside each other: at least half of the lines of one side have a line of the other side at
+   their height. The letterhead at the top left of a letter, the date above it on the right
+   and the addressee further down on the right lie on two sides of a gutter and not beside
+   each other; they are read down the page.
+
+Steps 7 (rows of cells) and 8 are from 2026-11-15. A scratch tool turned every columns-or-rows
+decision of the cached `dev` and `test` pages over, one at a time, and scored the page again:
+of 32 small blocks read as columns, 14 read better as rows and 8 worse, and the shared
+baselines told them apart but for three. Edits of the reading order on the 132 cached pages:
+13,710 before, 13,168 with step 8 (six pages better, none worse), 12,362 with both (sixteen
+better, one worse by 17); choosing the better of the analysis and plain rows page by page
+would give 12,293. Read by the engine: `dev` 11,305 edits to 10,039 (CER 0.0556 to 0.0494, eleven
+pages better and one worse), `test` 2,479 to 2,430 (two better, none worse).
+
+Fragments (`Fragments`: at most ten characters read at under 0.8, which the engine drops from
+its result after the order is found) take no part in steps 7 and 8. In the engine they are
+still among the lines when the order is found, and a stamp read as a few unsure characters
+beside a letterhead made the block across the gutter its neighbour.
 
 **`Layout.ROWS`** skips steps 3 to 7 and the merged-line cuts: after leveling, rows are read top
 to bottom. It is meant for streams of one-column documents.

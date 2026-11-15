@@ -17,7 +17,7 @@ W=bench/out/ro
 JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}
 J=$JAVA_HOME/bin
 P=ocr-pro/src/main/java/io/github/kamilkrzywanski/ocr/internal/post
-SRC="$P/ReadingOrder.java $P/PageSkew.java $P/LineBoxes.java $P/LineRows.java $P/ColumnGutter.java $P/ColumnTests.java $P/ColumnSection.java $P/MergedLines.java"
+SRC="$P/ReadingOrder.java $P/PageSkew.java $P/LineBoxes.java $P/LineRows.java $P/ColumnGutter.java $P/ColumnTests.java $P/ColumnSection.java $P/MergedLines.java $P/Fragments.java"
 mkdir -p "$W/json" "$W/tsv" "$W/classes" "$W/viz"
 compile() {
   rm -rf "$W/classes" && mkdir -p "$W/classes"

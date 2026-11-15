@@ -344,13 +344,61 @@ class PostProcessTest {
     }
 
     @Test
+    void smallBlocksOnTheSameBaselinesAreRowsOfCells() {
+        // A name and a title, a label and its value, two fields of a form: each line has a
+        // line across the gutter on its own baseline.
+        List<TextLine> lines = List.of(
+                line("Walls", 0, 0, 40, 10), line("Supervisor", 70, 0, 45, 10),
+                line("Chiles", 0, 12, 40, 10), line("Foreman", 70, 12, 35, 10),
+                line("MacLaren", 0, 24, 45, 10), line("Assistant", 70, 24, 40, 10),
+                line("Stevens", 0, 36, 40, 10), line("Liaison", 70, 36, 30, 10));
+        assertEquals("Walls Supervisor\nChiles Foreman\nMacLaren Assistant\nStevens Liaison",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void blocksOnTwoSidesThatDoNotStandBesideEachOtherAreReadDownThePage() {
+        // A letter: the date at the top right, the letterhead below it on the left, the
+        // addressee further down on the right, then the greeting on the left. Six lines on each
+        // side of a clean gutter, and no line of one side at the height of a line of the other.
+        List<TextLine> lines = new ArrayList<>();
+        lines.add(line("date", 150, 0, 60, 10));
+        for (int i = 0; i < 5; i++) {
+            lines.add(line("head" + i, 0, 14 + 12 * i, 80, 10));
+        }
+        for (int i = 0; i < 5; i++) {
+            lines.add(line("to" + i, 150, 90 + 12 * i, 70, 10));
+        }
+        lines.add(line("greeting", 0, 170, 90, 10));
+        assertEquals("date\nhead0\nhead1\nhead2\nhead3\nhead4\nto0\nto1\nto2\nto3\nto4\ngreeting",
+                ReadingOrder.join(ReadingOrder.group(lines)));
+    }
+
+    @Test
+    void aFragmentDoesNotMakeTwoBlocksNeighbours() {
+        // A letterhead on the left and an addressee lower down on the right. A stamp beside the
+        // letterhead was read as two short, unsure lines, which the engine drops from its
+        // result; they must not make the right side stand beside the left one first.
+        TextLine head1 = line("head1", 0, 0, 60, 10);
+        TextLine head2 = line("head2", 0, 12, 60, 10);
+        TextLine stamp1 = new TextLine("x7", 0.5f, 1f, new float[]{100, 4, 150, 4, 150, 14, 100, 14}, null);
+        TextLine stamp2 = new TextLine("q", 0.4f, 1f, new float[]{100, 16, 150, 16, 150, 26, 100, 26}, null);
+        TextLine to1 = line("to1", 100, 40, 60, 10);
+        TextLine to2 = line("to2", 100, 52, 60, 10);
+        TextLine to3 = line("to3", 100, 64, 60, 10);
+        assertEquals("head1 x7\nhead2 q\nto1\nto2\nto3",
+                ReadingOrder.join(ReadingOrder.group(List.of(to2, head1, stamp2, to1, head2, to3, stamp1))));
+    }
+
+    @Test
     void readingOrderReadsTwoTextColumns() {
+        // Two blocks set each for itself: the lines of the right one stand 4 px lower.
         TextLine left1 = line("L1", 0, 0, 40, 10);
-        TextLine right1 = line("R1", 70, 0, 25, 10);
+        TextLine right1 = line("R1", 70, 4, 25, 10);
         TextLine left2 = line("L2", 0, 12, 20, 10);
-        TextLine right2 = line("R2", 70, 12, 40, 10);
+        TextLine right2 = line("R2", 70, 16, 40, 10);
         TextLine left3 = line("L3", 0, 24, 30, 10);
-        TextLine right3 = line("R3", 70, 24, 15, 10);
+        TextLine right3 = line("R3", 70, 28, 15, 10);
         String text = ReadingOrder.join(ReadingOrder.group(
                 List.of(right2, left1, right3, left3, right1, left2)));
         assertEquals("L1\nL2\nL3\nR1\nR2\nR3", text);
@@ -360,11 +408,11 @@ class PostProcessTest {
     void verticalWordDoesNotGlueColumns() {
         TextLine tall = line("ORYGINAL", 0, 0, 8, 50);
         TextLine left1 = line("L1", 20, 0, 30, 10);
-        TextLine right1 = line("R1", 70, 0, 25, 10);
+        TextLine right1 = line("R1", 70, 4, 25, 10);
         TextLine left2 = line("L2", 20, 12, 20, 10);
-        TextLine right2 = line("R2", 70, 12, 40, 10);
+        TextLine right2 = line("R2", 70, 16, 40, 10);
         TextLine left3 = line("L3", 20, 24, 30, 10);
-        TextLine right3 = line("R3", 70, 24, 15, 10);
+        TextLine right3 = line("R3", 70, 28, 15, 10);
         String text = ReadingOrder.join(ReadingOrder.group(
                 List.of(right1, tall, left2, right3, left1, right2, left3)));
         assertEquals("ORYGINAL\nL1\nL2\nL3\nR1\nR2\nR3", text);
@@ -374,14 +422,14 @@ class PostProcessTest {
     void fullWidthLineSeparatesColumnBlocks() {
         List<TextLine> lines = List.of(
                 line("L1", 0, 0, 40, 10),
-                line("R1", 70, 0, 25, 10),
+                line("R1", 70, 4, 25, 10),
                 line("L2", 0, 12, 20, 10),
-                line("R2", 70, 12, 40, 10),
+                line("R2", 70, 16, 40, 10),
                 line("TITLE", 0, 40, 110, 10),
                 line("L3", 0, 60, 40, 10),
-                line("R3", 70, 60, 25, 10),
+                line("R3", 70, 64, 25, 10),
                 line("L4", 0, 72, 20, 10),
-                line("R4", 70, 72, 40, 10));
+                line("R4", 70, 76, 40, 10));
         assertEquals("L1\nL2\nR1\nR2\nTITLE\nL3\nL4\nR3\nR4", ReadingOrder.join(ReadingOrder.group(lines)));
     }
 
@@ -481,14 +529,14 @@ class PostProcessTest {
     void titleAcrossColumnsEndsASection() {
         List<TextLine> lines = List.of(
                 line("L1", 0, 0, 40, 10),
-                line("R1", 70, 0, 25, 10),
+                line("R1", 70, 3, 25, 10),
                 line("L2", 0, 12, 20, 10),
-                line("R2", 70, 12, 40, 10),
-                line("TITLE", 0, 24, 110, 10),
-                line("L3", 0, 36, 40, 10),
-                line("R3", 70, 36, 25, 10),
-                line("L4", 0, 48, 20, 10),
-                line("R4", 70, 48, 40, 10));
+                line("R2", 70, 15, 40, 10),
+                line("TITLE", 0, 27, 110, 10),
+                line("L3", 0, 39, 40, 10),
+                line("R3", 70, 42, 25, 10),
+                line("L4", 0, 51, 20, 10),
+                line("R4", 70, 54, 40, 10));
         assertEquals("L1\nL2\nR1\nR2\nTITLE\nL3\nL4\nR3\nR4", ReadingOrder.join(ReadingOrder.group(lines)));
     }
 
