@@ -4,27 +4,27 @@ za czas od 1 listopada 1926 r. do 31 października 1927 r. włącznie.
 Dochody.
 Złote i grosze
 1. Procenty zwłoki od należności z dóbr 1.973.684.59
-2. Procenty od gotowizny, ulokowanej w bankach. 198.352.16
+2. Procenty od gotowizny, ulokowanej w bankach 198.352.16
 3. Zysk z tytułu kuponów od papierów procentowych własnych:
-a. od 10% Obligacji Towarzystwa. 620.000.—
+a. od 10% Obligacji Towarzystwa 620.000.—
 b. od różnych papierów procentowych 111.107.68 731.107.68
 4. Zysk na kursie papierów procentowych:
-a. list. zast. nabytych zamiast losowania. 191.389.19
+a. list. zast. nabytych zamiast losowania 191.389.19
 b. „ „ „ za gotowiznę złożoną przy przedtermi-
 nowych spłatach i konwersjach pożyczek 9.798.90
 c. „ „ wylosowanych 2.219.25
 d. 8% pożyczki złotej 653.70 204.061.04
 5. Komorne 69.606.23
 6. Opłata za przechowanie depozytów 931.62
-7. Różne drobne. 18.942.92
+7. Różne drobne 18.942.92
 3.196.686.24
 Wydatki.
 Złote i grosze
 1. Wynagrodzenie Collegjum 120.925.—
-2. „ urzędników stałych. 503.171.67
-3. „ służby niższej. 48.577.13
-4. „ woźnych sądowych. 18.399.39
-5. Pomoc prawna i koszty sądowe. 31.197.60
+2. „ urzędników stałych 503.171.67
+3. „ służby niższej 48.577.13
+4. „ woźnych sądowych 18.399.39
+5. Pomoc prawna i koszty sądowe 31.197.60
 6. Wynagrodzenie pracowników czasowych i prace pozabiurowe 125.512.11
 7. Tymczasowa Kasa Przezorności pracowników 46.606.06
 8. Wpisy szkolne 11.919.79
@@ -35,7 +35,7 @@ Złote i grosze
 13. Utrzymanie porządku, opał i światło 25.298.72
 14. Mat. piśm., utensylja biurowe, porto, telefon, prenumer. pism,
 ogłoszenia i reparacja oraz zakup inwentarza biurowego 58.053.04
-15. Ogólne Zebrania oraz różne delegacje. 18.342.—
+15. Ogólne Zebrania oraz różne delegacje 18.342.—
 16. Koszty nadzoru Rządowego 4.600.—
 17. Wynagrodzenie Komitetu właścicieli Listów Zastawnych 1.900.—
 18. Bank Ziemiański za załatwienie czynności hipotecznych 26.550 —
@@ -45,13 +45,13 @@ ogłoszenia i reparacja oraz zakup inwentarza biurowego 58.053.04
 rowych zagranicą 14.160.82
 22. Podatki:
 a. podatek dochodowy Zł. 218.401.55
-b. od nieruchomości. 13.092.29
-c. od lokali. 1.960.95 „ 15.053 24
+b. od nieruchomości 13.092.29
+c. od lokali 1.960.95 „ 15.053 24
 d. inne „ 1.129.11 234.583.90
 23. Różne wydatki:
-a. Ofiary. 2.098.—
+a. Ofiary 2.098.—
 b. Związek Długoterm. Kred. i Związek Org. Roln. 19.700.—
-c. C. T. Rolnicze — na fundusz jubileuszowy. 3.000.—
+c. C. T. Rolnicze — na fundusz jubileuszowy 3.000.—
 d. Koszty likwidacyjne b. Kasy Przezorn. i Pom. 2.500.—
 e. Medale pamiątkowe z tytułu jubileuszu T wa 3.500.—
 f. Koszty egzekucji należności z dóbr 8.115.10

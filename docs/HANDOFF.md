@@ -607,6 +607,20 @@ not checked and are still `todo` like the rest (561); the next lot starts again 
 which will pick the same documents first. The kinds table of docs/benchmark.md counts the
 first 45 only.
 
+**A third lot from todo, 2026-11-16.** The owner asked for the next 50, two checkers at a time:
+the 37 left of the second lot and 13 more by the same rule (skipping the 40 documents the
+engine has read; the 13 dealt in one cycle over their list). 42 were taken in (`dev` 14,
+`test` 7, `test2` 7, `test3` 14) and 8 rejected and removed: the CFTC form (its reference
+orders table heads two ways), three blurred carbon copies and photos (Security Cargo 1948,
+Sitka 1955, the Minecraft ticket), a bill that is nine tenths handwriting (Charles Williams
+1882), two receipts too small or too short to score (Tchotchke, KG Cinemas) and a ticket whose
+stub print the reference leaves out (Mann's Chinese). The sets have 136, 42, 37 and 134 documents;
+`todo` has 511, of which 40 may join `dev` only and 23 are receipts in other languages. None of
+the 42 has been read by an engine, so the tables of docs/benchmark.md do not have them; the
+kinds table there counts the first 45 only. What the checkers kept finding: first dots of
+leaders read as full stops, typed names left out as signatures, printed digits of a year left
+out with the handwritten one, stamp lines kept as print.
+
 **Forms, 2026-11-16: looked for on dev, not found there.** The ten documents that joined
 `test2` read at 0.200 against Tesseract's 0.135, and the owner asked for forms to be worked on
 in `dev`. The forms of `dev` and `test` do not show it: ocr-pro is ahead of Tesseract on 20 of

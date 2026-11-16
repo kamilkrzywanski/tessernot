@@ -14,7 +14,8 @@ United States (Payee)
 Address Phoenix, Arizona (For use of Paying Office)
 By Payee's Account No.
 No. and Date of Date of Delivery Articles or Services Quantity UNIT PRICE AMOUNT
-Order or Service (Enter description, item number of contract or general supply schedule, and other information deemed necessary)
+Order or Service (Enter description, item number of contract or general supply
+schedule, and other information deemed necessary)
 Terms % Discount Cash days
 Cost Per Dollars Cts.
 Brought forward from continuation sheet(s)
@@ -24,21 +25,25 @@ to I certify that the long distance telephone calls covered
 by this voucher were necessary on account of official
 Dec. 20. business, were not personal and were in the interest
 of the government.
+L. Wayne Adams, Jr., Supervisor in Charge
 Shipped from to Weight Government B/L No. Total 68 65
 (Payee must NOT use this space)
 Differences
 Account verified; correct for
 (Signature or initials)
 Contract No. Date Req. No. Date Invoice Rec'd
-68.65 MEMORANDUM
+MEMORANDUM
+68.65
+L. Wayne Adams, Jr.
 Supervisor in Charge
 ACCOUNTING CLASSIFICATION (for completion by Administrative Office)
 Appropriation, limitation, or Appropriation title Limit'n or Proj't Appropriation
 project symbol Amount Amount
 COST ACCOUNT OBJECTIVE CLASSIFICATION
 Allotment symbol Amount Obligations liquidated Symbol Amount Symbol Amount
-Paid by Check No. dated 19 for $ on Treasurer of the United States in favor of
-Cash, $ on 19 payee named above.
+Paid by Check No. dated , 19 , for $ on Treasurer of the United States in favor of
+payee named above.
+Cash, $ , on , 19 , Payee
 (Sign original only)
 Per
 Title

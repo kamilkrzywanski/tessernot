@@ -33,6 +33,11 @@ The ten new documents of `test2` are the exception: ocr-pro reads them at 0.200,
 Tesseract. Four of them are forms, and that group is where the set fell (see its table). They
 have not been looked at; `test2` is not for tuning.
 
+**42 more joined on 2026-11-16** by the same rule (14 to `dev`, 7 to `test`, 7 to `test2`, 14 to
+`test3`; eight were rejected at the check): the sets now have 136, 42, 37 and 134 documents. These
+42 are in no table yet: the tables below are for the sets as scored on the night of 2026-11-15
+(122, 35, 30 and 120 documents).
+
 ## Rules for using the sets
 
 - **Find and fix on `dev`, report on a set nobody has tuned on.** A rule or threshold changed
