@@ -279,6 +279,12 @@ step 6), `ColumnGutter` (step 3), `ColumnSection` (step 4), `ColumnTests` (steps
    text). Built on one page, the Encyklopedja staropolska of `test` (0.408 to 0.005), after
    its reference was put right; no other cached page of `dev` or `test` changes.
 
+10. **Lines, not boxes.** A text column in step 5 needs five lines on each side, and a line is a
+   row: where the detector boxed a line word by word (display type set wide), the boxes of one
+   row count once. Four lines of a poster's paragraph whose word spaces stand one under the
+   other made a dozen boxes on each side of that river and were read as two columns
+   (`pl-obwieszczenie-informujemy-1920`, 0.199 to 0.043); no other cached page changes.
+
 Steps 7 (rows of cells) and 8 are from 2026-11-15. A scratch tool turned every columns-or-rows
 decision of the cached `dev` and `test` pages over, one at a time, and scored the page again:
 of 32 small blocks read as columns, 14 read better as rows and 8 worse, and the shared

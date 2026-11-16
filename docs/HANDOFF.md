@@ -649,6 +649,31 @@ column only. Not tried: reading two sides as blocks when both are running prose 
 open and the next beginning with a small letter), which is what the 1859 note needs besides a
 test of centred lines.
 
+**Forms and blocks side by side, 2026-11-16, second look.** Two things came of it.
+
+One rule: a text column needs five rows, not five boxes (docs/internals.md, reading order,
+step 10). The poster `pl-obwieszczenie-informujemy-1920` was checked and is in `dev` now; it
+reads at 0.043 where it read at 0.199, and a unit test built from its boxes fails without the
+rule. No other cached page of `dev` or `test` moves.
+
+One finding about the benchmark: on dense forms the references do not hold one reading order.
+A checker went through `en-form-sec-144` and `en-form-dol-wh347-2025` (0.215 and 0.163 in the
+diagnosis) and found every character right and the order mixed inside each file: cells joined
+by visual row in one part, each cell read whole in another, a whole header band on one line in
+one form and a line per printed line in the other. The CFTC form of the third lot was rejected
+for the same reason. So a form's CER measures agreement with the collector's choices where it
+is high, and the engine cannot be tuned on it. The two forms and the Schwender notice (a coarse
+halftone, ten to fifteen words uncertain) were removed; `en-form-bis-621p` of the same kind is
+still in `todo`, unchecked. Until the collecting rules name one order for forms (rows of cells
+left to right, header cells line by line, is the simplest to state and to check), forms should
+be scored by word F1, or kept out of the held-out sets' headline.
+
+Still open: the 1859 note. A trace shows no column is found at any level: the left and middle
+blocks fall on one side of the widest gutter, centred lines fail the margin test of a text
+column, and at the level of small blocks no gutter is found at all. It needs a test for
+centred blocks and a way to take a two-line block between two columns as a column of its own;
+no second page of `dev` asks for either.
+
 **Which model checks references, 2026-11-15.** Measured on seven documents of the third batch
 with the references as delivered and the same brief: of the 11 corrections that change a
 score, a Fable checker found 11, an Opus 5.5 checker 9 (it missed the two misplaced column

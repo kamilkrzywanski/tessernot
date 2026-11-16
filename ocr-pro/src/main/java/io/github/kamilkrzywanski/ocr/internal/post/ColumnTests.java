@@ -88,7 +88,8 @@ final class ColumnTests {
      */
     static boolean textSplit(List<TextLine> leftBoxes, List<TextLine> rightBoxes,
                                      List<List<TextLine>> rows, float medianH, int depth, boolean clean) {
-        if (leftBoxes.size() < NARROW_LINES || rightBoxes.size() < NARROW_LINES || !beside(leftBoxes, rightBoxes)) {
+        if (leftBoxes.size() < NARROW_LINES || rightBoxes.size() < NARROW_LINES || !beside(leftBoxes, rightBoxes)
+                || rowsOf(leftBoxes, rows) < NARROW_LINES || rowsOf(rightBoxes, rows) < NARROW_LINES) {
             return false;
         }
         float leftWidth = medianWidth(leftBoxes);
@@ -172,6 +173,26 @@ final class ColumnTests {
             i += Character.charCount(c);
         }
         return false;
+    }
+
+    /**
+     * The number of rows that hold a box of this side. A text column has its lines one under the
+     * other; where the detector boxed a line word by word (display type set wide), four lines
+     * make a dozen boxes and are still four lines.
+     */
+    static int rowsOf(List<TextLine> side, List<List<TextLine>> rows) {
+        Set<TextLine> boxes = Collections.newSetFromMap(new IdentityHashMap<>());
+        boxes.addAll(side);
+        int count = 0;
+        for (List<TextLine> row : rows) {
+            for (TextLine line : row) {
+                if (boxes.contains(line)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
     }
 
     /** A fragment that was read: with recognition off every line has an empty text and none is weak. */

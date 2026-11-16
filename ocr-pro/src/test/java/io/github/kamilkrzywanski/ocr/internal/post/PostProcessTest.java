@@ -448,6 +448,29 @@ class PostProcessTest {
     }
 
     @Test
+    void linesBoxedWordByWordAreNotTwoColumns() {
+        // The last paragraph of a poster of 1920 set in wide display type, as the detector boxed
+        // it: word by word. In four of its lines the word spaces near the middle stand one under
+        // the other and no box crosses there. A dozen boxes on each side of that river are still
+        // four lines, and four lines are no column of text: every row is read to its end.
+        int[][] boxes = {{147, 6, 431, 84}, {555, 19, 125, 63}, {664, 12, 234, 78}, {883, 12, 258, 73}, {1115, 6, 319, 85}, {1439, 29, 51, 45}, {1465, 17, 344, 67}, {1798, 13, 173, 70}, {148, 105, 152, 62}, {284, 88, 1429, 87}, {1668, 90, 309, 81}, {143, 180, 239, 74}, {347, 182, 195, 71}, {537, 182, 475, 71}, {141, 263, 353, 71}, {456, 268, 377, 71}, {829, 266, 191, 74}, {140, 344, 488, 77}, {630, 351, 189, 74}, {825, 348, 168, 73}, {142, 426, 850, 84}, {981, 174, 994, 85}, {1019, 267, 331, 76}, {1345, 256, 486, 87}, {1788, 252, 186, 89}, {998, 355, 145, 65}, {1133, 348, 167, 79}, {1292, 341, 681, 83}, {976, 427, 566, 86}, {1503, 424, 472, 87}, {141, 515, 309, 74}, {450, 513, 177, 77}, {632, 519, 222, 72}, {859, 522, 346, 71}, {1215, 524, 262, 62}, {1472, 513, 427, 71}, {1874, 518, 93, 60}, {135, 593, 538, 84}, {665, 595, 334, 82}, {965, 602, 232, 72}, {1173, 592, 526, 88}, {1693, 596, 191, 78}, {1882, 602, 81, 63}, {141, 680, 147, 65}, {287, 672, 223, 88}, {521, 680, 166, 76}, {681, 679, 557, 80}, {1251, 678, 221, 82}, {1490, 689, 74, 59}, {1578, 680, 106, 73}, {1688, 673, 275, 79}, {135, 755, 330, 84}, {419, 763, 234, 74}, {650, 765, 175, 73}, {808, 769, 170, 66}, {976, 764, 210, 75}, {1190, 766, 235, 81}};
+        List<TextLine> lines = new ArrayList<>();
+        for (int i = 0; i < boxes.length; i++) {
+            lines.add(line("b" + i, boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]));
+        }
+        float lastLeft = Float.NEGATIVE_INFINITY;
+        float lastMiddle = Float.NEGATIVE_INFINITY;
+        for (TextLine line : ReadingOrder.flatten(ReadingOrder.group(lines))) {
+            float middle = (line.top() + line.bottom()) / 2;
+            boolean nextRow = middle > lastMiddle + 40;
+            assertTrue(nextRow || line.left() > lastLeft,
+                    line.text() + " is read after a box to its right, or after a later row");
+            lastLeft = line.left();
+            lastMiddle = nextRow ? middle : lastMiddle;
+        }
+    }
+
+    @Test
     void readingOrderReadsTwoTextColumns() {
         // Two blocks set each for itself: the lines of the right one stand 4 px lower.
         TextLine left1 = line("L1", 0, 0, 40, 10);
