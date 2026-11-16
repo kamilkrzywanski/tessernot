@@ -1,12 +1,14 @@
 OMB 0703-0061 Exp: 31 July 2027
-CUI (when filled in) SECNAVINST 5500.35
+CUI (when filled in)
+SECNAVINST 5500.35
 EMPLOYMENT ACTIVITY INFORMATON
 25. EMPLOYER NAME AND ADDRESS (Include city/state/zip code): EMPLOYER PHONE (Include Area Code):
 26. SUPERVISOR NAME AND ADDRESS (Include city/state/zip code): SUPERVISOR PHONE(Include Area Code):
 27. Check the applicable box for WORK HOURS box or check the OTHER box and enter the work hours, then check the applicable box for WORK DAYS:
 WORK HOURS: 0600-1800 0800-1700 OTHER WORK DAYS: SN M T W TH F ST
 PRIOR FELONY CONVICTIONS
-28. Have you ever been convicted of a Felony? YES NO Initial
+28. Have you ever been convicted of a Felony? YES NO
+Initial
 REQUIREMENT TO RETURN LOCAL POPULATION ID CARD
 29. I understand that I am required to return my Local Population Identification Card to the Base Pass Office when it expires or if my employment is
 terminated for any reason. (initial)
@@ -24,10 +26,10 @@ that show my signature are as valid as the original release signed by me.
 FALSE STATEMENTS ARE PUNISHABLE BY LAW AND COULD RESULT IN FINES AND/OR IMPRISONMENT UP TO FIVE YEARS.
 BEFORE SIGNING THIS FORM, REVIEW IT CAREFULLY TO MAKE SURE YOU HAVE ANSWERED ALL QUESTIONS FULLY AND CORRECTLY.
 I DECLARE UNDER PENALTY OF PERJURY THAT THE STATEMENTS MADE BY ME ON THIS FORM ARE TRUE, COMPLETE AND CORRECT.
-DATE SIGNATURE
 Please print the form
 and provide a wet
 signature in Box 30.
+DATE SIGNATURE
 Digital signatures are
 not accepted.
 FINAL DETERMINATION ON YOUR ACCESS: The Base Commanding Officer has final authority for determination on granting physical access to
@@ -48,7 +50,7 @@ Officers (COs) to prohibit sex offender access to DoN facilities and Navy owned,
 purpose to collect and share the required information; and identifies the applicant/visitor and sponsor; and authorizes the DoD to perform the minimum
 vetting and fitness determination criteria. A favorable response on the vetting and fitness determination is required to receive access to DOD-controlled
 installation/facilities.
-SECNAV 5512/1 (April 2025) CUI (when filled in) Controlled by: DoN Page 2 of 3
-CUI Category: PRVCY
+Controlled by: DoN
+SECNAV 5512/1 (April 2025) CUI (when filled in) CUI Category: PRVCY Page 2 of 3
 LDC: FEDCON
 POC: Le'Ron Lawrence, leron.a.lawrence.civ@us.navy.mil,(703) 601-0604

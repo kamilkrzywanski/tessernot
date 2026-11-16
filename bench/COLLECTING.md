@@ -112,7 +112,22 @@ UTF-8, trailing newline.
 - **Reading order:**
   - running head first;
   - text on one visual row of a form or receipt is joined left to right; tables row by row,
-    cells separated by one space;
+    cells separated by one space. On a form this goes by the printed line, not by the cell,
+    and it is the only order:
+    - a line of the reference is everything printed on one row across the page, left to
+      right, whatever cells it stands in. Two pieces are on one row when each overlaps more
+      than half of the other's height;
+    - a cell of several lines is not read whole: each of its lines goes with the row it
+      stands on. Header cells too: a header band of two-line cells is two lines, not one, and
+      a label printed above its field is a row of its own with the labels beside it;
+    - lines of neighbouring cells that are not on one row (one set half a line lower) are
+      lines of their own, in the order of their tops;
+    - panels that stand apart, each in its own frame (the two faces of a card printed side by
+      side, the two pages of a spread), are read one after another, the left one first; the
+      rows go across one panel, not across the page;
+    - only running text set in columns is read by column (the instructions on a tax form):
+      prose whose sentences run on from line to line, five lines or more, beside another such
+      block. Everything else on the form, however many lines a cell has, goes by rows;
   - columns are read one after another, each top to bottom;
   - a *text* element across the columns (title, heading, abstract, full-width text or table)
     closes one band of columns and starts the next; a headline over only some columns starts the

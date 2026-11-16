@@ -72,10 +72,9 @@ legislation enacted after we release it) will be posted
 on that page.
 Personal Allowances Worksheet (Keep for your records.)
 A Enter "1" for yourself if no one else can claim you as a dependent A
-B Enter "1" if:
 • You are single and have only one job; or
-• You are married, have only one job, and your spouse does not work; or
-• Your wages from a second job or your spouse's wages (or the total of both) are $1,500 or less. B
+B Enter "1" if: • You are married, have only one job, and your spouse does not work; or B
+• Your wages from a second job or your spouse's wages (or the total of both) are $1,500 or less.
 C Enter "1" for your spouse. But, you may choose to enter "-0-" if you are married and have either a working spouse or more
 than one job. (Entering "-0-" may help you avoid having too little tax withheld.) C
 D Enter number of dependents (other than your spouse or yourself) you will claim on your tax return D
@@ -87,29 +86,25 @@ G Child Tax Credit (including additional child tax credit). See Pub. 972, Child 
 seven eligible children or less "2" if you have eight or more eligible children.
 • If your total income will be between $61,000 and $84,000 ($90,000 and $119,000 if married), enter "1" for each eligible child G
 H Add lines A through G and enter total here. (Note. This may be different from the number of exemptions you claim on your tax return.) ▶ H
-For accuracy,
-complete all
-worksheets
-that apply.
 • If you plan to itemize or claim adjustments to income and want to reduce your withholding, see the Deductions
-and Adjustments Worksheet on page 2.
-• If you are single and have more than one job or are married and you and your spouse both work and the combined
-earnings from all jobs exceed $40,000 ($10,000 if married), see the Two-Earners/Multiple Jobs Worksheet on page 2 to
-avoid having too little tax withheld.
+For accuracy, and Adjustments Worksheet on page 2.
+complete all • If you are single and have more than one job or are married and you and your spouse both work and the combined
+worksheets earnings from all jobs exceed $40,000 ($10,000 if married), see the Two-Earners/Multiple Jobs Worksheet on page 2 to
+that apply. avoid having too little tax withheld.
 • If neither of the above situations applies, stop here and enter the number from line H on line 5 of Form W-4 below.
 Separate here and give Form W-4 to your employer. Keep the top part for your records.
-Form W-4
-Department of the Treasury
-Internal Revenue Service
-Employee's Withholding Allowance Certificate
-▶ Whether you are entitled to claim a certain number of allowances or exemption from withholding is
-subject to review by the IRS. Your employer may be required to send a copy of this form to the IRS.
+Form W-4 Employee's Withholding Allowance Certificate
 OMB No. 1545-0074
 2012
+▶ Whether you are entitled to claim a certain number of allowances or exemption from withholding is
+Department of the Treasury
+Internal Revenue Service subject to review by the IRS. Your employer may be required to send a copy of this form to the IRS.
 1 Your first name and middle initial Last name 2 Your social security number
-Home address (number and street or rural route) 3 Single Married Married, but withhold at higher Single rate.
+Home address (number and street or rural route)
+3 Single Married Married, but withhold at higher Single rate.
 Note. If married, but legally separated, or spouse is a nonresident alien, check the "Single" box.
-City or town, state, and ZIP code 4 If your last name differs from that shown on your social security card,
+City or town, state, and ZIP code
+4 If your last name differs from that shown on your social security card,
 check here. You must call 1-800-772-1213 for a replacement card. ▶
 5 Total number of allowances you are claiming (from line H above or from the applicable worksheet on page 2) 5
 6 Additional amount, if any, you want withheld from each paycheck 6 $

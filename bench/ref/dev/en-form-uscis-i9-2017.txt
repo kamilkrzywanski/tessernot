@@ -1,10 +1,8 @@
-Employment Eligibility Verification
-Department of Homeland Security
-U.S. Citizenship and Immigration Services
-USCIS
+Employment Eligibility Verification USCIS
 Form I-9
+Department of Homeland Security
 OMB No. 1615-0047
-Expires 08/31/2019
+U.S. Citizenship and Immigration Services Expires 08/31/2019
 ▶START HERE: Read instructions carefully before completing this form. The instructions must be available, either in paper or electronically,
 during completion of this form. Employers are liable for errors in the completion of this form.
 ANTI-DISCRIMINATION NOTICE: It is illegal to discriminate against work-authorized individuals. Employers CANNOT specify which
@@ -23,7 +21,9 @@ I attest, under penalty of perjury, that I am (check one of the following boxes)
 3. A lawful permanent resident (Alien Registration Number/USCIS Number):
 4. An alien authorized to work until (expiration date, if applicable, mm/dd/yyyy):
 Some aliens may write "N/A" in the expiration date field. (See instructions)
+QR Code - Section 1
 Aliens authorized to work must provide only one of the following document numbers to complete Form I-9:
+Do Not Write In This Space
 An Alien Registration Number/USCIS Number OR Form I-94 Admission Number OR Foreign Passport Number.
 1. Alien Registration Number/USCIS Number:
 OR
@@ -31,8 +31,6 @@ OR
 OR
 3. Foreign Passport Number:
 Country of Issuance:
-QR Code - Section 1
-Do Not Write In This Space
 Signature of Employee Today's Date (mm/dd/yyyy)
 Preparer and/or Translator Certification (check one):
 I did not use a preparer or translator. A preparer(s) and/or translator(s) assisted the employee in completing Section 1.

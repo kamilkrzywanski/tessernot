@@ -1,10 +1,10 @@
 Appendix D.
 Puerto Rico Questionnaire
-This is the official form for all the people at this address.
-It is quick and easy, and your answers are protected by law.
 U.S. DEPARTMENT OF COMMERCE
 Economics and Statistics Administration
+This is the official form for all the people at this address.
 U.S. CENSUS BUREAU
+It is quick and easy, and your answers are protected by law.
 Use a blue or black pen.
 Start here
 The Census must count every person living in Puerto Rico
@@ -80,12 +80,9 @@ American Indian or Alaska Native — Print name of enrolled or principal tribe.
 Asian Indian Japanese Native Hawaiian
 Chinese Korean Guamanian or Chamorro
 Filipino Vietnamese Samoan
-Other Asian — Print race, for
-example, Hmong, Laotian, Thai,
-Pakistani, Cambodian, and so on.
-Other Pacific Islander — Print
-race, for example, Fijian, Tongan,
-and so on.
+Other Asian — Print race, for Other Pacific Islander — Print
+example, Hmong, Laotian, Thai, race, for example, Fijian, Tongan,
+Pakistani, Cambodian, and so on. and so on.
 Some other race — Print race.
 10. Does Person 1 sometimes live or stay somewhere else?
 No Yes — Mark X all that apply.

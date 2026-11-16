@@ -1,32 +1,29 @@
 PŁATNIK WYPEŁNIA POLA W WYZNACZONYCH KRATKACH KOMPUTEROWO, NA MASZYNIE LUB RĘCZNIE
 DUŻYMI DRUKOWANYMI LITERAMI, CZARNYM LUB NIEBIESKIM KOLOREM.
-ZAKŁAD UBEZPIECZEŃ
-SPOŁECZNYCH
-ZUS ZUA
-strona: 1
-ZGŁOSZENIE DO UBEZPIECZEŃ /
-ZGŁOSZENIE ZMIANY DANYCH OSOBY UBEZPIECZONEJ
+ZAKŁAD UBEZPIECZEŃ ZGŁOSZENIE DO UBEZPIECZEŃ /
+ZUS ZUA strona: 1
+SPOŁECZNYCH ZGŁOSZENIE ZMIANY DANYCH OSOBY UBEZPIECZONEJ
 I. DANE ORGANIZACYJNE
-01. ZGŁOSZENIE DO UBEZPIECZEŃ 02. ZGŁOSZENIE ZMIANY (wpisać - 1) / KOREKTY (wpisać - 2)
-(jeśli TAK, wpisać X) DANYCH OSOBY UBEZPIECZONEJ
-(nie dotyczy zmiany danych identyfikacyjnych)¹)
+02. ZGŁOSZENIE ZMIANY (wpisać - 1) / KOREKTY (wpisać - 2)
+01. ZGŁOSZENIE DO UBEZPIECZEŃ DANYCH OSOBY UBEZPIECZONEJ
+(jeśli TAK, wpisać X) (nie dotyczy zmiany danych identyfikacyjnych)¹)
 03. Data nadania (dd / mm / rrrr) 04. Nalepka „R”
 II. DANE IDENTYFIKACYJNE
 PŁATNIKA SKŁADEK
 II. DANE IDENTYFIKACYJNE PŁATNIKA SKŁADEK
 01. Numer NIP (wpisać bez kresek) 02. Numer REGON
-03. Numer PESEL²) 04. Rodzaj dokumentu: 05. Seria i numer dokumentu
+03. Numer PESEL²) 05. Seria i numer dokumentu
+04. Rodzaj dokumentu:
 jeśli dowód osobisty, wpisać 1,
-jeśli paszport - 2
-06. Nazwa skrócona
+06. Nazwa skrócona jeśli paszport - 2
 07. Nazwisko
 08. Imię pierwsze 09. Data urodzenia (dd / mm / rrrr)
 III. DANE IDENTYFIKACYJNE
 OSOBY ZGŁASZANEJ
 DO UBEZPIECZEŃ
 III. DANE IDENTYFIKACYJNE OSOBY ZGŁASZANEJ DO UBEZPIECZEŃ
-01. Numer PESEL²) 02. 03. Rodzaj dokumentu
-(wypełnić jak pole II.04) 04. Seria i numer dokumentu
+03. Rodzaj dokumentu
+01. Numer PESEL²) 02. (wypełnić jak pole II.04) 04. Seria i numer dokumentu
 05. Nazwisko
 06. Imię pierwsze 07. Data urodzenia (dd / mm / rrrr)
 IV. DANE EWIDENCYJNE OSOBY ZGŁASZANEJ DO UBEZPIECZEŃ
@@ -48,8 +45,10 @@ VII. DANE O OBOWIĄZKOWYM UBEZPIECZENIU ZDROWOTNYM
 obowiązku ubezpieczenia 02. Kod oddziału NFZ
 (dd / mm / rrrr)
 VIII. DANE O DOBROWOLNYCH UBEZPIECZENIACH SPOŁECZNYCH
-Wnoszę o objęcie ubezpieczeniami: 01. Emerytalnym 03. Rentowymi 05. Chorobowym
-(wpisać X w odpowiednim polu) 02. Od dnia (dd / mm / rrrr) 04. Od dnia (dd / mm / rrrr) 06. Od dnia (dd / mm / rrrr)
+Wnoszę o objęcie ubezpieczeniami:
+01. Emerytalnym 03. Rentowymi 05. Chorobowym
+(wpisać X w odpowiednim polu)
+02. Od dnia (dd / mm / rrrr) 04. Od dnia (dd / mm / rrrr) 06. Od dnia (dd / mm / rrrr)
 IX. DANE O DOBROWOLNYM UBEZPIECZENIU ZDROWOTNYM
 01. Data rozpoczęcia 02. Kod oddziału NFZ
 ubezpieczenia (dd / mm / rrrr)

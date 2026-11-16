@@ -173,20 +173,20 @@ post-processing) is public only for technical reasons. It may change in any rele
 
 Public documents with references transcribed by hand, in Polish and English: invoices,
 receipts, letters, forms, and multi-column books, dictionaries, newspapers and official
-gazettes. `test3` (120 documents) and `test2` (30) are held out: nobody tunes on them and their
-pages are not looked at. `test` (35) was scored once in an earlier round and then pointed at
-what to fix. All three were scored on 2026-11-15, after every reference had been checked
+gazettes. `test3` (134 documents) and `test2` (37) are held out: nobody tunes on them and their
+pages are not looked at. `test` (42) was scored once in an earlier round and then pointed at
+what to fix. All three were scored on 2026-11-16, after every reference had been checked
 against its picture again.
 
 ![Character accuracy on test3 by document kind](docs/benchmark-test3.png)
 
 | Engine | `test3` CER pooled / median | `test3` word F1 | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | **0.120** / 0.030 | **0.884** | 0.087 / 0.043 | **0.953** | **0.039** / 0.022 | **0.941** |
-| ocr-pro, `--limit 960` | 0.174 / 0.024 | 0.849 | 0.177 / 0.044 | 0.939 | 0.048 / 0.021 | 0.928 |
-| ocr-pro, `--layout rows` | 0.422 / 0.045 | 0.884 | 0.575 / 0.552 | 0.953 | 0.438 / 0.126 | 0.940 |
-| RapidOCR, same models on ONNX Runtime | 0.425 / 0.058 | 0.884 | 0.578 / 0.556 | 0.953 | 0.443 / 0.159 | 0.938 |
-| Tesseract 5 (`pol` / `eng`) | 0.152 / 0.038 | 0.821 | **0.082** / 0.059 | 0.926 | 0.176 / 0.130 | 0.864 |
+| **ocr-pro** | **0.123** / 0.033 | **0.885** | **0.084** / 0.048 | **0.954** | **0.041** / 0.022 | **0.941** |
+| ocr-pro, `--limit 960` | 0.177 / 0.024 | 0.850 | 0.166 / 0.054 | 0.941 | 0.050 / 0.021 | 0.929 |
+| ocr-pro, `--layout rows` | 0.408 / 0.046 | 0.885 | 0.536 / 0.151 | 0.954 | 0.387 / 0.099 | 0.941 |
+| RapidOCR, same models on ONNX Runtime | 0.412 / 0.062 | 0.884 | 0.538 / 0.214 | 0.953 | 0.393 / 0.127 | 0.938 |
+| Tesseract 5 (`pol` / `eng`) | 0.161 / 0.053 | 0.817 | 0.086 / 0.068 | 0.924 | 0.165 / 0.121 | 0.864 |
 
 CER counts reading order; word F1 does not. `--layout rows` reads row by row like RapidOCR: it
 matches the automatic layout on invoices and receipts and loses on everything with columns.

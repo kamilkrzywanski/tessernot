@@ -1,34 +1,17 @@
-Clear Form Instructions Link OMB CONTROL NO.: 1006-0006
-FORM 7-21SUMM-C
+Clear Form Instructions Link
+OMB CONTROL NO.: 1006-0006
+DISTRICT SUMMARY OF CERTIFICATION 1. District Name: 2. Total number of pages
+FORM 7-21SUMM-C AND DECLARATION FORMS including this page:
 2027
-DISTRICT SUMMARY OF CERTIFICATION
-AND DECLARATION FORMS
-1. District Name: 2. Total number of pages
-including this page:
 3. Project, unit, and/or division name: 4. Region:
 BUREAU OF RECLAMATION
 Do not use this form after December 31, 2027. Type or print in ink. Date and initial crossouts and corrections. Visit www.usbr.gov/rra for more information.
 5(a). District’s forms submittal category for the 2027 water year (check one): 1 2
 5(b). Does the District anticipate delivering Reclamation irrigation water this year? (check one): YES NO
-(a)
-Number of
+(a) Acreage Directly Acreage Directly Leased Directly Owned Directly Held
+Number of Owned FROM Other Parties Excess Acreage Full-Cost Acreage
 Landholders
-Acreage Directly
-Owned
-(b) Number
-(c) Acres
-Acreage Directly Leased
-FROM Other Parties
-(d) Number
-(e) Acres
-Directly Owned
-Excess Acreage
-(f) Number
-(g) Acres
-Directly Held
-Full-Cost Acreage
-(h) Number
-(i) Acres
+(b) Number (c) Acres (d) Number (e) Acres (f) Number (g) Acres (h) Number (i) Acres
 6. Individuals and entities (Tabulation A )
 Qualified recipients 240 through 960
 (For districts with forms submittal category 1 only)
@@ -38,7 +21,8 @@ Qualified recipients over 960
 Limited recipients 40 through 320
 Limited recipients over 320 through 640
 Limited recipients over 640
-7. Trusts and estates (Tabulation B )
+7.
+Trusts and estates (Tabulation B )
 Over RRA forms submittal threshold through 960
 Over 960
 8. Public entities (Tabulation C )

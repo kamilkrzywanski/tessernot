@@ -1,53 +1,43 @@
-Form W-9
-(Rev. March 2024)
-Department of the Treasury
-Internal Revenue Service
-Request for Taxpayer
-Identification Number and Certification
-Go to www.irs.gov/FormW9 for instructions and the latest information.
+Form W-9 Request for Taxpayer
 Give form to the
-requester. Do not
-send to the IRS.
+(Rev. March 2024) Identification Number and Certification requester. Do not
+Department of the Treasury send to the IRS.
+Go to www.irs.gov/FormW9 for instructions and the latest information.
+Internal Revenue Service
 Before you begin. For guidance related to the purpose of Form W-9, see Purpose of Form, below.
 Print or type.
 See Specific Instructions on page 3.
 1 Name of entity/individual. An entry is required. (For a sole proprietor or disregarded entity, enter the owner’s name on line 1, and enter the business/disregarded
 entity’s name on line 2.)
 2 Business name/disregarded entity name, if different from above.
-3a Check the appropriate box for federal tax classification of the entity/individual whose name is entered on line 1. Check
-only one of the following seven boxes.
-Individual/sole proprietor C corporation S corporation Partnership Trust/estate
-LLC. Enter the tax classification (C = C corporation, S = S corporation, P = Partnership)
-Note: Check the “LLC” box above and, in the entry space, enter the appropriate code (C, S, or P) for the tax
-classification of the LLC, unless it is a disregarded entity. A disregarded entity should instead check the appropriate
-box for the tax classification of its owner.
-Other (see instructions)
-3b If on line 3a you checked “Partnership” or “Trust/estate,” or checked “LLC” and entered “P” as its tax classification,
-and you are providing this form to a partnership, trust, or estate in which you have an ownership interest, check
-this box if you have any foreign partners, owners, or beneficiaries. See instructions
-4 Exemptions (codes apply only to
-certain entities, not individuals;
+3a Check the appropriate box for federal tax classification of the entity/individual whose name is entered on line 1. Check 4 Exemptions (codes apply only to
+only one of the following seven boxes. certain entities, not individuals;
 see instructions on page 3):
-Exempt payee code (if any)
-Exemption from Foreign Account Tax
-Compliance Act (FATCA) reporting
-code (if any)
+Individual/sole proprietor C corporation S corporation Partnership Trust/estate
+LLC. Enter the tax classification (C = C corporation, S = S corporation, P = Partnership) Exempt payee code (if any)
+Note: Check the “LLC” box above and, in the entry space, enter the appropriate code (C, S, or P) for the tax
+classification of the LLC, unless it is a disregarded entity. A disregarded entity should instead check the appropriate Exemption from Foreign Account Tax
+box for the tax classification of its owner. Compliance Act (FATCA) reporting
+Other (see instructions) code (if any)
+3b If on line 3a you checked “Partnership” or “Trust/estate,” or checked “LLC” and entered “P” as its tax classification,
 (Applies to accounts maintained
+and you are providing this form to a partnership, trust, or estate in which you have an ownership interest, check
 outside the United States.)
+this box if you have any foreign partners, owners, or beneficiaries. See instructions
 5 Address (number, street, and apt. or suite no.). See instructions. Requester’s name and address (optional)
 6 City, state, and ZIP code
 7 List account number(s) here (optional)
 Part I Taxpayer Identification Number (TIN)
+Social security number
 Enter your TIN in the appropriate box. The TIN provided must match the name given on line 1 to avoid
 backup withholding. For individuals, this is generally your social security number (SSN). However, for a
 resident alien, sole proprietor, or disregarded entity, see the instructions for Part I, later. For other
 entities, it is your employer identification number (EIN). If you do not have a number, see How to get a
+or
 TIN, later.
+Employer identification number
 Note: If the account is in more than one name, see the instructions for line 1. See also What Name and
 Number To Give the Requester for guidelines on whose number to enter.
-Social security number
-or
-Employer identification number
 Part II Certification
 Under penalties of perjury, I certify that:
 1. The number shown on this form is my correct taxpayer identification number (or I am waiting for a number to be issued to me); and

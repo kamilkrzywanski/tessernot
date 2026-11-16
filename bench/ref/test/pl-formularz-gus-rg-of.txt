@@ -18,8 +18,10 @@ wniosek dotyczy; numer identyfikacyjny REGON, o ile został nadany.
 (RRRR–MM–DD)
 4 – skreślenie wpisu data zakończenia działalności ____-__-__
 (RRRR–MM–DD)
-03. (F, L) Numer identyfikacyjny REGON _________ _____
-04. (F) NIP __________
+03. (F, L) Numer identyfikacyjny REGON
+_________ _____
+04. (F) NIP
+__________
 05. (F) Dane identyfikacyjne osoby fizycznej prowadzącej działalność gospodarczą
 5.1. Obywatelstwo polskie 5.2. Numer PESEL (o ile posiada)
 tak nie ___________

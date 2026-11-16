@@ -674,6 +674,38 @@ column, and at the level of small blocks no gutter is found at all. It needs a t
 centred blocks and a way to take a two-line block between two columns as a column of its own;
 no second page of `dev` asks for either.
 
+**One order for forms, and all four sets scored, 2026-11-16.** The owner chose the order:
+rows across the form, header cells line by line. `bench/COLLECTING.md` now says it in full (a
+line of the reference is one printed row; two pieces are on one row when each overlaps more
+than half of the other's height; lines of neighbouring cells that are not are ordered by their
+tops; panels that stand apart in their own frames are read one after another; only running
+prose in columns is read by column). Six checkers (Fable, about 500k tokens together, briefed
+to look at where lines stand and not at letters) went through 24 forms: the 12 of `test2` and
+`test3`, without any selection, and 12 of `dev` and `test` picked where the engine's words
+were out of the reference's order. 17 files changed, every word kept (checked by a script);
+the manifest notes say which. One change was taken back: on `pl-formularz-upowaznienie-kontrola`
+two framed cards stand side by side and the checker, by the letter of the rule, read rows
+across both; that is what the rule on panels was added for.
+
+What it did to the scores of `dev`: nine forms, 767 edits fewer, six down (W-9 0.139 to 0.066)
+and three up (KOWR 0.046 to 0.084, Navy 5512 0.022 to 0.040, NEA budget 0.015 to 0.023). The
+three that went up are an engine item for `dev`: lines of neighbouring cells set half a line
+apart, which the rule orders by their tops and the engine does not. ZUS ZUA and ZCNA stay at
+0.14 and 0.25: the engine reads the labels printed sideways in the margin as fragments.
+
+A limit of the rule, seen in the reports: in header bands of three type sizes (the NASA 533M
+title, the W-9 head) and where cells step down like stairs (PS 1583), one or two pixels decide
+whether two pieces share a row, and the overlaps are not transitive. The references are of one
+kind now, but on those bands a form's CER is still partly luck; word F1 is the steadier number
+for forms.
+
+All four sets were scored that day on the owner's word (engine of e6c7945; the baselines on
+the 43 new documents only, their earlier outputs kept; everything scored again from the kept
+outputs after the last reference had changed). `dev` 0.045 (137), `test` 0.041 (42), `test2`
+0.084 (37; Tesseract 0.086), `test3` 0.123 (134; Tesseract 0.161). The scores before it are in
+`bench/out/prev-2026-11-16`. The rule on lines boxed word by word moved one held-out page, a
+book page of `test3`, from 0.103 to 0.045, and no other.
+
 **Which model checks references, 2026-11-15.** Measured on seven documents of the third batch
 with the references as delivered and the same brief: of the 11 corrections that change a
 score, a Fable checker found 11, an Opus 5.5 checker 9 (it missed the two misplaced column
