@@ -31,9 +31,20 @@
     </dependencies>
 
     <build>
-        <!-- target/tessernot-cli.jar whatever the version, so ocr.sh and the docs need no version. -->
-        <finalName>tessernot-cli</finalName>
         <plugins>
+            <plugin>
+                <!-- The plain JAR is what Maven Central gets, with the other modules as dependencies,
+                     so that JBang can run io.github.kamilkrzywanski:tessernot-cli:<version>. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>io.github.kamilkrzywanski.ocr.cli.Cli</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <!-- The shaded JAR keeps our META-INF/LICENSE and NOTICE, so the license and notice
                      files of the bundled libraries go to META-INF/third-party/<artifact>/. -->
@@ -71,6 +82,10 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <!-- The runnable JAR with everything inside goes beside the plain one, to
+                                 target/tessernot-cli.jar whatever the version, for ocr.sh, the docs
+                                 and the GitHub release; it does not replace the plain JAR. -->
+                            <outputFile>${project.build.directory}/tessernot-cli.jar</outputFile>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">

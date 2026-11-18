@@ -219,7 +219,8 @@
                 mvn -Prelease deploy: sources and javadoc JARs, GPG signatures, and an upload to the
                 Maven Central Portal under the server id "central" of settings.xml (a portal user
                 token). The deployment waits in the portal until it is published there by hand.
-                tessernot-cli is not uploaded: its runnable JAR goes to GitHub Releases.
+                tessernot-cli is uploaded as a plain JAR with its dependencies in the POM, for JBang;
+                its runnable JAR with everything inside goes to GitHub Releases.
                 mvn -Prelease -Dgpg.skip package builds the JARs without signing.
             -->
             <id>release</id>
@@ -269,9 +270,6 @@
                         <configuration>
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>false</autoPublish>
-                            <excludeArtifacts>
-                                <excludeArtifact>tessernot-cli</excludeArtifact>
-                            </excludeArtifacts>
                         </configuration>
                     </plugin>
                 </plugins>

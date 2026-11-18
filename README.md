@@ -80,7 +80,7 @@ models are enough to start:
 | `tessernot-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
 | `tessernot-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
 | `tessernot-pdf` | PDF input and searchable PDF output through Apache PDFBox |
-| `tessernot-cli` | the command line: one runnable JAR with all of the above, attached to each [GitHub release](https://github.com/kamilkrzywanski/tessernot/releases) rather than published to Maven Central |
+| `tessernot-cli` | the command line; the runnable JAR with all of the above is attached to each [GitHub release](https://github.com/kamilkrzywanski/tessernot/releases), and JBang runs it from Maven Central: `jbang --java-options=--add-modules=jdk.incubator.vector io.github.kamilkrzywanski:tessernot-cli:0.1.0 ocr scan.jpg` |
 
 ```java
 try (OcrEngine engine = OcrEngine.load()) {             // models from tessernot-models

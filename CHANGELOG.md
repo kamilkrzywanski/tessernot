@@ -20,7 +20,8 @@ no native libraries. Experimental.
   `Corrections.POLISH`.
 - **PDF** (`tessernot-pdf`): PDF input and searchable PDF output through Apache PDFBox.
 - **Command line** (`tessernot-cli.jar` on the GitHub release): one runnable JAR with the
-  engine, PDF input and the models.
+  engine, PDF input and the models. On Maven Central `tessernot-cli` is a plain JAR with the
+  other modules as dependencies, so JBang runs it from its coordinates.
 - **Benchmark:** 350 documents in four sets, against Tesseract 5.5.3 and RapidOCR on the same
   models, in [docs/benchmark.md](docs/benchmark.md). On the held-out `test3` the pooled CER is
   0.123 against 0.161 for Tesseract, and 0.195 against 0.387 on invoices, bills and receipts.

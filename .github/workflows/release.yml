@@ -42,6 +42,7 @@ jobs:
             printf '```kotlin\nimplementation("io.github.kamilkrzywanski:tessernot:%s")\nimplementation("io.github.kamilkrzywanski:tessernot-models:%s")\n```\n\n' "$version" "$version"
             printf 'PDF input is `tessernot-pdf`, the Polish word lists `tessernot-models-pl`.\n\n'
             printf 'The command line is `tessernot-cli.jar` below, with the models inside: `java --add-modules jdk.incubator.vector -jar tessernot-cli.jar ocr scan.jpg`\n\n'
+            printf 'Or run it from Maven Central with [JBang](https://www.jbang.dev/): `jbang --java-options=--add-modules=jdk.incubator.vector io.github.kamilkrzywanski:tessernot-cli:%s ocr scan.jpg`\n\n' "$version"
             cat "$RUNNER_TEMP/release-notes.md"
           } > "$RUNNER_TEMP/release-body.md"
       - name: Install DejaVu, the font of the rendered test pages
