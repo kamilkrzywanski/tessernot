@@ -194,8 +194,8 @@ A page takes a few seconds: on an Intel i7-1365U laptop with 12 threads the medi
 4.4 s for tessernot, 4.1 s for RapidOCR and 1.7 s for Tesseract (the benchmark notes have the
 measurements and their caveats).
 
-- **Invoices, bills and receipts:** 87 % character accuracy against 70 % for Tesseract on
-  `test3`, 84 % against 51 % on `test2` and 89 % against 69 % on `test`. Tesseract returns
+- **Invoices, bills and receipts:** 80 % character accuracy against 61 % for Tesseract on
+  `test3`, 85 % against 52 % on `test2` and 88 % against 68 % on `test`. Tesseract returns
   nothing for some thermal and dot-matrix receipts.
 - **Recognition:** word F1 is above Tesseract on every set and matches ONNX Runtime running the
   same models, so the pure-Java runtime gives up nothing.
@@ -203,10 +203,10 @@ measurements and their caveats).
   articles and newspapers with three or four narrow columns are read column by column, also
   where the detector merged lines across the gutters. RapidOCR reads the same models row by row
   and loses most of those pages.
-- **Where Tesseract still wins:** a few complex pages, such as a 1910 magazine page, an 1836
-  gazette and a typed memo, and the forms and letters that joined `test2` in November 2026: on
-  its eight letters, forms and notices tessernot has 0.175 against 0.066, which puts Tesseract
-  slightly ahead on that set as a whole. It is faster.
+- **Where Tesseract still wins:** the letters, forms and notices of `test2` (0.076 against
+  0.133 for tessernot), which leave the two level on that set as a whole (0.086 against 0.084),
+  and a few complex older pages, such as a 1910 magazine page, an 1836 gazette and a typed memo.
+  It is faster.
 
 Method, the `dev` set, per-document results and how to reproduce them are in
 [docs/benchmark.md](docs/benchmark.md).
@@ -245,8 +245,6 @@ the pixels of the picture as given, and `OcrResult.rotation()` tells the quarter
 - [docs/internals.md](docs/internals.md): pipeline, runtime, kernels, concurrency
 - [docs/corrections.md](docs/corrections.md): the Polish rules
 - [docs/benchmark.md](docs/benchmark.md): the `dev` and `test` sets and how to reproduce the numbers
-- [docs/PLAN.md](docs/PLAN.md): the design decision log
-- [docs/HANDOFF.md](docs/HANDOFF.md): what to improve next and how to work on it
 
 ## License
 

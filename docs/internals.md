@@ -128,7 +128,8 @@ by reflection.
     page laid flat, 38 pages better and 11 worse. As given, no page of `dev` or `test` is
     taken for a fan. A page photographed from below, whose lines stay level while its margins
     lean in, is not helped: its point has to come from the margins, and laying such a page
-    flat was tried and dropped (HANDOFF.md, "Tried and dropped").
+    flat was tried and dropped: the point read from the margins also took pages with a slight
+    real lean for photos from below, and lost more edits on them than it saved.
   - **Askew:** the median angle of the long boxes, up to 45 degrees, moves a vertical gutter
     sideways by more than a line height between the top and the bottom of the page. The picture
     is turned level (bilinear, on a larger white canvas). Below that, `PageSkew` levels the

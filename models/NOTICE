@@ -1,11 +1,10 @@
 Model weights and word lists in this directory.
 
 - ch_PP-OCRv5_det_mobile.onnx, ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx,
-  PP-OCRv6_rec_small.onnx, ppocrv6_dict.txt, latin_PP-OCRv5_rec_mobile.onnx and
-  ppocrv5_latin_dict.txt: PP-OCR models and dictionaries by the PaddlePaddle Authors
-  (PaddleOCR, Apache-2.0), as converted to ONNX and published by RapidOCR (Apache-2.0),
-  https://www.modelscope.cn/models/RapidAI/RapidOCR. The files are unchanged; ModelFiles
-  holds the SHA-256 of the first four.
+  PP-OCRv6_rec_small.onnx and ppocrv6_dict.txt: PP-OCR models and dictionaries by the
+  PaddlePaddle Authors (PaddleOCR, Apache-2.0), as converted to ONNX and published by RapidOCR
+  (Apache-2.0), https://www.modelscope.cn/models/RapidAI/RapidOCR. The files are unchanged;
+  ModelFiles holds their SHA-256.
 - lexicon-pl.txt.gz: the sjp.pl Polish spell-checking dictionary, https://sjp.pl/sl/en/,
   which its authors license under the Apache-2.0, GPL-2, LGPL-2.1, MPL-1.1 or CC BY 4.0, at
   the user's choice; it is used here under Apache-2.0.

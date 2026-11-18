@@ -43,7 +43,7 @@ reference is one printed row across the form. 24 forms were gone through against
 pictures, all 12 of the held-out sets among them, by checkers who saw no engine output; 17
 files changed, in the order of words and the breaking of lines only, every word kept.
 
-Every table below is for the sets as they now stand, scored on 2026-11-16 on the owner's word
+Every table below is for the sets as they now stand, scored on 2026-11-16, by the maintainer's decision,
 with the engine of that day. Pooled CER on the documents each set had on 2026-11-15 and on the
 43 that joined:
 
@@ -191,7 +191,7 @@ better and 19 worse; the largest loss is 20 edits on a page that has 9,123.
 
 ### With the engine of 2026-11-16, 134 documents
 
-Scored three times on the owner's word since: on the morning of 2026-11-15 the 97 documents it
+Scored three times since, each time by the maintainer's decision: on the morning of 2026-11-15 the 97 documents it
 then had, for the first time also with Tesseract, RapidOCR and the engine variants; that night
 120, after its references had been checked a third time (180 lines corrected in `test2` and
 `test3`, most on old Polish newspapers whose spelling had been modernised) and 23 business
@@ -235,7 +235,7 @@ the pooled number little, because the pages they changed most (the Gazeta Polska
 
 ## Results on `test2`
 
-Scored on 2026-11-16, on the owner's word: 37 documents, the 30 it had on 2026-11-15 and 7
+Scored on 2026-11-16, by the maintainer's decision: 37 documents, the 30 it had on 2026-11-15 and 7
 business documents that joined it. On the 30 nothing moved (0.087, Tesseract 0.085): its five
 forms were gone through and two changed, by 14 edits together. The seven new ones read at
 0.056 against Tesseract's 0.095, and with them the whole set is tessernot's by a hair, 0.084
