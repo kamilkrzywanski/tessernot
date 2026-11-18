@@ -28,7 +28,8 @@ newspaper page with a hundred lines takes longest. Detection at 960 px instead o
 the default, about 512 MB at 960 px; a multi-page PDF fits in the same heap, with fewer pages read
 side by side when the heap is small. With less heap than the limit needs, the page is detected
 at the largest size that fits, down to a heap of about 512 MB; below that the call fails with
-a message that names the heap. Without the incubator module, the scalar path is slower.
+a message that names the heap. Without the incubator module, the scalar path gives the same text about nine times slower
+(twelve pages on eight cores: 398 s against 45 s).
 
 ## Quick start
 
@@ -54,7 +55,7 @@ ModelScope and checks their SHA-256 digests.
 `ocr.sh` runs `tessernot-cli/target/tessernot-cli.jar` with `--add-modules
 jdk.incubator.vector`. That JAR bundles the models, so it also runs on its own, from any directory:
 `java --add-modules jdk.incubator.vector -jar tessernot-cli.jar ocr scan.jpg`. Without the
-flag, the engine uses the scalar path.
+flag, the engine uses the scalar path and the command line says so on stderr.
 
 ## Java API
 
@@ -65,12 +66,12 @@ models are enough to start:
 <dependency>
     <groupId>io.github.kamilkrzywanski</groupId>
     <artifactId>tessernot</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 <dependency>
     <groupId>io.github.kamilkrzywanski</groupId>
     <artifactId>tessernot-models</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
@@ -80,7 +81,7 @@ models are enough to start:
 | `tessernot-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
 | `tessernot-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
 | `tessernot-pdf` | PDF input and searchable PDF output through Apache PDFBox |
-| `tessernot-cli` | the command line; the runnable JAR with all of the above is attached to each [GitHub release](https://github.com/kamilkrzywanski/tessernot/releases), and JBang runs it from Maven Central: `jbang --java-options=--add-modules=jdk.incubator.vector io.github.kamilkrzywanski:tessernot-cli:0.1.0 ocr scan.jpg` |
+| `tessernot-cli` | the command line; the runnable JAR with all of the above is attached to each [GitHub release](https://github.com/kamilkrzywanski/tessernot/releases), and JBang runs it from Maven Central: `jbang --java-options=--add-modules=jdk.incubator.vector io.github.kamilkrzywanski:tessernot-cli:0.1.1 ocr scan.jpg` |
 
 ```java
 try (OcrEngine engine = OcrEngine.load()) {             // models from tessernot-models

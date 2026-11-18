@@ -2,6 +2,17 @@
 
 The release workflow takes the section of the tagged version as the notes of its GitHub release.
 
+## 0.1.1
+
+Fixes in the command line, found by running 0.1.0 on Windows.
+
+- Output redirected to a file or a pipe is UTF-8 on every platform. On Windows it used the ANSI
+  code page, so `--json` was not UTF-8 and letters outside that page were lost: on a Windows with
+  an English system locale, `Ł` came out as `?`. On an interactive console the output keeps the
+  console's encoding.
+- Started without `--add-modules jdk.incubator.vector`, the commands that read pages say on stderr
+  that they run on the scalar kernels, which give the same text about nine times slower.
+
 ## 0.1.0
 
 The first release: OCR for printed documents in pure Java, on PaddleOCR's PP-OCR models, with

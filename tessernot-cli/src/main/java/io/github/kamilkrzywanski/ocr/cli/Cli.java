@@ -17,9 +17,15 @@ import io.github.kamilkrzywanski.ocr.internal.image.Images;
 import io.github.kamilkrzywanski.ocr.internal.pdf.SearchablePdf;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Session;
 import io.github.kamilkrzywanski.ocr.internal.runtime.Tensor;
+import io.github.kamilkrzywanski.ocr.internal.runtime.VectorSupport;
 import io.github.kamilkrzywanski.ocr.pdf.OcrPdf;
 
 import java.awt.image.BufferedImage;
+import java.io.Console;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -53,9 +59,47 @@ public final class Cli {
      * @param args the command and its arguments, see {@code docs/cli.md}
      */
     public static void main(String[] args) {
+        if (!stdoutIsTerminal()) {
+            // Redirected to a file or a pipe, the text is UTF-8 whatever the platform's code page: on
+            // Windows that page would turn Ł into ? and make the JSON output something else than UTF-8.
+            System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.UTF_8));
+        }
+        if (readsWithEngine(args) && !VectorSupport.available()) {
+            System.err.println("Running without the Vector API, which is several times slower."
+                    + " Start Java with --add-modules jdk.incubator.vector for the fast kernels.");
+        }
         int code = execute(args);
         if (code != 0) {
             System.exit(code);
+        }
+    }
+
+    /** Whether standard output is an interactive console, which keeps its own encoding. */
+    static boolean stdoutIsTerminal() {
+        Console console = System.console();
+        if (console == null) {
+            return false;
+        }
+        try {
+            // Java 22 and later give a console also when the streams are redirected and say here which it is.
+            return (Boolean) Console.class.getMethod("isTerminal").invoke(console);
+        } catch (ReflectiveOperationException e) {
+            return true;
+        }
+    }
+
+    /** Whether the command runs the recognition engine, where the Vector API decides the speed. */
+    static boolean readsWithEngine(String[] args) {
+        try {
+            Parsed parsed = Parsed.of(args);
+            String command = parsed.positionals.isEmpty() ? "" : parsed.positionals.get(0);
+            return switch (command) {
+                case "ocr", "pdf", "bench", "eval", "selfcheck" -> true;
+                case "score" -> parsed.flag("hyp") == null;
+                default -> false;
+            };
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 

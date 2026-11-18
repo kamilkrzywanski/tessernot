@@ -63,6 +63,18 @@ class CliArgsTest {
     }
 
     @Test
+    void vectorHintOnlyForCommandsThatRunTheEngine() {
+        assertTrue(Cli.readsWithEngine(new String[]{"ocr", "scan.jpg"}));
+        assertTrue(Cli.readsWithEngine(new String[]{"--json", "pdf", "doc.pdf"}));
+        assertTrue(Cli.readsWithEngine(new String[]{"score", "refs", "images"}));
+        assertFalse(Cli.readsWithEngine(new String[]{"score", "refs", "--hyp", "outputs"}));
+        assertFalse(Cli.readsWithEngine(new String[]{"help"}));
+        assertFalse(Cli.readsWithEngine(new String[]{"download"}));
+        assertFalse(Cli.readsWithEngine(new String[0]));
+        assertFalse(Cli.readsWithEngine(new String[]{"ocr", "--limit"}));
+    }
+
+    @Test
     void correctionsAreNamedAndCheckedBeforeAFileIsOpened() {
         Run bad = run(() -> Cli.execute(new String[]{"ocr", "missing.png", "--corrections", "german"}));
         assertEquals(1, bad.code);

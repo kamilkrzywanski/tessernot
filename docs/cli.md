@@ -23,7 +23,7 @@ ocr eval [--model dir]
 | Command | What it does |
 | --- | --- |
 | `download` | Fetches the default ONNX files and dictionary from ModelScope and checks SHA-256. A file that already has the right digest is not fetched again. |
-| `ocr` | One image. Page text to stdout, then each table (a ruled grid, or rows set in three or more aligned columns) as `--- table N ---` with tab-separated cells. Timings go to stderr. |
+| `ocr` | One image. Page text to stdout, then each table (a ruled grid, or rows set in three or more aligned columns) as `--- table N ---` with tab-separated cells. Timings go to stderr. Redirected to a file or a pipe, the output is UTF-8 on every platform; on an interactive console it uses the console's encoding. |
 | `pdf` | Every page of a PDF, rendered with PDFBox at `--dpi` (default 150). With more than one page, each page starts with `--- page N ---` and is printed as soon as it is done. |
 | `bench` | One warm-up and three timed runs on one image. Prints the minimum and the median. |
 | `score` | Held-out benchmark. Compares page text with references, or scores ready outputs of another engine with `--hyp`. See [benchmark.md](benchmark.md). |
