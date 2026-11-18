@@ -58,8 +58,21 @@ flag, the engine uses the scalar path.
 
 ## Java API
 
-The library is not on Maven Central yet. Run `./mvnw install` and depend on the artifacts you need,
-all under `io.github.kamilkrzywanski` with version `0.1.0-SNAPSHOT`:
+The artifacts are on Maven Central under `io.github.kamilkrzywanski`; the engine and the default
+models are enough to start:
+
+```xml
+<dependency>
+    <groupId>io.github.kamilkrzywanski</groupId>
+    <artifactId>tessernot</artifactId>
+    <version>0.1.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.kamilkrzywanski</groupId>
+    <artifactId>tessernot-models</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
 
 | Artifact | What it holds |
 | --- | --- |
@@ -67,7 +80,7 @@ all under `io.github.kamilkrzywanski` with version `0.1.0-SNAPSHOT`:
 | `tessernot-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
 | `tessernot-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
 | `tessernot-pdf` | PDF input and searchable PDF output through Apache PDFBox |
-| `tessernot-cli` | the command line: one runnable JAR with all of the above |
+| `tessernot-cli` | the command line: one runnable JAR with all of the above, attached to each [GitHub release](https://github.com/kamilkrzywanski/tessernot/releases) rather than published to Maven Central |
 
 ```java
 try (OcrEngine engine = OcrEngine.load()) {             // models from tessernot-models
