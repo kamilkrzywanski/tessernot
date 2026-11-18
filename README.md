@@ -1,4 +1,4 @@
-# ocr-pro
+# tessernot
 
 OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. The engine is one JAR
 with no runtime dependencies, and the models come in a second one. It needs no native libraries:
@@ -51,9 +51,9 @@ ModelScope and checks their SHA-256 digests.
 | `ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx` | 0° / 180° line orientation |
 | `PP-OCRv6_rec_small.onnx` + `ppocrv6_dict.txt` | recognition: Latin scripts including Polish, Chinese, Japanese kana, Greek |
 
-`ocr.sh` runs `ocr-pro-cli/target/ocr-pro-cli.jar` with `--add-modules
+`ocr.sh` runs `tessernot-cli/target/tessernot-cli.jar` with `--add-modules
 jdk.incubator.vector`. That JAR bundles the models, so it also runs on its own, from any directory:
-`java --add-modules jdk.incubator.vector -jar ocr-pro-cli.jar ocr scan.jpg`. Without the
+`java --add-modules jdk.incubator.vector -jar tessernot-cli.jar ocr scan.jpg`. Without the
 flag, the engine uses the scalar path.
 
 ## Java API
@@ -63,14 +63,14 @@ all under `io.github.kamilkrzywanski` with version `0.1.0-SNAPSHOT`:
 
 | Artifact | What it holds |
 | --- | --- |
-| `ocr-pro` | the engine, with no runtime dependencies |
-| `ocr-pro-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
-| `ocr-pro-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
-| `ocr-pro-pdf` | PDF input and searchable PDF output through Apache PDFBox |
-| `ocr-pro-cli` | the command line: one runnable JAR with all of the above |
+| `tessernot` | the engine, with no runtime dependencies |
+| `tessernot-models` | the default models (27 MB), found on the class path by `OcrConfig.defaults()` |
+| `tessernot-models-pl` | the word lists and Polish postal codes of `Corrections.POLISH` (12 MB) |
+| `tessernot-pdf` | PDF input and searchable PDF output through Apache PDFBox |
+| `tessernot-cli` | the command line: one runnable JAR with all of the above |
 
 ```java
-try (OcrEngine engine = OcrEngine.load()) {             // models from ocr-pro-models
+try (OcrEngine engine = OcrEngine.load()) {             // models from tessernot-models
     OcrResult result = engine.recognize(OcrImages.read(Path.of("scan.jpg")));
     String text = result.text();                  // page text in reading order
     for (TextLine line : result.lines()) {
@@ -80,16 +80,16 @@ try (OcrEngine engine = OcrEngine.load()) {             // models from ocr-pro-m
     for (TextTable table : result.tables()) {     // table.ruled(): a grid of rules, or columns with none
         List<List<String>> rows = table.cells();  // empty cell = ""
     }
-    List<OcrResult> pages = OcrPdf.recognize(engine, Path.of("scan.pdf"), 150f);  // ocr-pro-pdf
+    List<OcrResult> pages = OcrPdf.recognize(engine, Path.of("scan.pdf"), 150f);  // tessernot-pdf
     // The same scan, or an image, as a PDF with the text under every line:
     OcrPdf.searchable(engine, Path.of("scan.pdf"), Path.of("scan-with-text.pdf"), 150f);
 }
 ```
 
 The bundled models are read into memory; nothing is written to disk. To keep them out of your
-artifact, leave out `ocr-pro-models`, fetch the files once with `ModelFiles.ensure(dir)` and use
+artifact, leave out `tessernot-models`, fetch the files once with `ModelFiles.ensure(dir)` and use
 `OcrEngine.load(dir)` or `OcrConfig.defaults(dir)`. The Polish rules look for their word lists next
-to the models: in the same directory, or in `ocr-pro-models-pl`; without them the rules still run,
+to the models: in the same directory, or in `tessernot-models-pl`; without them the rules still run,
 without the dictionary steps.
 
 An engine is not meant for concurrent calls. For parallel requests, use a pool, which gives
@@ -130,7 +130,7 @@ word (`a`→`ą`, `u`→`ü`) is allowed even when the image shows little of it.
 numbers and letters glued to digits stay as read. There are no rules for any one language: a list
 is only its words.
 
-With the Polish and English lists of `ocr-pro-models-pl` as `--words`, and no other rule, word F1
+With the Polish and English lists of `tessernot-models-pl` as `--words`, and no other rule, word F1
 rose from 0.930 to 0.945 on `test` (Polish pages 0.915 to 0.933) and from 0.956 to 0.963 on `dev`;
 pooled CER on `test` went from 0.046 to 0.044. Searching costs under 1 % of a page's time; a large
 list that is already sorted, lowercase and NFC loads in about half a second, any other is sorted
@@ -163,8 +163,8 @@ The public API is in `io.github.kamilkrzywanski.ocr`:
 | `ModelFiles`, `ModelSource`, `ModelBundle` | download and check the default models; where a model file comes from; the interface of a model JAR |
 | `OcrException` | the single exception type |
 
-PDF input is `io.github.kamilkrzywanski.ocr.pdf.OcrPdf` in `ocr-pro-pdf`, and the command line is
-`io.github.kamilkrzywanski.ocr.cli.Cli` in `ocr-pro-cli`.
+PDF input is `io.github.kamilkrzywanski.ocr.pdf.OcrPdf` in `tessernot-pdf`, and the command line is
+`io.github.kamilkrzywanski.ocr.cli.Cli` in `tessernot-cli`.
 
 Everything under `io.github.kamilkrzywanski.ocr.internal` (runtime, kernels, pre- and
 post-processing) is public only for technical reasons. It may change in any release.
@@ -182,16 +182,16 @@ against its picture again.
 
 | Engine | `test3` CER pooled / median | `test3` word F1 | `test2` CER pooled / median | `test2` word F1 | `test` CER pooled / median | `test` word F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **ocr-pro** | **0.123** / 0.033 | **0.885** | **0.084** / 0.048 | **0.954** | **0.041** / 0.022 | **0.941** |
-| ocr-pro, `--limit 960` | 0.177 / 0.024 | 0.850 | 0.166 / 0.054 | 0.941 | 0.050 / 0.021 | 0.929 |
-| ocr-pro, `--layout rows` | 0.408 / 0.046 | 0.885 | 0.536 / 0.151 | 0.954 | 0.387 / 0.099 | 0.941 |
+| **tessernot** | **0.123** / 0.033 | **0.885** | **0.084** / 0.048 | **0.954** | **0.041** / 0.022 | **0.941** |
+| tessernot, `--limit 960` | 0.177 / 0.024 | 0.850 | 0.166 / 0.054 | 0.941 | 0.050 / 0.021 | 0.929 |
+| tessernot, `--layout rows` | 0.408 / 0.046 | 0.885 | 0.536 / 0.151 | 0.954 | 0.387 / 0.099 | 0.941 |
 | RapidOCR, same models on ONNX Runtime | 0.412 / 0.062 | 0.884 | 0.538 / 0.214 | 0.953 | 0.393 / 0.127 | 0.938 |
 | Tesseract 5 (`pol` / `eng`) | 0.161 / 0.053 | 0.817 | 0.086 / 0.068 | 0.924 | 0.165 / 0.121 | 0.864 |
 
 CER counts reading order; word F1 does not. `--layout rows` reads row by row like RapidOCR: it
 matches the automatic layout on invoices and receipts and loses on everything with columns.
 A page takes a few seconds: on an Intel i7-1365U laptop with 12 threads the median was 3.5 to
-4.4 s for ocr-pro, 4.1 s for RapidOCR and 1.7 s for Tesseract (the benchmark notes have the
+4.4 s for tessernot, 4.1 s for RapidOCR and 1.7 s for Tesseract (the benchmark notes have the
 measurements and their caveats).
 
 - **Invoices, bills and receipts:** 87 % character accuracy against 70 % for Tesseract on
@@ -205,7 +205,7 @@ measurements and their caveats).
   and loses most of those pages.
 - **Where Tesseract still wins:** a few complex pages, such as a 1910 magazine page, an 1836
   gazette and a typed memo, and the forms and letters that joined `test2` in November 2026: on
-  its eight letters, forms and notices ocr-pro has 0.175 against 0.066, which puts Tesseract
+  its eight letters, forms and notices tessernot has 0.175 against 0.066, which puts Tesseract
   slightly ahead on that set as a whole. It is faster.
 
 Method, the `dev` set, per-document results and how to reproduce them are in
@@ -253,6 +253,6 @@ the pixels of the picture as given, and `OcrResult.rotation()` tells the quarter
 The code is under the [Apache License 2.0](LICENSE). The models, word lists, test images and
 benchmark documents come from third parties under their own licenses. See [NOTICE](NOTICE),
 [models/NOTICE](models/NOTICE) and [bench/README.md](bench/README.md#licenses); the model JARs
-carry these notices in `META-INF/models/`. `ocr-pro-pdf` depends on Apache PDFBox, and the runnable
-JAR of `ocr-pro-cli` bundles it; the license and notice files of the bundled libraries are in its
+carry these notices in `META-INF/models/`. `tessernot-pdf` depends on Apache PDFBox, and the runnable
+JAR of `tessernot-cli` bundles it; the license and notice files of the bundled libraries are in its
 `META-INF/third-party/`.

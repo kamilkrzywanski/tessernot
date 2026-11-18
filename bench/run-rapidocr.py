@@ -1,4 +1,4 @@
-"""Baseline: RapidOCR (Python, onnxruntime) on the same ONNX files as ocr-pro.
+"""Baseline: RapidOCR (Python, onnxruntime) on the same ONNX files as tessernot.
 
     pip install rapidocr==3.10.0 onnxruntime==1.31.0
     python bench/run-rapidocr.py bench/ref bench/data bench/out/rapidocr [models]

@@ -1,4 +1,4 @@
-# Handoff: how to keep improving ocr-pro
+# Handoff: how to keep improving tessernot
 
 State on 2026-10-14, after the reading-order round and the column-gutter change. Read [README.md](../README.md),
 [internals.md](internals.md) and [benchmark.md](benchmark.md) first; this file is the to-do list
@@ -182,7 +182,7 @@ the second batch is below. Checked here before use:
 - Dropped three: `en-receipt-bep-currency-1915` (pen-lettered script), `en-form-usfs-visitor-
   permit-1991` (a grid of eighty numbered boxes: no reading order to hold an engine to),
   `pl-formularz-cybercomplex-zsk-2025` (a named person's phone number and an address that may be
-  a home). The last one is still in the history of the `ocr-pro-bench` repository.
+  a home). The last one is still in the history of the `tessernot-bench` repository.
 - `en-receipt-target-ala-moana-2018` came at 7176x13968 and ran out of a 1 GB heap; it is stored
   scaled to 2569x5000 and its manifest row says so. The CLI ended with a bare
   `OutOfMemoryError` on such a picture; since that evening it is read at a fraction of its size.
@@ -532,9 +532,9 @@ the corrected references and the new documents; their tables are from that scori
 
 The one finding that matters is the reading order of `pl-encyklopedja-staropolska-1900-s42`:
 its photograph sits across both columns and the columns run on below it, and the reference
-read it in two bands. Put right, ocr-pro reads the page at 0.408 (0.005 before) and Tesseract
+read it in two bands. Put right, tessernot reads the page at 0.408 (0.005 before) and Tesseract
 at 0.036 (0.408): the engine splits the columns at the picture as the old reference did. `test`
-is 0.054 for ocr-pro, not 0.041. The tables and chart of `test` and the README are rebuilt
+is 0.054 for tessernot, not 0.041. The tables and chart of `test` and the README are rebuilt
 from the same engine outputs; `dev` did not move at three decimals; `test2` was not scored
 again (three characters). This is the first open item now: a figure across columns must not
 end a band when the lines above and below it belong to one sentence or one column.
@@ -623,7 +623,7 @@ out with the handwritten one, stamp lines kept as print.
 
 **Forms, 2026-11-16: looked for on dev, not found there.** The ten documents that joined
 `test2` read at 0.200 against Tesseract's 0.135, and the owner asked for forms to be worked on
-in `dev`. The forms of `dev` and `test` do not show it: ocr-pro is ahead of Tesseract on 20 of
+in `dev`. The forms of `dev` and `test` do not show it: tessernot is ahead of Tesseract on 20 of
 23 (behind on the W-4 by 59 edits, the Navy 5512 by 72 against plain rows, the NLS form by 11).
 The scores of the held-out pages, read without opening the pages, point elsewhere: three
 documents carry `test2` (a two-column census questionnaire 0.456, a bilingual notice in two
@@ -742,10 +742,10 @@ Tesseract and RapidOCR run again on all 105 and 27 documents, and a chart for ea
 
 | | `dev` (105) | `test` (27) |
 | --- | --- | --- |
-| ocr-pro | 0.049 | 0.041 |
-| ocr-pro + polish | 0.048 | 0.038 |
-| ocr-pro, `--limit 960` | 0.078 | 0.049 |
-| ocr-pro, `--layout rows` | 0.374 | 0.508 |
+| tessernot | 0.049 | 0.041 |
+| tessernot + polish | 0.048 | 0.038 |
+| tessernot, `--limit 960` | 0.078 | 0.049 |
+| tessernot, `--layout rows` | 0.374 | 0.508 |
 | RapidOCR, same models | 0.389 | 0.512 |
 | Tesseract 5 | 0.146 | 0.210 |
 
@@ -780,7 +780,7 @@ Found in the review and still open:
   the docs and the commit history are all in English.
 - Talk to the owner in Polish. Push to `origin master` only when asked.
 - All benchmark data is tracked on purpose. Page images and PDF/DjVu originals live in the
-  submodule `bench/data` (its own repository, `ocr-pro-bench`); references and the manifest live
+  submodule `bench/data` (its own repository, `tessernot-bench`); references and the manifest live
   here. A new image is committed in the submodule first (on its `master`, not a detached HEAD),
   then the submodule pointer here. `bench/data/manifest.tsv` is a copy of `bench/manifest.tsv`
   for readers of the bench repository: copy it over after every manifest change. Keep every file
@@ -794,9 +794,9 @@ Found in the review and still open:
 - The owner wants a universal tool: no thresholds fitted to the benchmark sets. Prefer one
   mechanism with a parameter that means something (nats, a probability) set before measuring. `QualityGateTest`
   guards the three tuning scans; its Polish-rules gate is pinned to 960 px detection on purpose.
-- Modules: `ocr-pro` (the engine, no runtime dependencies), `ocr-pro-pdf` (PDFBox),
-  `ocr-pro-models` and `ocr-pro-models-pl` (the files of `models/` as JARs, found through
-  `ModelBundle`), `ocr-pro-cli` (the runnable JAR that `ocr.sh` uses). Tests run from the
+- Modules: `tessernot` (the engine, no runtime dependencies), `tessernot-pdf` (PDFBox),
+  `tessernot-models` and `tessernot-models-pl` (the files of `models/` as JARs, found through
+  `ModelBundle`), `tessernot-cli` (the runnable JAR that `ocr.sh` uses). Tests run from the
   repository root, read `models/` there and skip when it is missing: check that the count of
   skipped tests stays 0.
 
@@ -981,12 +981,12 @@ failures come down to one share just under its threshold.
 7. **Release.** The build is ready: `mvn -Prelease deploy` makes the sources and javadoc JARs,
    signs with GPG and uploads to the Maven Central Portal (server id `central` in settings.xml,
    a portal user token); the deployment then waits in the portal to be published by hand.
-   `ocr-pro-cli` is not uploaded: attach `ocr-pro-cli/target/ocr-pro-cli.jar` to a GitHub
+   `tessernot-cli` is not uploaded: attach `tessernot-cli/target/tessernot-cli.jar` to a GitHub
    release. CI (`.github/workflows/build.yml`) runs `mvn verify` and fails on a skipped test.
    Left to the owner: the version (now `0.1.0-SNAPSHOT`; `./mvnw versions:set -DnewVersion=0.1.0`), making the
    repository public, the `io.github.kamilkrzywanski` namespace on central.sonatype.com, the
-   portal token, and a GPG key on a public key server. The models ship as `ocr-pro-models`
-   (27 MB) and `ocr-pro-models-pl` (12 MB), so no separate hosting is needed;
+   portal token, and a GPG key on a public key server. The models ship as `tessernot-models`
+   (27 MB) and `tessernot-models-pl` (12 MB), so no separate hosting is needed;
    `ModelFiles.ensure` still downloads from ModelScope for those who leave the JARs out. Release
    all five modules together with one version: a bundled default model must match the SHA-256
    in `ModelFiles`, so a bundle from another release fails at load time.
@@ -1088,9 +1088,9 @@ failures come down to one share just under its threshold.
 
 - **Tesseract's LSTM as the line recognizer** (2026-10-15). `bench/tools/tessline.py` crops every
   line box from the `ro.sh` cache the way the engine does, reads it with `tesseract --psm 7`
-  (`pol` or `eng`) and keeps ocr-pro's reading order, so only recognition differs. Word F1 on
-  `test` / `dev`: ocr-pro 0.930 / 0.956, Tesseract `tessdata_best` 0.870 / 0.884,
-  `tessdata_fast` (the Debian packages) 0.866 / 0.881. ocr-pro wins 26 of 27 English pages
+  (`pol` or `eng`) and keeps tessernot's reading order, so only recognition differs. Word F1 on
+  `test` / `dev`: tessernot 0.930 / 0.956, Tesseract `tessdata_best` 0.870 / 0.884,
+  `tessdata_fast` (the Debian packages) 0.866 / 0.881. tessernot wins 26 of 27 English pages
   (one tie) and 24 of 36 Polish ones; Tesseract wins 8 Polish pages, mostly on Polish marks in
   capitals and typescript (ŁOWISKA, mogą, kąpieli), and partly by returning nothing for stamps
   that the references leave out. Turning its dictionaries off changed no output, so the edge on

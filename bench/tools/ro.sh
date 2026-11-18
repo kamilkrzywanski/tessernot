@@ -20,27 +20,27 @@ T=bench/tools
 W=bench/out/ro
 JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}
 J=$JAVA_HOME/bin
-P=ocr-pro/src/main/java/io/github/kamilkrzywanski/ocr/internal/post
+P=tessernot/src/main/java/io/github/kamilkrzywanski/ocr/internal/post
 SRC="$P/ReadingOrder.java $P/PageSkew.java $P/LineBoxes.java $P/LineRows.java $P/ColumnGutter.java $P/ColumnTests.java $P/ColumnSection.java $P/MergedLines.java $P/Fragments.java"
 mkdir -p "$W/json" "$W/tsv" "$W/classes" "$W/viz"
 compile() {
   rm -rf "$W/classes" && mkdir -p "$W/classes"
   # shellcheck disable=SC2086
-  "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro/target/classes $SRC "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java" "$T/RoJitter.java"
+  "$J/javac" -nowarn -d "$W/classes" -cp tessernot/target/classes $SRC "$T/RoBench.java" "$T/RoOrder.java" "$T/RoCuts.java" "$T/RoJitter.java"
 }
 cmd=$1
 shift
 case $cmd in
   dump)
-    "$J/javac" -nowarn -d "$W/classes" -cp ocr-pro-cli/target/ocr-pro-cli.jar "$T/RoDump.java"
-    "$J/java" --add-modules jdk.incubator.vector -cp "ocr-pro-cli/target/ocr-pro-cli.jar:$W/classes" RoDump "$W/json" "$@"
+    "$J/javac" -nowarn -d "$W/classes" -cp tessernot-cli/target/tessernot-cli.jar "$T/RoDump.java"
+    "$J/java" --add-modules jdk.incubator.vector -cp "tessernot-cli/target/tessernot-cli.jar:$W/classes" RoDump "$W/json" "$@"
     python3 -I "$T/totsv.py" "$W/json" "$W/tsv" ;;
-  score) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
-  cuts) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoCuts "$W/tsv" ;;
-  jitter) compile; "$J/java" -cp "$W/classes:ocr-pro/target/classes" ${RO_OPTS:-} RoJitter "$W/tsv" "$@" ;;
+  score) compile; "$J/java" -cp "$W/classes:tessernot/target/classes" ${RO_OPTS:-} RoBench "$W/tsv" "$@" ;;
+  cuts) compile; "$J/java" -cp "$W/classes:tessernot/target/classes" RoCuts "$W/tsv" ;;
+  jitter) compile; "$J/java" -cp "$W/classes:tessernot/target/classes" ${RO_OPTS:-} RoJitter "$W/tsv" "$@" ;;
   show)
     compile
-    "$J/java" -cp "$W/classes:ocr-pro/target/classes" RoOrder "$W/tsv/$1.tsv" "$W/viz/$1.order.tsv"
+    "$J/java" -cp "$W/classes:tessernot/target/classes" RoOrder "$W/tsv/$1.tsv" "$W/viz/$1.order.tsv"
     for ext in jpg jpeg png tif; do img=bench/data/$1.$ext; [ -f "$img" ] && break; done
     python3 -I "$T/viz.py" "$img" "$W/viz/$1.order.tsv" "$W/viz/$1.png" 1600
     echo "$W/viz/$1.png" ;;

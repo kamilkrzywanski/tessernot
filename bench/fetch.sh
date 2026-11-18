@@ -12,7 +12,7 @@ set -eu
 BENCH=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 DATA="$BENCH/data"
 mkdir -p "$DATA"
-UA='ocr-pro-bench/1.0 (https://github.com/kamilkrzywanski/ocr-pro)'
+UA='tessernot-bench/1.0 (https://github.com/kamilkrzywanski/tessernot)'
 
 digest() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi

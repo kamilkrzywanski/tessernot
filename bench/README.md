@@ -20,7 +20,7 @@ These are public documents with references transcribed by hand. Read
 - `ref/dev/`, `ref/test/`, `ref/test2/`, `ref/test3/`: reference transcriptions (`pl-*`, `en-*`);
   `ref/todo/`: references not checked yet
 - `data/`: the page images (about 350 MB) and the PDF and DjVu originals of rendered pages (about
-  860 MB), kept in their own repository [ocr-pro-bench](https://github.com/kamilkrzywanski/ocr-pro-bench)
+  860 MB), kept in their own repository [tessernot-bench](https://github.com/kamilkrzywanski/tessernot-bench)
   and mounted here as a submodule: `git submodule update --init bench/data`. Licenses and authors
   are in `manifest.tsv`.
 - `fetch.sh`: rebuilds a missing image from its source and checks SHA-256. Pages of PDF and DjVu

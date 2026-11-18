@@ -385,7 +385,7 @@ the budget of the pool: every engine gets `threads / size` of it, at least one.
 - `close` waits for running calls.
 - Closing a borrowed engine removes that slot from the pool.
 
-A multi-page document (`recognizePages`, which the PDF input of `ocr-pro-pdf` uses) stays on one
+A multi-page document (`recognizePages`, which the PDF input of `tessernot-pdf` uses) stays on one
 engine. Its pages run in parallel in a window as wide as the pool,
 so at most that many bitmaps are in memory. Page workers run detection on their own thread, so
 the pool never waits on itself.
@@ -418,21 +418,21 @@ budgets the same document ran out of memory with 9 GB.
 
 ## Modules and model files
 
-In `ocr-pro`, `OcrEngine` runs the pipeline and owns the sessions and worker threads. What it
+In `tessernot`, `OcrEngine` runs the pipeline and owns the sessions and worker threads. What it
 loads is a `ModelSet` (shared by the engines of a pool), the heap shares are `MemoryBudget`, and
 the second reads of `Corrections.POLISH` are `PolishRules`.
 
-- `ocr-pro` is the engine and has no runtime dependencies. A model file is a `ModelSource`: a path,
+- `tessernot` is the engine and has no runtime dependencies. A model file is a `ModelSource`: a path,
   or a name that a `ModelBundle` holds. Bundles are found with `ServiceLoader`, through the
   thread's context class loader and then the library's own. A bundled file is read with
   `getResourceAsStream` into memory, so it works from fat and nested JARs and nothing is extracted
   to disk.
-- The four default files of `ocr-pro-models` must match the SHA-256 in `ModelFiles`. The check
+- The four default files of `tessernot-models` must match the SHA-256 in `ModelFiles`. The check
   runs once per JVM and catches a bundle from another release before thresholds tuned for other
   weights read with it.
 - The word lists of `Corrections.POLISH` are looked up next to the dict: in its directory, or in
-  the bundles (`ocr-pro-models-pl`).
-- `ocr-pro-pdf` renders pages with PDFBox and hands them to `OcrEngine.recognizePages`. The
+  the bundles (`tessernot-models-pl`).
+- `tessernot-pdf` renders pages with PDFBox and hands them to `OcrEngine.recognizePages`. The
   document is released right after its last page is rendered.
 - A searchable PDF (`OcrPdf.searchable`, `TextLayer`) is the source with a text layer added:
   each word is one string in text rendering mode 3, stretched over the word's box, along its
@@ -492,7 +492,7 @@ For timings on real documents next to Tesseract and RapidOCR, see [benchmark.md]
 - Raw and fused detection graphs agree within 1e-3.
 - A synthetic invoice rendered with DejaVu: CER below 0.25, and `Zażółć gęślą jaźń` is present.
 - Empty and 1×1 images, `null`, a vertical `FAKTURA`, EXIF orientations 1–8.
-- PDFs: one page, several pages in order, empty, encrypted (`ocr-pro-pdf`).
+- PDFs: one page, several pages in order, empty, encrypted (`tessernot-pdf`).
 - hOCR: parsed back as XML, with the page box, line and word boxes, the angle of a line that
   runs down the page, and markup characters in the text.
 - Searchable PDFs: the layer read back with PDFBox (Polish letters, more characters than one

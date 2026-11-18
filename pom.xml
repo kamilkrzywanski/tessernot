@@ -5,20 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.kamilkrzywanski</groupId>
-    <artifactId>ocr-pro-parent</artifactId>
+    <artifactId>tessernot-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>ocr-pro-parent</name>
+    <name>tessernot-parent</name>
     <description>Pure Java PP-OCR engine. No native libraries.</description>
-    <url>https://github.com/kamilkrzywanski/ocr-pro</url>
+    <url>https://github.com/kamilkrzywanski/tessernot</url>
     <inceptionYear>2026</inceptionYear>
 
     <modules>
-        <module>ocr-pro</module>
-        <module>ocr-pro-pdf</module>
-        <module>ocr-pro-models</module>
-        <module>ocr-pro-models-pl</module>
-        <module>ocr-pro-cli</module>
+        <module>tessernot</module>
+        <module>tessernot-pdf</module>
+        <module>tessernot-models</module>
+        <module>tessernot-models-pl</module>
+        <module>tessernot-cli</module>
     </modules>
 
     <licenses>
@@ -38,9 +38,9 @@
     </developers>
 
     <scm>
-        <url>https://github.com/kamilkrzywanski/ocr-pro</url>
-        <connection>scm:git:https://github.com/kamilkrzywanski/ocr-pro.git</connection>
-        <developerConnection>scm:git:git@github.com:kamilkrzywanski/ocr-pro.git</developerConnection>
+        <url>https://github.com/kamilkrzywanski/tessernot</url>
+        <connection>scm:git:https://github.com/kamilkrzywanski/tessernot.git</connection>
+        <developerConnection>scm:git:git@github.com:kamilkrzywanski/tessernot.git</developerConnection>
     </scm>
 
     <properties>
@@ -62,22 +62,22 @@
         <dependencies>
             <dependency>
                 <groupId>io.github.kamilkrzywanski</groupId>
-                <artifactId>ocr-pro</artifactId>
+                <artifactId>tessernot</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.kamilkrzywanski</groupId>
-                <artifactId>ocr-pro-pdf</artifactId>
+                <artifactId>tessernot-pdf</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.kamilkrzywanski</groupId>
-                <artifactId>ocr-pro-models</artifactId>
+                <artifactId>tessernot-models</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.kamilkrzywanski</groupId>
-                <artifactId>ocr-pro-models-pl</artifactId>
+                <artifactId>tessernot-models-pl</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -199,11 +199,11 @@
                             <rules>
                                 <requireJavaVersion>
                                     <version>[21,)</version>
-                                    <message>ocr-pro builds with Java 21 or newer. Point JAVA_HOME at one.</message>
+                                    <message>tessernot builds with Java 21 or newer. Point JAVA_HOME at one.</message>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>[3.9,)</version>
-                                    <message>ocr-pro builds with Maven 3.9 or newer. ./mvnw downloads it.</message>
+                                    <message>tessernot builds with Maven 3.9 or newer. ./mvnw downloads it.</message>
                                 </requireMavenVersion>
                             </rules>
                         </configuration>
@@ -219,7 +219,7 @@
                 mvn -Prelease deploy: sources and javadoc JARs, GPG signatures, and an upload to the
                 Maven Central Portal under the server id "central" of settings.xml (a portal user
                 token). The deployment waits in the portal until it is published there by hand.
-                ocr-pro-cli is not uploaded: its runnable JAR goes to GitHub Releases.
+                tessernot-cli is not uploaded: its runnable JAR goes to GitHub Releases.
                 mvn -Prelease -Dgpg.skip package builds the JARs without signing.
             -->
             <id>release</id>
@@ -270,7 +270,7 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>false</autoPublish>
                             <excludeArtifacts>
-                                <excludeArtifact>ocr-pro-cli</excludeArtifact>
+                                <excludeArtifact>tessernot-cli</excludeArtifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

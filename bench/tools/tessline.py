@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Recognize ocr-pro's own line boxes with Tesseract (--psm 7), keep ocr-pro's reading order.
+"""Recognize tessernot's own line boxes with Tesseract (--psm 7), keep tessernot's reading order.
 
 usage: tessline.py <repo> <out-dir> <tessdata-dir|-> <ref-dir>...
 Needs the line cache of `ro.sh dump` (bench/out/ro/json), Pillow, and tesseract with the pol and
 eng models (`-` uses the installed ones). Writes <out-dir>/tess/<name>.txt and
-<out-dir>/ocrpro/<name>.txt for `ocr score --hyp`. Extra tesseract options go in TESS_EXTRA.
+<out-dir>/tessernot/<name>.txt for `ocr score --hyp`. Extra tesseract options go in TESS_EXTRA.
 """
 import json, math, os, subprocess, sys, tempfile
 from multiprocessing import Pool
@@ -55,7 +55,7 @@ def run(job):
     texts = [t.strip().replace('\n', ' ') for t in pages[:len(lines)]]
     if len(texts) != len(lines):
         print(f'{name}: {len(texts)} texts for {len(lines)} lines', file=sys.stderr)
-    for sub, body in (('tess', texts), ('ocrpro', [l['text'] for l in lines])):
+    for sub, body in (('tess', texts), ('tessernot', [l['text'] for l in lines])):
         os.makedirs(os.path.join(out, sub), exist_ok=True)
         with open(os.path.join(out, sub, name + '.txt'), 'w', encoding='utf-8') as f:
             f.write('\n'.join(body) + '\n')

@@ -8,7 +8,7 @@
 # The variants are listed in Probe.java. It scores bench/ref/dev and bench/ref/test only.
 set -eu
 JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}
-JAR=ocr-pro-cli/target/ocr-pro-cli.jar
+JAR=tessernot-cli/target/tessernot-cli.jar
 W=bench/out/probe-classes
 [ -f "$JAR" ] || { echo "missing $JAR: run ./mvnw -DskipTests package" >&2; exit 1; }
 mkdir -p "$W"

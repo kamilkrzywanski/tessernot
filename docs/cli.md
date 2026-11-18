@@ -1,6 +1,6 @@
 # Command line
 
-`ocr.sh` runs the runnable JAR of `ocr-pro-cli` with `--add-modules jdk.incubator.vector`, using
+`ocr.sh` runs the runnable JAR of `tessernot-cli` with `--add-modules jdk.incubator.vector`, using
 `$JAVA_HOME/bin/java` when `JAVA_HOME` is set and `java` from `PATH` otherwise. It keeps the
 caller's working directory, so relative paths work. It passes `--model <dir next to the script>/models`
 when you leave `--model` out. The JAR itself bundles the default models and the Polish word lists:
