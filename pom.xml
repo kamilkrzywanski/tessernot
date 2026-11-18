@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.kamilkrzywanski</groupId>
@@ -37,7 +38,10 @@
         </developer>
     </developers>
 
-    <scm>
+    <!-- Every module points at the repository itself, not at a path below it that does not exist. -->
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
         <url>https://github.com/kamilkrzywanski/tessernot</url>
         <connection>scm:git:https://github.com/kamilkrzywanski/tessernot.git</connection>
         <developerConnection>scm:git:git@github.com:kamilkrzywanski/tessernot.git</developerConnection>
@@ -48,6 +52,11 @@
         <maven.compiler.release>21</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <pdfbox.version>3.0.5</pdfbox.version>
+        <!-- The version of tessernot-models and tessernot-models-pl. They are released on their own,
+             with a tag models-v<version>, only when the files in models/ change; a release of the
+             engine (tag v<version>) depends on the models already on Maven Central. Keep it equal
+             to the <version> in tessernot-models/pom.xml and tessernot-models-pl/pom.xml. -->
+        <tessernot.models.version>0.1.0</tessernot.models.version>
         <!-- Every module is one level below this POM: the repository root holds models/ and the tests read it. -->
         <repository.root>${project.basedir}/..</repository.root>
         <!-- The test JVM runs the Vector API kernels. Empty, it runs the scalar ones. -->
@@ -73,12 +82,12 @@
             <dependency>
                 <groupId>io.github.kamilkrzywanski</groupId>
                 <artifactId>tessernot-models</artifactId>
-                <version>${project.version}</version>
+                <version>${tessernot.models.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.kamilkrzywanski</groupId>
                 <artifactId>tessernot-models-pl</artifactId>
-                <version>${project.version}</version>
+                <version>${tessernot.models.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.pdfbox</groupId>
@@ -110,6 +119,11 @@
         </resources>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.7.3</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>

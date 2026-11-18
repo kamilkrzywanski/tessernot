@@ -17,6 +17,12 @@
 
     <dependencies>
         <dependency>
+            <!-- Named here so that the engine of this release wins over the one tessernot-models 0.1.0
+                 still lists in its POM. -->
+            <groupId>io.github.kamilkrzywanski</groupId>
+            <artifactId>tessernot</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.github.kamilkrzywanski</groupId>
             <artifactId>tessernot-pdf</artifactId>
         </dependency>

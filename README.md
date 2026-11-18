@@ -60,7 +60,8 @@ flag, the engine uses the scalar path and the command line says so on stderr.
 ## Java API
 
 The artifacts are on Maven Central under `io.github.kamilkrzywanski`; the engine and the default
-models are enough to start:
+models are enough to start. The models have a version of their own, which changes only when the
+model files do; the engine checks the SHA-256 of every file it reads, not the version:
 
 ```xml
 <dependency>
@@ -71,7 +72,7 @@ models are enough to start:
 <dependency>
     <groupId>io.github.kamilkrzywanski</groupId>
     <artifactId>tessernot-models</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 

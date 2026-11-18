@@ -2,6 +2,14 @@
 
 The release workflow takes the section of the tagged version as the notes of its GitHub release.
 
+## 0.1.2
+
+- `tessernot-models` and `tessernot-models-pl` have a version of their own and are released only
+  when the model files change, with a tag `models-v<version>`. This release depends on
+  `tessernot-models` 0.1.0, the files of every release so far. Their published POMs name no
+  parent and no dependencies.
+- The published POMs point at the repository itself, not at a path per module below it.
+
 ## 0.1.1
 
 Fixes in the command line, found by running 0.1.0 on Windows.

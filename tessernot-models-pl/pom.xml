@@ -11,6 +11,8 @@
     </parent>
 
     <artifactId>tessernot-models-pl</artifactId>
+    <!-- Its own version, released with a tag models-v<version>; see tessernot.models.version in the parent. -->
+    <version>0.1.0</version>
     <name>tessernot-models-pl</name>
     <description>Word lists and Polish postal codes for Corrections.POLISH in tessernot, found on the
         class path next to tessernot-models.</description>
@@ -36,8 +38,11 @@
 
     <dependencies>
         <dependency>
+            <!-- For the ModelBundle interface only: whoever uses the models has the engine already. -->
             <groupId>io.github.kamilkrzywanski</groupId>
             <artifactId>tessernot</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.kamilkrzywanski</groupId>
@@ -88,6 +93,36 @@
                         </manifestEntries>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <!-- The published POM has no parent and no dependencies: the JAR is data that the
+                     engine finds on the class path, so it does not pin an engine version, and its
+                     parent at a SNAPSHOT version would not resolve. -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <configuration>
+                    <flattenMode>ossrh</flattenMode>
+                    <updatePomFile>true</updatePomFile>
+                    <pomElements>
+                        <dependencies>remove</dependencies>
+                    </pomElements>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

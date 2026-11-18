@@ -175,7 +175,7 @@ public final class ModelSource {
         String actual = ModelFiles.sha256(data);
         if (!expected.equals(actual)) {
             throw new OcrException("bundled " + name + " has SHA-256 " + actual + ", not the one this tessernot"
-                    + " expects; use tessernot-models of the same version as tessernot");
+                    + " expects; use the tessernot-models version named in the README of this release");
         }
         VERIFIED.add(key);
     }
