@@ -1,4 +1,4 @@
-# tessernot
+# <img src="docs/icon.png" alt="" width="48" align="top"> tessernot
 
 OCR for printed documents in pure Java, built on PaddleOCR's PP-OCR models. The engine is one JAR
 with no runtime dependencies, and the models come in a second one. It needs no native libraries:
