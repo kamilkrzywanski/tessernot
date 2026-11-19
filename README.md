@@ -125,6 +125,40 @@ For Latin-script documents, `.alphabet(Alphabet.LATIN)` (`--alphabet latin`) kee
 recognizer's 18,710 output classes: the same accuracy on the benchmark, and 8–18 % less time over
 a benchmark set, up to a quarter on pages with a lot of text.
 
+### Models of your own
+
+Each of the four files can be replaced on its own. A file read from a path is not checked
+against a hash:
+
+```java
+OcrConfig config = OcrConfig.defaults().toBuilder()
+        .recModel(Path.of("my_rec.onnx"))   // another recognizer
+        .dict(Path.of("my_dict.txt"))       // and its character dictionary, one per line
+        .build();                           // detModel(...) and clsModel(...) the same way
+try (OcrEngine engine = OcrEngine.create(config)) { ... }
+```
+
+The command line takes a directory with `--model dir`. There the files must have the names of
+the defaults in `ModelFiles`: `DET`, `REC`, `CLS` and `DICT`. To ship models in a JAR of your
+own, implement `ModelBundle` and name it in
+`META-INF/services/io.github.kamilkrzywanski.ocr.ModelBundle`. Give the files names other than
+the defaults: a bundled file with a default name must have the default's SHA-256, so other
+weights under those names fail to load.
+
+What to expect from other models:
+
+- **Only PP-OCR architectures.** The runtime is not a general ONNX runtime: it has the
+  operators the PP-OCR graphs use, listed in [docs/internals.md](docs/internals.md). Another
+  PP-OCR detector or recognizer, such as a PP-OCRv5 language model, should run. A model with any
+  other operator fails at load with `Unsupported op: NAME`.
+- **The thresholds were chosen for the default weights.** For other weights you may have to set
+  `detThresh`, `boxThresh`, `unclipRatio`, `recHeight`, `mean` and `std` in the builder again.
+- **The dictionary has to belong to the recognizer.** Its lines are the recognizer's output
+  classes in order, after the CTC blank at index 0. With `useSpaceChar`, the default, a space is
+  appended as the last class, as PaddleOCR does. `Alphabet.LATIN` keeps the Latin and Greek characters of whatever
+  dictionary is loaded. The runner-up rules of `Corrections.POLISH` are made for the default
+  dictionary and may do less with another one.
+
 ### Word lists in any language
 
 A word list makes the recognizer prefer real words where the image allows it. Each list is a
